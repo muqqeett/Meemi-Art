@@ -1,0 +1,79 @@
+"use client";
+
+import { useActionState } from "react";
+import { Loader2, Check, AlertCircle, Send } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { sendTestEmail } from "@/lib/actions/admin/email";
+
+/**
+ * Sends a test email from admin settings.
+ *
+ * Disabled when no provider is configured — offering a button that can only
+ * fail wastes a click and teaches the operator to distrust the screen. The
+ * reason is stated instead.
+ */
+export function TestEmailForm({
+  configured,
+  defaultEmail,
+}: {
+  configured: boolean;
+  defaultEmail: string;
+}) {
+  const [state, formAction, pending] = useActionState(sendTestEmail, null);
+
+  return (
+    <form action={formAction} className="mt-4 border-t border-border pt-4" noValidate>
+      <Label htmlFor="test-email" className="text-sm font-medium text-foreground">
+        Send a test email
+      </Label>
+      <p className="text-body mt-1 text-xs">
+        {configured
+          ? "Confirms mail leaves under the right sender. Contains no tokens or links."
+          : "Available once RESEND_API_KEY and EMAIL_FROM are set."}
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Input
+          id="test-email"
+          name="email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          defaultValue={defaultEmail}
+          required
+          disabled={!configured}
+          aria-invalid={Boolean(state && !state.ok)}
+          className="h-10 min-w-56 flex-1"
+        />
+        <Button type="submit" size="sm" className="h-10" disabled={!configured || pending}>
+          {pending ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <Send aria-hidden />
+          )}
+          Send test email
+        </Button>
+      </div>
+
+      {state && (
+        <p
+          role={state.ok ? "status" : "alert"}
+          className={`mt-3 flex items-start gap-2 text-sm ${
+            state.ok ? "text-success" : "text-destructive"
+          }`}
+        >
+          {state.ok ? (
+            <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
+          ) : (
+            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          )}
+          {state.ok ? state.message : state.error}
+        </p>
+      )}
+    </form>
+  );
+}

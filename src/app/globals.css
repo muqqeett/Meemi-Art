@@ -1,0 +1,486 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Meemi Art — Handmade Crochet. Beautifully Crafted.
+
+   Editorial commerce in dark purple and sapphire blue. Purple carries the
+   brand — headings, primary actions, the footer. Blue is the supporting
+   accent: links, focus, selected states, secondary actions. Everything else
+   stays near-white so the product photography leads.
+
+   Colour lives here and nowhere else. Components reference the `brand-*`
+   (purple) and `royal-*` (blue) scales or the semantic aliases below, so the
+   whole scheme can be re-pitched from this file alone.
+
+   The storefront is a light theme with intentional dark sections. It is not a
+   light/dark dual theme.
+   --------------------------------------------------------------------------- */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* The width the Figma frames are drawn at.
+
+     Pair it with `lg:max-wide:` rather than a bare `lg:` — Tailwind emits this
+     block ahead of the built-in breakpoints, not in width order, so a plain
+     `lg:` utility outranks its `wide:` counterpart at every width above 1440
+     and the drawn layout never appears. Disjoint ranges sidestep the ordering
+     entirely; overlapping ones silently resolve the wrong way. */
+  --breakpoint-wide: 1440px;
+
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-fraunces);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Hero headline. Segoe Print first so Windows renders the drawn shapes the
+     design was set in; Kalam is the served fallback everywhere else. */
+  --font-hand: "Segoe Print", var(--font-kalam), "Bradley Hand", cursive;
+  /* The design's body face. Present on every Windows machine; DM Sans, which
+     the rest of the site is set in, carries it elsewhere. */
+  --font-ui: "Segoe UI", var(--font-dm-sans), system-ui, sans-serif;
+  /* Connected script, used once — the "Revive the Art" banner. */
+  --font-script: "Segoe Script", var(--font-caveat), "Brush Script MT", cursive;
+  /* The wordmark only. */
+  --font-wordmark: var(--font-source-sans), "Segoe UI", system-ui, sans-serif;
+
+  /* ---- Product detail page (Figma 57:1305) -------------------------------
+     A third type and colour system, belonging to the product page alone.
+     Clash Grotesk carries almost everything; Raleway appears only on the
+     small bold section labels ("Description:").
+
+     Like the homepage tokens below, these are additive — they sit alongside
+     the purple `brand-*` scale the shop, cart, checkout and admin still use,
+     rather than replacing it. */
+  --font-clash: "Clash Grotesk", var(--font-dm-sans), system-ui, sans-serif;
+  --font-raleway: var(--font-raleway), var(--font-dm-sans), system-ui, sans-serif;
+
+  /* Type, darkest to lightest. Named for the job, not the value. */
+  --color-pdp-price: #141414;
+  --color-pdp-title: #292929;
+  --color-pdp-body: #666666;
+  --color-pdp-meta: #525252;
+  --color-pdp-subtle: #7a7a7a;
+  --color-pdp-label: #8f8f8f;
+  /* The design's own near-black, used for ratings and bar counts. */
+  --color-pdp-ink: #0b0f0e;
+
+  /* Surfaces and rules. */
+  --color-pdp-surface: #f2f2f2;
+  --color-pdp-hairline: #e6e6e6;
+  --color-pdp-border: #b8b8b8;
+  --color-pdp-track: #e4e9ee;
+
+  /* The one accent: rating stars. */
+  --color-pdp-star: #ffa439;
+
+  /* ---- Homepage palette (Figma 222:2) ------------------------------------
+     A separate, warmer scheme from the purple `brand-*` scale the rest of the
+     storefront still uses. Named for the role each colour plays in the design
+     rather than for the colour itself, so a re-pitch changes one line here.
+
+     These are additive. Nothing below replaces a `brand-*` token, because the
+     shop, product, cart, checkout, account and admin pages are all still
+     built on that scale — see the note in the homepage component. */
+
+  /* Page ground. Warm off-white, not the lilac `--background`. */
+  --color-paper: #faf8f5;
+  /* Hero band and the brand's anchor colour. */
+  --color-forest: #155a33;
+  /* The one accent — "Freely", "Art". Used on dark grounds only. */
+  --color-amber: #ffa61e;
+  /* Announcement bar. */
+  --color-sky: #bdcff4;
+  /* "Revive the Art" band. */
+  --color-cream: #f1e8c8;
+  /* "Who Are We?" band. */
+  --color-blush: #f2afbd;
+  /* Footer. */
+  --color-slate-deep: #312d49;
+
+  /* Type on the warm ground. Near-black rather than pure, which reads softer
+     against #faf8f5 than #000 does. */
+  --color-near-black: #191919;
+  --color-grey-text: #5e5e5e;
+  /* On the dark footer. */
+  --color-footer-text: #dfe0e1;
+  --color-footer-muted: #9695a8;
+  /* Inline "Learn more" links in the trust row. */
+  --color-rose-link: #ff596f;
+
+  /* ---- Purple: the primary brand scale -----------------------------------
+     Ascending darkness. `700` is the brand purple used for headings and
+     primary buttons; `600` is its lighter hover. Tints at 50–300 do the
+     quiet work — hover surfaces, hairlines, and type on dark panels. */
+  --color-brand-50: #f7f5fc;
+  --color-brand-100: #f0ecfa;
+  --color-brand-200: #e3daf5;
+  --color-brand-300: #c7b6e8;
+  --color-brand-400: #7b5fbf;
+  /* 500–700 are the three brand purples. The old 500 (#7355b4) was a lavender
+     that read as decorative next to the primary; these three are one family,
+     so a label, a hover and a headline look related rather than adjacent. */
+  --color-brand-500: #3b2a73;
+  --color-brand-600: #2f1a55;
+  --color-brand-700: #24113f;
+  --color-brand-800: #1a0c2e;
+  --color-brand-900: #120820;
+
+  /* ---- Sapphire: the supporting accent ----------------------------------
+     Links, focus rings, selected states and secondary actions. Deliberately
+     never the primary button, so the two never compete. */
+  --color-royal-50: #eef2fe;
+  --color-royal-100: #dce4fd;
+  --color-royal-200: #bccbfb;
+  --color-royal-300: #8ea2ff;
+  --color-royal-400: #6485ec;
+  --color-royal-500: #4169e1;
+  --color-royal-600: #3157c8;
+  --color-royal-700: #2745a0;
+  --color-royal-800: #1f3780;
+  --color-royal-900: #182b63;
+
+  /* ---- Semantic aliases --------------------------------------------------
+     Named by role rather than by step, for call sites where the intent
+     matters more than the position in a scale. */
+  --color-brand-purple: #24113f;
+  --color-brand-purple-deep: #2f1a55;
+  --color-brand-purple-dark: #1a0c2e;
+  --color-brand-blue: #3157c8;
+  --color-brand-blue-light: #4169e1;
+  --color-brand-lavender: #f0ecfa;
+  --color-brand-ink: #17131c;
+
+  /* Ink — body copy and the deepest panels. */
+  --color-ink: #17131c;
+  --color-ink-soft: #2a2530;
+  /* Footer and campaign panels sit on brand purple rather than neutral black. */
+  --color-carbon: #24113f;
+
+  /* Surfaces, lightest to deepest. */
+  --color-surface: #ffffff;
+  --color-surface-alt: #f7f5fc;
+  --color-surface-deep: #f0ecfa;
+
+  /* The one warm note in an otherwise cool palette. Used sparingly, as a
+     ground for editorial sections that would look clinical on lilac — it is
+     the colour of undyed cotton, which is what the work is actually made of.
+     Never a card background; only a full-width band. */
+  --color-sand: #f4f0e8;
+  --color-sand-deep: #e9e2d4;
+
+  /* Ratings keep a gold star. Like error red and success green this is a
+     convention readers decode at a glance, so it is exempt from the rebrand. */
+  --color-star: #c9962e;
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Tight, editorial radii — corners are crisp, never pill-soft. */
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: var(--radius);
+  --radius-xl: 4px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+
+  /* Depth comes from hairlines and space; shadows stay barely-there. */
+  --shadow-card: 0 1px 2px rgb(21 18 26 / 0.04);
+  --shadow-card-hover: 0 2px 12px -4px rgb(36 17 63 / 0.16);
+  --shadow-pop: 0 18px 48px -20px rgb(36 17 63 / 0.32);
+}
+
+:root {
+  --background: #faf9fc;
+  --foreground: #17131c;
+
+  --card: #ffffff;
+  --card-foreground: #17131c;
+  --popover: #ffffff;
+  --popover-foreground: #17131c;
+
+  /* Primary is the brand purple; white on it clears AA comfortably. */
+  --primary: #24113f;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f0ecfa;
+  --secondary-foreground: #24113f;
+
+  --muted: #f7f5fc;
+  --muted-foreground: #6f6878;
+
+  --accent: #f0ecfa;
+  --accent-foreground: #2f1a55;
+
+  /* Semantic states keep their conventional hues — they communicate meaning,
+     not brand, so the rebrand deliberately leaves them alone. */
+  --destructive: #b3261e;
+  --success: #1f6b45;
+  --warning: #8a5a12;
+  --info: #3157c8;
+
+  --border: #d8d3e2;
+  --input: #d8d3e2;
+  /* Focus is blue so it never reads as a filled primary button. */
+  --ring: #3157c8;
+
+  --chart-1: #24113f;
+  --chart-2: #3157c8;
+  --chart-3: #7355b4;
+  --chart-4: #8ea2ff;
+  --chart-5: #c7b6e8;
+
+  --radius: 3px;
+
+  --sidebar: #24113f;
+  --sidebar-foreground: #e3daf5;
+  --sidebar-primary: #4169e1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #321a5f;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #321a5f;
+  --sidebar-ring: #4169e1;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Display headings carry the brand purple; body copy stays ink. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-brand-700;
+    text-wrap: balance;
+  }
+
+  /* Visible, blue focus ring everywhere — never removed. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-royal-600;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-100);
+    color: var(--color-brand-700);
+  }
+}
+
+@layer components {
+  /* Page gutter used by every section so the storefront lines up vertically. */
+  .container-page {
+    @apply mx-auto w-full max-w-[1400px] px-5 sm:px-8 lg:px-12;
+  }
+
+  /* The homepage's gutter, which is a different measurement.
+     The Figma frame is 1440 wide with 120px side padding, so its content sits
+     in exactly 1200. Reproducing that as `max-w-[1200px]` plus padding would
+     be 64px narrower than drawn at every width, and every band would be
+     misaligned against the hero. This keeps the frame's own arithmetic and
+     lets the content shrink below 1440 instead of overflowing. */
+  .container-figma {
+    @apply mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-[120px];
+  }
+
+  /* Generous editorial rhythm between sections. */
+  .section-y {
+    @apply py-16 sm:py-20 lg:py-28;
+  }
+
+  /* ---- Type scale ------------------------------------------------------
+     Six tiers, each with one job. Components reference these instead of
+     picking sizes, so a heading on the shop page and a heading on the about
+     page are the same heading.
+
+     Display sizes are capped below what a pure editorial layout would use:
+     past roughly 4.5rem a headline stops being read and starts being looked
+     at, which costs more than the drama is worth on a page that has to sell
+     something. */
+
+  /* Campaign scale. Homepage hero and 404 only — one per page, at most. */
+  .heading-hero {
+    @apply font-display text-[2.75rem] leading-[0.98] font-semibold tracking-[-0.02em] sm:text-6xl lg:text-[4.5rem];
+  }
+
+  /* Editorial statement inside a section, e.g. the craft and story blocks.
+     Sits between the hero and a section title. */
+  .heading-display {
+    @apply font-display text-[2.25rem] leading-[1.02] font-semibold tracking-[-0.018em] sm:text-[3rem] lg:text-[3.5rem];
+  }
+
+  /* Section titles — display face, quieter than the hero. */
+  .heading-section {
+    @apply font-display text-[2rem] leading-[1.05] font-semibold tracking-[-0.015em] sm:text-[2.5rem] lg:text-[2.75rem];
+  }
+
+  /* Sub-section and card headings that still want the display face. */
+  .heading-sub {
+    @apply font-display text-xl leading-tight font-semibold tracking-[-0.01em] sm:text-2xl;
+  }
+
+  /* The small tracked-out label that opens most sections. */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-[0.6875rem] font-semibold tracking-[0.18em] text-royal-600 uppercase;
+  }
+
+  /* Tracked-out micro type for metadata, nav and buttons. */
+  .label-caps {
+    @apply text-[0.6875rem] font-semibold tracking-[0.14em] uppercase;
+  }
+
+  .text-body {
+    @apply text-[0.9375rem] leading-[1.75] text-muted-foreground;
+  }
+
+  /* Longer-form editorial paragraphs — story and craft copy, where the
+     measure is wider and the reading is continuous. */
+  .text-lede {
+    @apply text-base leading-[1.8] text-muted-foreground sm:text-[1.0625rem];
+  }
+
+  /* ---- Commerce type ---------------------------------------------------
+     Price is the second thing a shopper reads after the photograph, so it
+     gets tabular figures and its own weight rather than inheriting body. */
+  .price {
+    @apply font-medium text-brand-700 tabular-nums;
+  }
+
+  .price-lg {
+    @apply text-2xl leading-none font-semibold text-brand-700 tabular-nums sm:text-[1.75rem];
+  }
+
+  .price-was {
+    @apply text-sm text-muted-foreground line-through tabular-nums;
+  }
+
+  /* Product name on a card. Deliberately quiet — the image is doing the
+     selling, and a grid of bold names reads as a spreadsheet. */
+  .product-title {
+    @apply text-[0.9375rem] leading-snug font-medium;
+  }
+
+  /* Inline text link: purple at rest, blue on hover. */
+  .link-brand {
+    @apply text-brand-600 underline-offset-4 transition-colors hover:text-royal-600 hover:underline;
+  }
+
+  /* Thin rule used to separate editorial blocks. */
+  .rule {
+    @apply h-px w-full bg-border;
+  }
+
+  /* Page entrance — see components/motion/page-transition.tsx for why this is
+     CSS rather than Framer Motion. `both` holds the opening frame during the
+     delay-free start and pins the closing one afterwards, so the element is
+     never left at an in-between value.
+
+     12px of travel on an element that is already at its final size: nothing
+     below it reflows, so this cannot contribute to layout shift. */
+  .page-enter {
+    animation: page-enter 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Horizontal product rails on small screens. */
+  .snap-rail {
+    scroll-snap-type: x mandatory;
+  }
+  .snap-rail > * {
+    scroll-snap-align: start;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Motion
+   --------------------------------------------------------------------------- */
+
+/* Reduced motion, part one: CSS transitions and keyframes.
+
+   Part two is Framer Motion, which ignores CSS entirely because it writes
+   inline styles from JavaScript — that is handled by `<MotionProvider>`'s
+   `reducedMotion="user"`. Both are needed; neither is redundant. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Entrance animations start from `opacity: 0`, which JavaScript then clears.
+   With no scripting there is nothing to clear it, so pin every reveal to its
+   finished state — a shopper without JavaScript sees the page, not a blank
+   one. */
+@media (scripting: none) {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
