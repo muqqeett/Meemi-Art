@@ -63,8 +63,18 @@ export async function SiteHeader() {
           />
         </div>
 
-        <div className="flex shrink-0 items-center max-lg:absolute max-lg:left-1/2 max-lg:-translate-x-1/2">
-          <Logo />
+        {/* Below lg the wordmark centres by taking the space *between* the
+            menu button and the actions, rather than being absolutely centred
+            on the viewport. Absolute centring ignored the action cluster, so
+            on every common phone width the mark ran straight into it — 64px of
+            overlap at 320, still colliding at 430. As a flex item it can never
+            reach them.
+
+            The mark also steps down to 24px below sm, because at 320 the track
+            between the two clusters is 104px and the drawn 32px mark is 136px
+            wide. It returns to the drawn size from sm up. */}
+        <div className="flex items-center max-lg:min-w-0 max-lg:flex-1 max-lg:justify-center lg:shrink-0">
+          <Logo className="max-sm:text-2xl/6" />
         </div>
 
         <div className="lg:ml-8">
