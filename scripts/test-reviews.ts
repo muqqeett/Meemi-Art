@@ -20,7 +20,11 @@ import "dotenv/config";
 import { randomUUID } from "node:crypto";
 
 import { prisma } from "../src/lib/prisma";
-import { hasPurchasedProduct, getVerifiedReviewerIds } from "../src/lib/queries/reviews";
+import {
+  hasPurchasedProduct,
+  getVerifiedReviewerIds,
+  getReviewEligibility,
+} from "../src/lib/queries/reviews";
 
 const TAG = `zz-review-test-${randomUUID().slice(0, 8)}`;
 
@@ -254,6 +258,119 @@ async function main() {
   const verified = await getVerifiedReviewerIds(product.id, [buyer.id, stranger.id]);
   check("buyer is marked verified", verified.has(buyer.id));
   check("stranger is not marked verified", !verified.has(stranger.id));
+  // Nothing on Review carries the badge, so there is no column a customer
+  // could set. It is derived from the orders on every render.
+  const reviewColumns = Object.keys(
+    await prisma.review.findFirstOrThrow({ where: { productId: product.id } }),
+  );
+  check(
+    "no verified/badge column exists on Review to be set by hand",
+    !reviewColumns.some((column) => /verif|badge/i.test(column)),
+    reviewColumns.join(","),
+  );
+
+  console.log("\n7. Eligibility never expires");
+  // Backdate the whole purchase by three years — order, completion and the
+  // review itself — and ask again. Nothing in the eligibility query looks at
+  // time, so this must be indistinguishable from a purchase made today.
+  const longAgo = new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000);
+  await prisma.order.updateMany({
+    where: { userId: buyer.id, orderNumber: { startsWith: TAG } },
+    data: { placedAt: longAgo, completedAt: longAgo },
+  });
+  await prisma.review.update({
+    where: { productId_userId: { productId: product.id, userId: buyer.id } },
+    data: { createdAt: longAgo },
+  });
+
+  check(
+    "a three-year-old purchase still grants review permission",
+    await hasPurchasedProduct(buyer.id, product.id),
+  );
+
+  const lateEligibility = await getReviewEligibility(buyer.id, [product.id, unbought.id]);
+  check("batched eligibility includes the old purchase", lateEligibility.has(product.id));
+  check(
+    "batched eligibility excludes the unbought product",
+    !lateEligibility.has(unbought.id),
+  );
+  check(
+    "existing review is returned for prefilling",
+    lateEligibility.get(product.id)?.title === "First",
+    JSON.stringify(lateEligibility.get(product.id)),
+  );
+
+  console.log("\n8. Editing years later updates rather than duplicates");
+  const before = await prisma.review.findUniqueOrThrow({
+    where: { productId_userId: { productId: product.id, userId: buyer.id } },
+    select: { id: true },
+  });
+
+  // Exactly the statement the action runs.
+  await prisma.review.upsert({
+    where: { productId_userId: { productId: product.id, userId: buyer.id } },
+    create: {
+      productId: product.id,
+      userId: buyer.id,
+      rating: 5,
+      title: "Should not be reached",
+      body: "The row already exists, so this branch must not run.",
+    },
+    update: {
+      rating: 5,
+      title: "Revised years later",
+      body: "Coming back to this long after buying it, and changing my mind.",
+    },
+  });
+
+  const after = await prisma.review.findUniqueOrThrow({
+    where: { productId_userId: { productId: product.id, userId: buyer.id } },
+    select: { id: true, rating: true, title: true },
+  });
+
+  check("the same review row is updated, not replaced", after.id === before.id);
+  check(
+    "the edit took effect",
+    after.rating === 5 && after.title === "Revised years later",
+  );
+  check(
+    "still exactly two reviews on the product",
+    (await prisma.review.count({ where: { productId: product.id } })) === 2,
+  );
+
+  console.log("\n9. A non-purchaser cannot reach another customer's review");
+  // The action keys its upsert on the session user, so the only row a stranger
+  // can ever address is their own. Confirm the buyer's row is untouched by an
+  // upsert made under the stranger's id after the edit above.
+  await prisma.review.upsert({
+    where: { productId_userId: { productId: product.id, userId: stranger.id } },
+    create: {
+      productId: product.id,
+      userId: stranger.id,
+      rating: 3,
+      title: "Stranger again",
+      body: "A second attempt under the stranger's own id.",
+    },
+    update: { rating: 3, title: "Stranger again", body: "A second attempt." },
+  });
+
+  const buyerAfterStranger = await prisma.review.findUniqueOrThrow({
+    where: { productId_userId: { productId: product.id, userId: buyer.id } },
+    select: { id: true, title: true },
+  });
+  check(
+    "buyer's row survives the stranger's second write intact",
+    buyerAfterStranger.id === before.id &&
+      buyerAfterStranger.title === "Revised years later",
+  );
+  check(
+    "stranger has no eligibility despite having a review row",
+    !(await hasPurchasedProduct(stranger.id, product.id)),
+  );
+  check(
+    "stranger's batched eligibility is empty",
+    (await getReviewEligibility(stranger.id, [product.id])).size === 0,
+  );
 
   console.log(`\n${passed} passed, ${failed} failed\n`);
 }

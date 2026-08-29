@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Download, Ban, FileDown } from "lucide-react";
+import { Download, Ban, FileDown, PencilLine } from "lucide-react";
 
 import { requireUser } from "@/lib/auth-guards";
 import { getDownloadsForUser } from "@/lib/queries/downloads";
+import { getReviewEligibility } from "@/lib/queries/reviews";
 import { formatBytes } from "@/lib/format-bytes";
 import { EmptyState } from "@/components/brand/empty-state";
 import { ButtonLink } from "@/components/ui/button-link";
@@ -30,6 +31,17 @@ export const metadata: Metadata = {
 export default async function DownloadsPage() {
   const user = await requireUser("/account/downloads");
   const downloads = await getDownloadsForUser(user.id);
+
+  /**
+   * Which of these the customer may review, and what they have already
+   * written. A `DigitalAccess` grant is not itself proof of a reviewable
+   * purchase — a refund revokes access but leaves the row — so eligibility is
+   * asked of the orders, exactly as everywhere else.
+   */
+  const reviewable = await getReviewEligibility(
+    user.id,
+    downloads.map((entry) => entry.productId),
+  );
 
   return (
     <div>
@@ -91,6 +103,21 @@ export default async function DownloadsPage() {
                       Downloaded {entry.downloadCount}{" "}
                       {entry.downloadCount === 1 ? "time" : "times"}
                     </p>
+                  )}
+
+                  {/* A link to the product's own review panel rather than a
+                      form inline: the review belongs beside the reviews, and
+                      this keeps a list of files a list of files. */}
+                  {reviewable.has(entry.productId) && (
+                    <Link
+                      href={`/products/${entry.productSlug}#reviews`}
+                      className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 underline-offset-4 hover:underline"
+                    >
+                      <PencilLine className="size-3.5" aria-hidden />
+                      {reviewable.get(entry.productId)
+                        ? "Edit Review"
+                        : "Write a Review"}
+                    </Link>
                   )}
                 </div>
 

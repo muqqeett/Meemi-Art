@@ -7,7 +7,7 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { getOrderForViewer } from "@/lib/queries/orders";
 import { isEmailConfigured } from "@/lib/email";
 import { getCurrentUser } from "@/lib/auth-guards";
-import { prisma } from "@/lib/prisma";
+import { getReviewEligibility, type OwnReview } from "@/lib/queries/reviews";
 
 export const metadata: Metadata = {
   title: "Order",
@@ -56,41 +56,33 @@ export default async function OrderPage({
   /**
    * Which lines this viewer may review.
    *
-   * Built here, on the server, from facts this page already holds: the order
-   * is COMPLETED with a PAID payment, and it belongs to the signed-in user.
-   * A guest viewing an order through the remembered-id path gets nothing —
-   * a review has to hang off an account.
+   * Asked per product, not per order. This page used to require *this* order
+   * to be COMPLETED and PAID, which quietly hid the button whenever the same
+   * product also sat on an order that was not — the customer had paid, but the
+   * page they happened to open said otherwise. `getReviewEligibility` asks
+   * whether they ever bought it, on any paid order, with no time limit.
    *
-   * The submit action re-checks all of this independently, so this map only
+   * Still scoped to the order's own owner: `getOrderForViewer` also admits
+   * admins and guests holding a remembered id, and neither should be offered a
+   * review form on someone else's receipt. That is a question of whose page
+   * this is, not of who may review — an admin who bought the product themselves
+   * still gets the form on the product page.
+   *
+   * The submit action re-checks eligibility independently, so this map only
    * decides what to draw, never what is allowed.
    */
   const viewer = await getCurrentUser();
-  let reviewable: Record<string, { rating: number; title: string; body: string } | null> | undefined;
+  let reviewable: Record<string, OwnReview | null> | undefined;
 
-  if (viewer && isPaid && order.userId === viewer.id) {
-    const productIds = order.items
-      .map((item) => item.productId)
-      .filter((id): id is string => Boolean(id));
+  if (viewer && order.userId === viewer.id) {
+    const eligibility = await getReviewEligibility(
+      viewer.id,
+      order.items
+        .map((item) => item.productId)
+        .filter((id): id is string => Boolean(id)),
+    );
 
-    if (productIds.length > 0) {
-      const own = await prisma.review.findMany({
-        where: { userId: viewer.id, productId: { in: productIds } },
-        select: { productId: true, rating: true, title: true, body: true },
-      });
-      const byProduct = new Map(own.map((r) => [r.productId, r]));
-
-      reviewable = Object.fromEntries(
-        productIds.map((id) => {
-          const existing = byProduct.get(id);
-          return [
-            id,
-            existing
-              ? { rating: existing.rating, title: existing.title, body: existing.body }
-              : null,
-          ];
-        }),
-      );
-    }
+    if (eligibility.size > 0) reviewable = Object.fromEntries(eligibility);
   }
 
   return (

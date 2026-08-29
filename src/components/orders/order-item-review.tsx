@@ -23,10 +23,11 @@ export function OrderItemReview({
   productName: string;
   existing: { rating: number; title: string; body: string } | null;
 }) {
+  // Seeded from the server and then kept locally, so reopening the panel right
+  // after saving prefills what was just written rather than an empty form.
+  const [current, setCurrent] = useState(existing);
+  const hasReview = current !== null;
   const [open, setOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  const hasReview = Boolean(existing) || saved;
 
   if (!open) {
     return (
@@ -34,7 +35,7 @@ export function OrderItemReview({
         {hasReview && (
           <span className="text-success inline-flex items-center gap-1.5 text-sm font-medium">
             <Star className="size-4 fill-current" aria-hidden />
-            Reviewed
+            Your Review
           </span>
         )}
         <Button
@@ -45,7 +46,7 @@ export function OrderItemReview({
           onClick={() => setOpen(true)}
         >
           <PencilLine className="mr-2 size-4" aria-hidden />
-          {hasReview ? "Edit your review" : "Write a review"}
+          {hasReview ? "Edit Review" : "Write a Review"}
         </Button>
       </div>
     );
@@ -55,7 +56,7 @@ export function OrderItemReview({
     <div className="mt-4 rounded-xl border border-border bg-surface-alt/40 p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-foreground">
-          {hasReview ? "Edit your review" : `Review ${productName}`}
+          {hasReview ? "Edit Review" : `Review ${productName}`}
         </h3>
         <Button
           type="button"
@@ -71,8 +72,8 @@ export function OrderItemReview({
       <ReviewForm
         productId={productId}
         productName={productName}
-        existing={existing}
-        onDone={() => setSaved(true)}
+        existing={current}
+        onDone={setCurrent}
       />
     </div>
   );

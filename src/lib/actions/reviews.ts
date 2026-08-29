@@ -90,6 +90,10 @@ export async function submitReview(input: ReviewInput): Promise<ReviewResult> {
 
   revalidatePath(`/products/${product.slug}`);
   revalidatePath("/account/orders");
+  revalidatePath("/account/downloads");
+  // By route pattern, because the action has no idea which order number the
+  // customer came from — and every one of them may now show "Edit Review".
+  revalidatePath("/orders/[orderNumber]", "page");
   revalidatePath("/admin/reviews");
 
   return {

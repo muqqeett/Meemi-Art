@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Star, BadgeCheck } from "lucide-react";
 
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/reveal";
+import { ProductReviewPanel } from "@/components/product/product-review-panel";
 import { staggerStep } from "@/lib/motion";
 
 type Review = {
@@ -86,6 +87,10 @@ export function PdpReviews({
   count,
   viewerId,
   verifiedReviewerIds,
+  productId,
+  productName,
+  canReview = false,
+  ownReview = null,
 }: {
   reviews: Review[];
   average: number;
@@ -98,7 +103,21 @@ export function PdpReviews({
    * than no badge.
    */
   verifiedReviewerIds?: Set<string>;
+  productId: string;
+  productName: string;
+  /** Set by the server when this viewer has a paid order for the product. */
+  canReview?: boolean;
+  /** Their existing review, when they have written one. */
+  ownReview?: { rating: number; title: string; body: string } | null;
 }) {
+  const panel = canReview ? (
+    <ProductReviewPanel
+      productId={productId}
+      productName={productName}
+      existing={ownReview}
+    />
+  ) : null;
+
   if (reviews.length === 0) {
     return (
       <section id="reviews" className="w-full scroll-mt-24">
@@ -110,10 +129,13 @@ export function PdpReviews({
             No reviews yet.
           </p>
           <p className="font-clash mt-1 text-sm text-pdp-subtle">
-            Reviews are written by customers who have bought this file — you&apos;ll
-            find the form on your order once payment clears.
+            {canReview
+              ? "You bought this one — yours would be the first."
+              : "Reviews are written by customers who have bought this file."}
           </p>
         </div>
+
+        {panel}
       </section>
     );
   }
@@ -170,6 +192,8 @@ export function PdpReviews({
           </div>
         </div>
       </Reveal>
+
+      {panel}
 
       {/* Says what the bars are counting. With a page of reviews rather than
           all of them, an unlabelled distribution reads as the whole picture. */}

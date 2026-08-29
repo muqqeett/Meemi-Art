@@ -14,7 +14,11 @@ import {
   getAllProductSlugs,
 } from "@/lib/queries/products";
 import { getSoldCounts } from "@/lib/queries/sales";
-import { getVerifiedReviewerIds } from "@/lib/queries/reviews";
+import {
+  getVerifiedReviewerIds,
+  getReviewEligibility,
+  type OwnReview,
+} from "@/lib/queries/reviews";
 import { getCurrentUser } from "@/lib/auth-guards";
 import { siteConfig } from "@/lib/config";
 
@@ -91,6 +95,19 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
     product.id,
     product.reviews.map((review) => review.userId),
   );
+
+  /**
+   * May the reader review this, and have they already?
+   *
+   * This is the surface that makes the review permanently reachable: the
+   * customer does not have to find the original order months later, they just
+   * open the product. Eligibility is the purchase itself, with no time bound.
+   */
+  const eligibility = viewer
+    ? await getReviewEligibility(viewer.id, [product.id])
+    : new Map<string, OwnReview | null>();
+  const canReview = eligibility.has(product.id);
+  const ownReview = eligibility.get(product.id) ?? null;
 
   /**
    * Product structured data. Rating and review fields are only emitted when
@@ -211,6 +228,10 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             count={product.reviewCount}
             viewerId={viewer?.id ?? null}
             verifiedReviewerIds={verifiedReviewerIds}
+            productId={product.id}
+            productName={product.name}
+            canReview={canReview}
+            ownReview={ownReview}
           />
 
           <PdpProductRail

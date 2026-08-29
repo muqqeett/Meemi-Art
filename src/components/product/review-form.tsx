@@ -37,8 +37,12 @@ export function ReviewForm({
   productId: string;
   productName: string;
   existing?: Existing;
-  /** Called after a successful write, so a parent can close a panel. */
-  onDone?: () => void;
+  /**
+   * Called after a successful write with what was saved, so a parent can show
+   * the "Your Review" state and prefill the form if it is reopened — without
+   * waiting for the server component above it to revalidate.
+   */
+  onDone?: (saved: { rating: number; title: string; body: string }) => void;
 }) {
   const groupId = useId();
   const [rating, setRating] = useState(existing?.rating ?? 0);
@@ -64,7 +68,7 @@ export function ReviewForm({
         return;
       }
       setResult({ ok: true, message: response.message });
-      onDone?.();
+      onDone?.({ rating, title, body });
     });
   }
 
@@ -210,7 +214,7 @@ export function ReviewForm({
 
       <Button type="submit" variant="brand" size="pill" disabled={pending} className="w-full sm:w-auto">
         {pending && <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />}
-        {existing ? "Update review" : "Submit review"}
+        {existing ? "Update Review" : "Submit Review"}
       </Button>
     </form>
   );
