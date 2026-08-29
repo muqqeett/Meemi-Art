@@ -75,6 +75,12 @@ export default async function EditProductPage({
           })),
         }}
       asset={product.asset}
+        paddle={{
+          paddleProductId: product.paddleProductId,
+          paddlePriceId: product.paddlePriceId,
+          paddlePriceCents: product.paddlePriceCents,
+          paddleSyncedAt: product.paddleSyncedAt,
+        }}
       />
     </div>
   );

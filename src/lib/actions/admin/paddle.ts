@@ -19,7 +19,17 @@ import { syncAllProductsToPaddle, syncProductToPaddle } from "@/lib/payments/pad
  */
 
 export type SyncResult =
-  | { ok: true; message: string }
+  | {
+      ok: true;
+      message: string;
+      /**
+       * The catalogue ids, so the form can show "Connected" without a reload.
+       * These are identifiers, not credentials — Paddle publishes them in its
+       * own dashboard and they appear in checkout requests.
+       */
+      paddleProductId?: string;
+      paddlePriceId?: string;
+    }
   | { ok: false; error: string };
 
 async function assertAdmin(): Promise<SyncResult | null> {
@@ -70,6 +80,14 @@ export async function syncCatalogToPaddle(): Promise<SyncResult> {
   };
 }
 
+/**
+ * Create — or bring back into step — the Paddle product and one-time price for
+ * a single product, and hand the ids back to the caller.
+ *
+ * Safe to press twice. `syncProductToPaddle` reuses whatever ids the row
+ * already carries, so an already-connected product is updated in place rather
+ * than duplicated in the Paddle catalogue.
+ */
 export async function syncOneProductToPaddle(productId: string): Promise<SyncResult> {
   const denied = (await assertAdmin()) ?? assertPaddle();
   if (denied) return denied;
@@ -78,8 +96,21 @@ export async function syncOneProductToPaddle(productId: string): Promise<SyncRes
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${productId}/edit`);
 
-  return result.ok
-    ? { ok: true, message: `Synced to Paddle (${result.action}).` }
-    : { ok: false, error: result.error };
+  if (!result.ok) return { ok: false, error: result.error };
+
+  const wording =
+    result.action === "created"
+      ? "Connected to Paddle."
+      : result.action === "updated"
+        ? "Paddle price updated to match."
+        : "Already in step with Paddle.";
+
+  return {
+    ok: true,
+    message: wording,
+    paddleProductId: result.paddleProductId,
+    paddlePriceId: result.paddlePriceId,
+  };
 }

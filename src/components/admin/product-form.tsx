@@ -23,6 +23,10 @@ import {
   type ProductFormValues,
 } from "@/lib/validations/admin";
 import { createProduct, updateProduct } from "@/lib/actions/admin/products";
+import {
+  PaddleConnectionField,
+  type PaddleConnection,
+} from "@/components/admin/paddle-connection-field";
 import { siteConfig } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +37,8 @@ type ProductFormProps = {
   defaultValues?: Partial<ProductFormValues>;
   /** The product's current file, when it has one. */
   asset?: DigitalAssetSummary;
+  /** Paddle catalogue link, when editing an existing product. */
+  paddle?: PaddleConnection | null;
 };
 
 const EMPTY: ProductFormValues = {
@@ -101,6 +107,7 @@ export function ProductForm({
   productId,
   defaultValues,
   asset = null,
+  paddle = null,
 }: ProductFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -398,6 +405,20 @@ export function ProductForm({
         description="The file the customer downloads after paying. A product cannot be published without one."
       >
         <DigitalFileField productId={productId ?? null} asset={asset} />
+      </Section>
+
+      {/* Sits directly after the file, because these are the two things a
+          product needs before it can actually be sold: something to deliver,
+          and a price Paddle will honour. */}
+      <Section
+        title="Paddle"
+        description="Connects this product to a Paddle catalogue price. Checkout charges that price — never an amount sent from the browser."
+      >
+        <PaddleConnectionField
+          productId={productId ?? null}
+          priceCents={Number(watch("priceCents")) || 0}
+          connection={paddle}
+        />
       </Section>
 
       <Section
