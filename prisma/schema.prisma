@@ -1,7 +1,3 @@
-// Montana Hill — e-commerce schema
-// Money is stored as integer minor units (cents) to avoid float/Decimal
-// serialization issues across the server/client boundary.
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -11,72 +7,31 @@ datasource db {
   provider = "postgresql"
 }
 
-// ---------------------------------------------------------------- enums
-
-enum Role {
-  CUSTOMER
-  ADMIN
-}
-
-/**
- * Lifecycle of a digital order.
- *
- * There is no SHIPPED or DELIVERED: fulfilment is instantaneous and happens
- * inside the same transaction that records the payment, so an order is either
- * awaiting money, complete, abandoned, or reversed.
- */
-enum OrderStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  CANCELLED
-  REFUNDED
-}
-
-enum PaymentStatus {
-  PENDING
-  PROCESSING
-  PAID
-  FAILED
-  CANCELLED
-  REFUNDED
-}
-
-enum DiscountType {
-  PERCENTAGE
-  FIXED
-}
-
-// ---------------------------------------------------------------- auth
-
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?
-  role          Role      @default(CUSTOMER)
-  phone         String?
-
+  id                      String                   @id @default(cuid())
+  name                    String?
+  email                   String                   @unique
+  emailVerified           DateTime?
+  image                   String?
+  passwordHash            String?
+  role                    Role                     @default(CUSTOMER)
+  phone                   String?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
   /// Paddle's own id for this buyer (`ctm_...`). A provider id, deliberately
   /// kept separate from `id` and `email`: Paddle owns it, it means nothing to
   /// this application beyond matching a webhook back to a person, and it must
   /// never be used as an identity or an authorisation key.
-  paddleCustomerId String? @unique
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
+  paddleCustomerId        String?                  @unique
   accounts                Account[]
-  sessions                Session[]
-  orders                  Order[]
-  reviews                 Review[]
   cart                    Cart?
-  wishlist                Wishlist?
   downloads               DigitalAccess[]
-  passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  orders                  Order[]
+  passwordResetTokens     PasswordResetToken[]
+  reviews                 Review[]
+  sessions                Session[]
+  wishlist                Wishlist?
 
   @@index([role])
   @@index([createdAt])
@@ -88,15 +43,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
@@ -107,8 +61,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -121,55 +74,44 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-/**
- * Email ownership proof, deliberately mirroring PasswordResetToken: only a
- * SHA-256 hash is stored, so a database leak cannot be replayed as a
- * verification link. Single-use via `usedAt`, and time-limited.
- */
+/// *
+/// * Email ownership proof, deliberately mirroring PasswordResetToken: only a
+/// * SHA-256 hash is stored, so a database leak cannot be replayed as a
+/// * verification link. Single-use via `usedAt`, and time-limited.
 model EmailVerificationToken {
   id        String    @id @default(cuid())
   userId    String
   tokenHash String    @unique
-  /** The address being proved — a later email change re-verifies. */
+  /// * The address being proved — a later email change re-verifies.
   email     String
   expires   DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expires])
 }
 
-enum EmailStatus {
-  /** No provider configured — nothing was sent, and we say so. */
-  SKIPPED
-  SENT
-  FAILED
-}
-
-/**
- * One row per email attempt.
- *
- * Serves three jobs at once without adding a queue or Redis: delivery history,
- * idempotency (`dedupeKey` is unique, so a retried order cannot send a second
- * confirmation), and rate limiting (count recent rows per recipient/template).
- */
+/// *
+/// * One row per email attempt.
+/// *
+/// * Serves three jobs at once without adding a queue or Redis: delivery history,
+/// * idempotency (`dedupeKey` is unique, so a retried order cannot send a second
+/// * confirmation), and rate limiting (count recent rows per recipient/template).
 model EmailLog {
   id         String      @id @default(cuid())
   to         String
   template   String
   subject    String
   status     EmailStatus
-  /** Resend's message id, when the send succeeded. */
+  /// * Resend's message id, when the send succeeded.
   providerId String?
-  /** Provider error text on failure. Never contains tokens. */
+  /// * Provider error text on failure. Never contains tokens.
   error      String?
-  /**
-   * Natural key for "this exact email, once". Null for mail that may
-   * legitimately repeat, such as a second password reset request.
-   */
+  /// *
+  /// * Natural key for "this exact email, once". Null for mail that may
+  /// * legitimately repeat, such as a second password reset request.
   dedupeKey  String?     @unique
   createdAt  DateTime    @default(now())
 
@@ -184,81 +126,69 @@ model PasswordResetToken {
   expires   DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expires])
 }
 
-// ---------------------------------------------------------------- catalog
-
 model Category {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   name        String
-  slug        String   @unique
+  slug        String     @unique
   description String?
   image       String?
   icon        String?
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
+  sortOrder   Int        @default(0)
+  isActive    Boolean    @default(true)
   parentId    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children Category[] @relation("CategoryTree")
-  products Product[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryTree")
+  products    Product[]
 
   @@index([parentId])
   @@index([isActive, sortOrder])
 }
 
 model Product {
-  id               String   @id @default(cuid())
+  id               String          @id @default(cuid())
   name             String
-  slug             String   @unique
-  description      String   @db.Text
+  slug             String          @unique
+  description      String
   shortDescription String?
   brand            String
-  sku              String   @unique
+  sku              String          @unique
   priceCents       Int
   compareAtCents   Int?
   categoryId       String
-  featured         Boolean  @default(false)
-  isActive         Boolean  @default(true)
-  ratingAvg        Float    @default(0)
-  reviewCount      Int      @default(0)
-
-  // Optional per-product SEO overrides. When unset, metadata is derived from
-  // the product name, category and description.
-  seoTitle       String?
-  seoDescription String?
-
+  featured         Boolean         @default(false)
+  isActive         Boolean         @default(true)
+  ratingAvg        Float           @default(0)
+  reviewCount      Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  seoDescription   String?
+  seoTitle         String?
+  paddlePriceCents Int?
+  paddlePriceId    String?         @unique
   /// Paddle catalogue link. `paddlePriceId` is the one-time price the checkout
   /// charges; `paddlePriceCents` records what that price was worth when it was
   /// last synced, so a drift between this row's `priceCents` and Paddle can be
   /// detected without an API call. All three are null until the product is
   /// synced — checkout refuses to sell an unsynced product rather than
   /// inventing a price.
-  paddleProductId  String? @unique
-  paddlePriceId    String? @unique
-  paddlePriceCents Int?
+  paddleProductId  String?         @unique
   paddleSyncedAt   DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  category      Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  images        ProductImage[]
-  // The purchasable file. Absent means the product cannot be sold yet — see
-  // the publish guard in lib/actions/admin/products.ts.
-  asset         DigitalAsset?
-  reviews       Review[]
-  wishlistItems WishlistItem[]
-  cartItems     CartItem[]
-  orderItems    OrderItem[]
-  access        DigitalAccess[]
+  cartItems        CartItem[]
+  access           DigitalAccess[]
+  asset            DigitalAsset?
+  orderItems       OrderItem[]
+  category         Category        @relation(fields: [categoryId], references: [id])
+  images           ProductImage[]
+  reviews          Review[]
+  wishlistItems    WishlistItem[]
 
   @@index([categoryId])
   @@index([featured])
@@ -269,51 +199,41 @@ model Product {
 }
 
 model ProductImage {
-  id        String @id @default(cuid())
-  productId String
-  url       String
-  alt       String
-  sortOrder Int    @default(0)
-
-  // Provider handle for the stored object — Cloudinary's public_id, or the
-  // filename for the local driver. Needed to delete the asset when the image
-  // is removed from the product. Null for seed rows that point at an external
-  // URL we do not own and must never try to delete.
+  id         String  @id @default(cuid())
+  productId  String
+  url        String
+  alt        String
+  sortOrder  Int     @default(0)
   storageKey String?
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, sortOrder])
 }
 
-/**
- * The purchasable file behind a product.
- *
- * The binary lives in private object storage; only the provider handle is
- * stored here. `storageKey` must never be rendered into a page or an email —
- * it is resolved to a short-lived signed URL by the download route, after
- * authorisation. See lib/storage/digital.ts.
- *
- * One row per product. Replacing the file overwrites this row and bumps
- * `version`, so a customer who bought v1 always gets whatever the current
- * file is — which is the behaviour buyers of patterns and templates expect.
- */
+/// *
+/// * The purchasable file behind a product.
+/// *
+/// * The binary lives in private object storage; only the provider handle is
+/// * stored here. `storageKey` must never be rendered into a page or an email —
+/// * it is resolved to a short-lived signed URL by the download route, after
+/// * authorisation. See lib/storage/digital.ts.
+/// *
+/// * One row per product. Replacing the file overwrites this row and bumps
+/// * `version`, so a customer who bought v1 always gets whatever the current
+/// * file is — which is the behaviour buyers of patterns and templates expect.
 model DigitalAsset {
-  id        String @id @default(cuid())
-  productId String @unique
-
-  /** Private storage handle. Never leaves the server. */
+  id          String   @id @default(cuid())
+  productId   String   @unique
+  /// * Private storage handle. Never leaves the server.
   storageKey  String
   filename    String
   contentType String
   bytes       Int
-  /** Free-text, shown to buyers, e.g. "1.2" or "2026 edition". */
-  version     String @default("1")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// * Free-text, shown to buyers, e.g. "1.2" or "2026 edition".
+  version     String   @default("1")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Review {
@@ -322,58 +242,51 @@ model Review {
   userId    String
   rating    Int
   title     String
-  body      String   @db.Text
+  body      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([productId, userId])
   @@index([productId, createdAt])
   @@index([userId])
 }
 
-// ---------------------------------------------------------------- cart & wishlist
-
 model Cart {
-  id        String   @id @default(cuid())
-  userId    String?  @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user  User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items CartItem[]
+  id        String     @id @default(cuid())
+  userId    String?    @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
 }
 
-/**
- * A line in the bag.
- *
- * Points straight at the product: a digital file has no size, colour or stock,
- * so there is nothing for a variant to distinguish. Quantity is retained
- * because a buyer may want several licences of the same file.
- */
+/// *
+/// * A line in the bag.
+/// *
+/// * Points straight at the product: a digital file has no size, colour or stock,
+/// * so there is nothing for a variant to distinguish. Quantity is retained
+/// * because a buyer may want several licences of the same file.
 model CartItem {
   id        String   @id @default(cuid())
   cartId    String
-  productId String
   quantity  Int      @default(1)
   createdAt DateTime @default(now())
-
-  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([cartId, productId])
   @@index([cartId])
 }
 
 model Wishlist {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  createdAt DateTime @default(now())
-
-  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items WishlistItem[]
+  id        String         @id @default(cuid())
+  userId    String         @unique
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WishlistItem[]
 }
 
 model WishlistItem {
@@ -381,63 +294,53 @@ model WishlistItem {
   wishlistId String
   productId  String
   createdAt  DateTime @default(now())
-
-  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
 
   @@unique([wishlistId, productId])
   @@index([wishlistId])
 }
 
-// ---------------------------------------------------------------- orders
-
-/**
- * A digital order.
- *
- * No addresses, no shipping, no tracking. `userId` is required rather than
- * optional: a download has to be authorised against an account, so there is no
- * such thing as a guest purchase here.
- *
- * Money is stored in minor units of `currency` — never floats. `totalCents` is
- * what the server calculated and what the provider is asked to charge; the
- * webhook refuses to complete an order whose provider amount disagrees.
- *
- * Tax is deliberately not a column. Paddle is the merchant of record: it
- * calculates, collects and remits sales tax on top of our price, and that
- * money is never ours. Recording it here would imply we owe it to someone.
- */
+/// *
+/// * A digital order.
+/// *
+/// * No addresses, no shipping, no tracking. `userId` is required rather than
+/// * optional: a download has to be authorised against an account, so there is no
+/// * such thing as a guest purchase here.
+/// *
+/// * Money is stored in minor units of `currency` — never floats. `totalCents` is
+/// * what the server calculated and what the provider is asked to charge; the
+/// * webhook refuses to complete an order whose provider amount disagrees.
+/// *
+/// * Tax is deliberately not a column. Paddle is the merchant of record: it
+/// * calculates, collects and remits sales tax on top of our price, and that
+/// * money is never ours. Recording it here would imply we owe it to someone.
 model Order {
-  id          String      @id @default(cuid())
-  orderNumber String      @unique
-  userId      String
-  status      OrderStatus @default(PENDING)
-
-  /** Snapshot — the order must survive the customer changing their address. */
-  email        String
-  customerName String
-
+  id            String          @id @default(cuid())
+  orderNumber   String          @unique
+  userId        String
+  status        OrderStatus     @default(PENDING)
+  /// * Snapshot — the order must survive the customer changing their address.
+  email         String
   subtotalCents Int
-  discountCents Int    @default(0)
+  discountCents Int             @default(0)
   totalCents    Int
-  /** ISO 4217, upper case. Fixed per order at the moment of creation. */
-  currency      String @default("USD")
-
-  couponId   String?
-  couponCode String?
-
-  notes String?
-
-  placedAt    DateTime  @default(now())
-  completedAt DateTime?
-  cancelledAt DateTime?
-  refundedAt  DateTime?
-  updatedAt   DateTime  @updatedAt
-
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  coupon  Coupon?         @relation(fields: [couponId], references: [id], onDelete: SetNull)
-  items   OrderItem[]
-  payment Payment?
-  access  DigitalAccess[]
+  couponId      String?
+  couponCode    String?
+  notes         String?
+  placedAt      DateTime        @default(now())
+  cancelledAt   DateTime?
+  updatedAt     DateTime        @updatedAt
+  completedAt   DateTime?
+  /// * ISO 4217, upper case. Fixed per order at the moment of creation.
+  currency      String          @default("USD")
+  customerName  String
+  refundedAt    DateTime?
+  access        DigitalAccess[]
+  coupon        Coupon?         @relation(fields: [couponId], references: [id])
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         OrderItem[]
+  payment       Payment?
 
   @@index([userId, placedAt])
   @@index([status])
@@ -446,12 +349,9 @@ model Order {
 }
 
 model OrderItem {
-  id      String @id @default(cuid())
-  orderId String
-
-  productId String?
-
-  // Snapshots — the line must survive product edits and deletes.
+  id             String         @id @default(cuid())
+  orderId        String
+  productId      String?
   name           String
   slug           String
   sku            String
@@ -459,73 +359,62 @@ model OrderItem {
   unitPriceCents Int
   quantity       Int
   totalCents     Int
-
-  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
-  access  DigitalAccess[]
+  access         DigitalAccess?
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product?       @relation(fields: [productId], references: [id])
 
   @@index([orderId])
   @@index([productId])
 }
 
-/**
- * The money side of an order.
- *
- * `providerTransactionId` is unique, which is what makes replayed webhooks
- * safe: two events describing the same charge cannot produce two paid rows.
- * No card number, expiry or CVC is ever stored — Paddle holds the instrument
- * and returns only a brand and last four for display.
- */
+/// *
+/// * The money side of an order.
+/// *
+/// * `providerTransactionId` is unique, which is what makes replayed webhooks
+/// * safe: two events describing the same charge cannot produce two paid rows.
+/// * No card number, expiry or CVC is ever stored — Paddle holds the instrument
+/// * and returns only a brand and last four for display.
 model Payment {
-  id      String @id @default(cuid())
-  orderId String @unique
-
-  /** Driver name, e.g. "paddle" or "sandbox". */
-  provider String
-  status   PaymentStatus @default(PENDING)
-
-  amountCents Int
-  currency    String @default("USD")
-
-  /** The provider's own id for this charge. Unique across the table. */
-  providerTransactionId String? @unique
-  /** Provider-hosted page the customer was sent to, for retry and support. */
+  id                    String        @id @default(cuid())
+  orderId               String        @unique
+  status                PaymentStatus @default(PENDING)
+  amountCents           Int
+  cardBrand             String?
+  cardLast4             String?
+  paidAt                DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  cancelledAt           DateTime?
+  /// * Provider-hosted page the customer was sent to, for retry and support.
   checkoutUrl           String?
-
-  cardBrand String?
-  cardLast4 String?
-
-  /** Provider's reason string on failure. Never a credential. */
-  failureReason String?
-
-  paidAt      DateTime?
-  failedAt    DateTime?
-  cancelledAt DateTime?
-  refundedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  currency              String        @default("USD")
+  failedAt              DateTime?
+  /// * Provider's reason string on failure. Never a credential.
+  failureReason         String?
+  /// * Driver name, e.g. "paddle" or "sandbox".
+  provider              String
+  /// * The provider's own id for this charge. Unique across the table.
+  providerTransactionId String?       @unique
+  refundedAt            DateTime?
+  order                 Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([provider, status])
 }
 
-/**
- * A processed webhook event.
- *
- * Written inside the same transaction that acts on the event, so the unique
- * constraint on `(provider, eventId)` is what makes delivery idempotent: a
- * replay hits the constraint, the transaction rolls back, and nothing is
- * granted or emailed twice. Payload is not stored — it can contain customer
- * details we have no reason to keep a second copy of.
- */
+/// *
+/// * A processed webhook event.
+/// *
+/// * Written inside the same transaction that acts on the event, so the unique
+/// * constraint on `(provider, eventId)` is what makes delivery idempotent: a
+/// * replay hits the constraint, the transaction rolls back, and nothing is
+/// * granted or emailed twice. Payload is not stored — it can contain customer
+/// * details we have no reason to keep a second copy of.
 model PaymentEvent {
-  id       String @id @default(cuid())
-  provider String
-  eventId  String
-  type     String
-
+  id          String   @id @default(cuid())
+  provider    String
+  eventId     String
+  type        String
   orderId     String?
   processedAt DateTime @default(now())
 
@@ -533,35 +422,32 @@ model PaymentEvent {
   @@index([orderId])
 }
 
-/**
- * Permission to download one purchased file.
- *
- * The row is the authorisation. The download route looks up nothing else: if
- * there is no unrevoked row joining this user to this product through a paid
- * order, there is no file. Changing an id in the URL therefore cannot work —
- * see api/download/[productId]/route.ts.
- *
- * `orderItemId` is unique, so granting access twice for the same purchased
- * line is impossible even if two webhooks race.
- */
+/// *
+/// * Permission to download one purchased file.
+/// *
+/// * The row is the authorisation. The download route looks up nothing else: if
+/// * there is no unrevoked row joining this user to this product through a paid
+/// * order, there is no file. Changing an id in the URL therefore cannot work —
+/// * see api/download/[productId]/route.ts.
+/// *
+/// * `orderItemId` is unique, so granting access twice for the same purchased
+/// * line is impossible even if two webhooks race.
 model DigitalAccess {
-  id          String @id @default(cuid())
-  userId      String
-  orderId     String
-  orderItemId String @unique
-  productId   String
-
+  id             String    @id @default(cuid())
+  userId         String
+  orderId        String
+  orderItemId    String    @unique
+  productId      String
   grantedAt      DateTime  @default(now())
-  /** Set when a refund lands. A revoked row denies the download. */
+  /// * Set when a refund lands. A revoked row denies the download.
   revokedAt      DateTime?
   revokedReason  String?
   downloadCount  Int       @default(0)
   lastDownloadAt DateTime?
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
-  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem      OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, grantedAt])
   @@index([userId, productId])
@@ -569,21 +455,60 @@ model DigitalAccess {
 }
 
 model Coupon {
-  id             String       @id @default(cuid())
-  code           String       @unique
-  description    String?
-  type           DiscountType
-  value          Int
-  minOrderCents  Int          @default(0)
-  maxUses        Int?
-  usedCount      Int          @default(0)
-  startsAt       DateTime     @default(now())
-  expiresAt      DateTime?
-  isActive       Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  orders Order[]
+  id            String       @id @default(cuid())
+  code          String       @unique
+  description   String?
+  type          DiscountType
+  value         Int
+  minOrderCents Int          @default(0)
+  maxUses       Int?
+  usedCount     Int          @default(0)
+  startsAt      DateTime     @default(now())
+  expiresAt     DateTime?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  orders        Order[]
 
   @@index([isActive, expiresAt])
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+/// *
+/// * Lifecycle of a digital order.
+/// *
+/// * There is no SHIPPED or DELIVERED: fulfilment is instantaneous and happens
+/// * inside the same transaction that records the payment, so an order is either
+/// * awaiting money, complete, abandoned, or reversed.
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PROCESSING
+  CANCELLED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum EmailStatus {
+  /// * No provider configured — nothing was sent, and we say so.
+  SKIPPED
+  SENT
+  FAILED
 }

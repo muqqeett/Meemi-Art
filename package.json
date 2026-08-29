@@ -19,6 +19,7 @@
     "test:paddle": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-paddle.ts",
     "test:downloads": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-downloads.ts",
     "test:paddle-env": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-paddle-env.ts",
+    "migrate:catalog": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/migrate-catalog-to-production.ts",
     "paddle:webhook-events": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/paddle-webhook-events.ts",
     "paddle:audit": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/paddle-audit.ts",
     "paddle:check": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/check-paddle-env.ts",
