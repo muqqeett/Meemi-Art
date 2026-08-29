@@ -103,7 +103,7 @@ export default async function AdminDashboardPage() {
       {/* The only stagger in the admin, and only because these four are the
           first thing on the page. `onMount` — they are above the fold, so an
           observer would fire immediately anyway. */}
-      <RevealGroup onMount className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <RevealGroup onMount className="grid [&>*]:min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <RevealItem>
           <StatCard
             label="Total revenue"
@@ -140,7 +140,7 @@ export default async function AdminDashboardPage() {
         </RevealItem>
       </RevealGroup>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid [&>*]:min-w-0 gap-6 xl:grid-cols-3">
         <Panel title="Revenue — last 12 months" className="xl:col-span-2">
           <RevenueChart data={revenue} />
         </Panel>
@@ -150,7 +150,7 @@ export default async function AdminDashboardPage() {
         </Panel>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid [&>*]:min-w-0 gap-6 xl:grid-cols-2">
         <Panel title="Orders per month">
           <OrdersChart data={revenue} />
         </Panel>
@@ -160,13 +160,13 @@ export default async function AdminDashboardPage() {
         </Panel>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid [&>*]:min-w-0 gap-6">
         <Panel title="Revenue by category">
           <SalesByCategoryChart data={salesByCategory} />
         </Panel>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid [&>*]:min-w-0 gap-6 xl:grid-cols-2">
         <Panel
           title="Recent orders"
           action={
@@ -189,7 +189,10 @@ export default async function AdminDashboardPage() {
               <li key={order.id}>
                 <Link
                   href={`/admin/orders/${order.orderNumber}`}
-                  className="flex items-center gap-3 py-3 transition-colors hover:text-brand-600"
+                  // The status pill and amount are unshrinkable, so on a phone
+                  // they are allowed onto a second line rather than pushing the
+                  // row past the viewport. Unchanged from sm up.
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3 transition-colors hover:text-brand-600 sm:flex-nowrap"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="font-mono text-sm font-medium">{order.orderNumber}</p>

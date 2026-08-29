@@ -206,7 +206,7 @@ export default async function AdminSettingsPage() {
 
         <Row
           label="Required variables"
-          value={<span className="font-mono text-xs">{payments.requiredVars}</span>}
+          value={<span className="font-mono text-xs break-words">{payments.requiredVars}</span>}
         />
 
         {/* Blockers, named. Anything listed here means checkout will refuse

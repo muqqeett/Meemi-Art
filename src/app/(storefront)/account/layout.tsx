@@ -18,7 +18,11 @@ export default async function AccountLayout({ children }: LayoutProps<"/account"
       </header>
 
       <div className="grid gap-8 lg:grid-cols-[220px_1fr] lg:gap-12">
-        <aside className="lg:sticky lg:top-28 lg:self-start">
+        {/* min-w-0 because a grid item's automatic minimum is its min-content
+            width: the nav below is a horizontal scroller of shrink-0 pills, so
+            without this the track grows to ~704px and every account page
+            scrolls sideways on a phone. */}
+        <aside className="min-w-0 lg:sticky lg:top-28 lg:self-start">
           <AccountNav />
         </aside>
         <div className="min-w-0">{children}</div>

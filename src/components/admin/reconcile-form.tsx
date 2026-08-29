@@ -42,7 +42,7 @@ export function ReconcileForm() {
       </p>
 
       <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
-        <div className="min-w-[18rem] flex-1 space-y-1.5">
+        <div className="min-w-0 flex-1 space-y-1.5 sm:min-w-[18rem]">
           <Label htmlFor="txn">Paddle transaction ID</Label>
           <Input
             id="txn"
