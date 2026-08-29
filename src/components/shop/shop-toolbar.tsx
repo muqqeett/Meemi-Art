@@ -49,7 +49,13 @@ export function ShopToolbar({ total, showing, ...filterProps }: ShopToolbarProps
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger
             render={
-              <Button variant="brandOutline" size="pillSm" className="lg:hidden" />
+              <Button
+                variant="brandOutline"
+                size="pillSm"
+                // 36px is below a comfortable thumb target. Only ever rendered
+                // below lg, so desktop sizing is unaffected.
+                className="h-11 lg:hidden"
+              />
             }
           >
             <SlidersHorizontal aria-hidden />

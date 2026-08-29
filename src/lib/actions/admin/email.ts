@@ -29,8 +29,25 @@ import {
 const TEST_LIMIT = { max: 5, windowMinutes: 60 };
 
 export type TestEmailResult =
-  | { ok: true; message: string }
-  | { ok: false; error: string };
+  | {
+      ok: true;
+      message: string;
+      /** Resend's id for the accepted message, for cross-referencing. */
+      providerId?: string | null;
+      subject?: string;
+      to?: string;
+    }
+  | {
+      ok: false;
+      error: string;
+      /**
+       * The provider's own wording, passed through verbatim. Resend says
+       * things like "The meemiart.com domain is not verified" — collapsing
+       * that to "email failed" throws away the entire diagnosis.
+       */
+      providerError?: string;
+      to?: string;
+    };
 
 export async function sendTestEmail(
   _prev: TestEmailResult | null,
@@ -70,7 +87,12 @@ export async function sendTestEmail(
 
   switch (result.status) {
     case "SENT":
-      return { ok: true, message: `Test email sent to ${to}.` };
+      return {
+        ok: true,
+        message: `Test email accepted by Resend for ${to}.`,
+        providerId: result.providerId ?? null,
+        to,
+      };
     case "SKIPPED":
       return {
         ok: false,
@@ -85,6 +107,8 @@ export async function sendTestEmail(
       return {
         ok: false,
         error: result.error ?? "The provider rejected the message.",
+        providerError: result.error,
+        to,
       };
   }
 }

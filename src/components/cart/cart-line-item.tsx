@@ -75,7 +75,10 @@ export function CartLineItem({ line }: { line: CartLineView }) {
             onClick={remove}
             disabled={pending}
             aria-label={`Remove ${line.name} from bag`}
-            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-surface-alt hover:text-destructive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            // 44px on touch — this deletes a line, so it is the one control
+            // here worth making hard to hit by accident. Reverts to the drawn
+            // density from sm up, where a cursor is doing the pointing.
+            className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-alt hover:text-destructive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 sm:size-auto sm:p-1.5"
           >
             <Trash2 className="size-4" aria-hidden />
           </button>

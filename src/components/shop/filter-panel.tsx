@@ -113,7 +113,7 @@ export function FilterPanel({
                 }}
                 aria-pressed={!activeCategory}
                 className={cn(
-                  "flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-colors",
+                  "flex w-full min-h-11 items-center justify-between rounded-md px-2 py-2 text-left transition-colors lg:min-h-0",
                   !activeCategory
                     ? "bg-brand-50 font-medium text-brand-700"
                     : "hover:bg-surface-alt",
@@ -134,7 +134,7 @@ export function FilterPanel({
                     }}
                     aria-pressed={active}
                     className={cn(
-                      "flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-colors",
+                      "flex w-full min-h-11 items-center justify-between rounded-md px-2 py-2 text-left transition-colors lg:min-h-0",
                       active
                         ? "bg-brand-50 font-medium text-brand-700"
                         : "hover:bg-surface-alt",
@@ -211,7 +211,7 @@ export function FilterPanel({
                   }}
                   aria-pressed={active}
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-2 transition-colors",
+                    "flex w-full min-h-11 items-center gap-2 rounded-md px-2 py-2 transition-colors lg:min-h-0",
                     active ? "bg-brand-50 text-brand-700" : "hover:bg-surface-alt",
                   )}
                 >
@@ -251,7 +251,7 @@ export function FilterPanel({
                     }}
                     aria-pressed={active}
                     className={cn(
-                      "flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-colors",
+                      "flex w-full min-h-11 items-center justify-between rounded-md px-2 py-2 text-left transition-colors lg:min-h-0",
                       active
                         ? "bg-brand-50 font-medium text-brand-700"
                         : "hover:bg-surface-alt",

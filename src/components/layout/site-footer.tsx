@@ -41,8 +41,20 @@ const ABOUT = [
 export function SiteFooter() {
   return (
     <footer className="mt-auto w-full overflow-hidden bg-slate-deep">
-      <div className="mx-auto w-full max-w-[1440px] px-5 py-[60px] sm:px-8 lg:px-[120px]">
-        <div className="grid gap-10 lg:grid-cols-[607px_303px_1fr]">
+      {/* The drawn 120px gutter needs a 1440 frame to sit in. Below that it was
+          eating 240px of a 1009px laptop, which is what pushed the columns out
+          of the footer entirely. Restored exactly at `wide`. */}
+      <div className="mx-auto w-full max-w-[1440px] px-5 py-[60px] sm:max-lg:px-8 lg:max-wide:px-12 wide:px-[120px]">
+        {/* 607 + 303 + 1fr is the Figma frame, and it only fits the 1200px
+            content column that a 1440 viewport provides. At 1024 those rigid
+            widths totalled 1131px inside 769px of space, so "About" was clipped
+            and "Stay up to date" — the contact address — was pushed past the
+            edge and hidden completely by the panel's `overflow-hidden`.
+
+            Three columns share the width by ratio between lg and 1440, and the
+            drawn widths return at `wide` where they fit. Disjoint ranges, for
+            the ordering reason noted on `--breakpoint-wide` in globals.css. */}
+        <div className="grid gap-10 sm:max-lg:grid-cols-2 lg:max-wide:grid-cols-[2fr_1fr_1fr] lg:max-wide:gap-12 wide:grid-cols-[607px_303px_1fr]">
           <div>
             <h2 className="font-ui text-[16.875px] leading-[22.5px] font-bold text-white uppercase">
               Support

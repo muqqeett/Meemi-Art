@@ -60,19 +60,49 @@ export function TestEmailForm({
       </div>
 
       {state && (
-        <p
+        <div
           role={state.ok ? "status" : "alert"}
-          className={`mt-3 flex items-start gap-2 text-sm ${
-            state.ok ? "text-success" : "text-destructive"
+          className={`mt-3 rounded-lg border p-3 text-sm ${
+            state.ok
+              ? "border-success/30 bg-success/5"
+              : "border-destructive/30 bg-destructive/5"
           }`}
         >
-          {state.ok ? (
-            <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
-          ) : (
-            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <p
+            className={`flex items-start gap-2 ${
+              state.ok ? "text-success" : "text-destructive"
+            }`}
+          >
+            {state.ok ? (
+              <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
+            ) : (
+              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+            )}
+            <span>{state.ok ? state.message : state.error}</span>
+          </p>
+
+          {/* Resend's message id, so a send can be found in their dashboard. */}
+          {state.ok && state.providerId && (
+            <p className="text-body mt-2 text-xs">
+              Resend message ID:{" "}
+              <span className="font-mono break-all text-foreground">
+                {state.providerId}
+              </span>
+            </p>
           )}
-          {state.ok ? state.message : state.error}
-        </p>
+
+          {/* The provider's own words. This is the whole point of the page:
+              "domain not verified" is a different problem from a bad key, and
+              only Resend can tell you which. */}
+          {!state.ok && state.providerError && (
+            <p className="text-body mt-2 text-xs">
+              Resend said:{" "}
+              <span className="font-mono break-all text-foreground">
+                {state.providerError}
+              </span>
+            </p>
+          )}
+        </div>
       )}
     </form>
   );

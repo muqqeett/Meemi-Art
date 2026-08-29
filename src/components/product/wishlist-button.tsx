@@ -76,7 +76,9 @@ export function WishlistButton({
         "inline-flex items-center justify-center transition-all",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
         variant === "floating"
-          ? "size-9 rounded-full bg-white/90 text-ink shadow-sm backdrop-blur-sm hover:bg-white hover:text-brand-700"
+          ? // 44px on touch screens, the drawn 36px from sm up where a cursor
+            // is doing the pointing.
+            "size-11 sm:size-9 rounded-full bg-white/90 text-ink shadow-sm backdrop-blur-sm hover:bg-white hover:text-brand-700"
           : "size-11 rounded-full border border-border bg-background text-muted-foreground hover:border-brand-300 hover:text-brand-700",
         pending && "opacity-70",
         className,

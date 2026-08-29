@@ -32,7 +32,8 @@ export function QuantityStepper({
   label,
   className,
 }: QuantityStepperProps) {
-  const buttonSize = size === "sm" ? "size-8" : "size-10";
+  // 44px is the comfortable thumb target; the drawn sizes return from sm up.
+  const buttonSize = size === "sm" ? "size-11 sm:size-8" : "size-11 sm:size-10";
 
   return (
     <div

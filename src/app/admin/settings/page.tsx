@@ -285,7 +285,21 @@ export default async function AdminSettingsPage() {
         icon={Mail}
         description={email.hint}
         // The key itself is never rendered — only whether one is present.
-        footer={<TestEmailForm configured={email.isConfigured} defaultEmail={admin.email} />}
+        footer={
+          <>
+            {/* Full diagnostics live on their own page: configuration, a test
+                send, and the provider's own reply for every recent attempt. */}
+            <p className="mt-4 border-t border-border pt-4 text-sm">
+              <Link
+                href="/admin/settings/email"
+                className="font-semibold text-brand-600 hover:underline"
+              >
+                Email test &amp; delivery log →
+              </Link>
+            </p>
+            <TestEmailForm configured={email.isConfigured} defaultEmail={admin.email} />
+          </>
+        }
       >
         <Row label="Provider" value={email.provider} />
         <Row
