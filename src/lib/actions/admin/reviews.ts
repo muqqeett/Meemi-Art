@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
+import { syncProductRating } from "@/lib/queries/reviews";
 import { getAdminOrNull } from "@/lib/auth-guards";
 import type { AdminResult } from "@/lib/actions/admin/products";
 
@@ -22,22 +23,8 @@ async function assertAdmin(): Promise<AdminResult | null> {
   return null;
 }
 
-/** Recalculate a product's cached rating aggregates from its live reviews. */
-async function syncProductRating(productId: string): Promise<void> {
-  const agg = await prisma.review.aggregate({
-    where: { productId },
-    _avg: { rating: true },
-    _count: true,
-  });
-
-  await prisma.product.update({
-    where: { id: productId },
-    data: {
-      ratingAvg: Math.round((agg._avg.rating ?? 0) * 10) / 10,
-      reviewCount: agg._count,
-    },
-  });
-}
+// syncProductRating now lives in lib/queries/reviews.ts so the customer
+// review action and this moderation flow share one implementation.
 
 export async function deleteReview(id: string): Promise<AdminResult> {
   const denied = await assertAdmin();

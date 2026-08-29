@@ -6,6 +6,8 @@ import { OrderConfirmed } from "@/components/orders/order-confirmed";
 import { ButtonLink } from "@/components/ui/button-link";
 import { getOrderForViewer } from "@/lib/queries/orders";
 import { isEmailConfigured } from "@/lib/email";
+import { getCurrentUser } from "@/lib/auth-guards";
+import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "Order",
@@ -50,6 +52,46 @@ export default async function OrderPage({
 
   // Never tell a shopper mail went out when the provider isn't configured.
   const emailConfigured = isEmailConfigured();
+
+  /**
+   * Which lines this viewer may review.
+   *
+   * Built here, on the server, from facts this page already holds: the order
+   * is COMPLETED with a PAID payment, and it belongs to the signed-in user.
+   * A guest viewing an order through the remembered-id path gets nothing —
+   * a review has to hang off an account.
+   *
+   * The submit action re-checks all of this independently, so this map only
+   * decides what to draw, never what is allowed.
+   */
+  const viewer = await getCurrentUser();
+  let reviewable: Record<string, { rating: number; title: string; body: string } | null> | undefined;
+
+  if (viewer && isPaid && order.userId === viewer.id) {
+    const productIds = order.items
+      .map((item) => item.productId)
+      .filter((id): id is string => Boolean(id));
+
+    if (productIds.length > 0) {
+      const own = await prisma.review.findMany({
+        where: { userId: viewer.id, productId: { in: productIds } },
+        select: { productId: true, rating: true, title: true, body: true },
+      });
+      const byProduct = new Map(own.map((r) => [r.productId, r]));
+
+      reviewable = Object.fromEntries(
+        productIds.map((id) => {
+          const existing = byProduct.get(id);
+          return [
+            id,
+            existing
+              ? { rating: existing.rating, title: existing.title, body: existing.body }
+              : null,
+          ];
+        }),
+      );
+    }
+  }
 
   return (
     <div className="container-page max-w-4xl py-10 lg:py-14">
@@ -138,7 +180,7 @@ export default async function OrderPage({
         </header>
       )}
 
-      <OrderDetailView order={order} />
+      <OrderDetailView order={order} reviewable={reviewable} />
     </div>
   );
 }

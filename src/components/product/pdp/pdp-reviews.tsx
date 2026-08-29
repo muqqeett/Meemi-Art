@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Star } from "lucide-react";
+import { Star, BadgeCheck } from "lucide-react";
 
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/reveal";
 import { staggerStep } from "@/lib/motion";
@@ -10,6 +10,7 @@ type Review = {
   title: string;
   body: string;
   createdAt: Date;
+  userId: string;
   user: { name: string | null; image: string | null };
 };
 
@@ -83,10 +84,20 @@ export function PdpReviews({
   reviews,
   average,
   count,
+  viewerId,
+  verifiedReviewerIds,
 }: {
   reviews: Review[];
   average: number;
   count: number;
+  /** The signed-in reader, so their own review can be marked. */
+  viewerId?: string | null;
+  /**
+   * Reviewers with a completed, paid order for this product. Computed on the
+   * server rather than assumed — a badge that is merely decorative is worse
+   * than no badge.
+   */
+  verifiedReviewerIds?: Set<string>;
 }) {
   if (reviews.length === 0) {
     return (
@@ -96,7 +107,11 @@ export function PdpReviews({
         </h2>
         <div className="mt-6 rounded-[8px] border-[0.8px] border-dashed border-pdp-border px-6 py-12 text-center">
           <p className="font-clash text-base text-pdp-body">
-            No reviews yet. Reviews are written by customers after their order arrives.
+            No reviews yet.
+          </p>
+          <p className="font-clash mt-1 text-sm text-pdp-subtle">
+            Reviews are written by customers who have bought this file — you&apos;ll
+            find the form on your order once payment clears.
           </p>
         </div>
       </section>
@@ -179,7 +194,10 @@ export function PdpReviews({
                 {review.body}
               </p>
 
-              <div className="mt-1 flex items-center gap-3">
+              {/* Wraps: at 320px the avatar, name, two badges and the date do
+                  not fit on one line, and an unwrapped row would push the
+                  article past the viewport. */}
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span className="relative grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-pdp-surface">
                   {review.user.image ? (
                     <Image
@@ -196,9 +214,26 @@ export function PdpReviews({
                   )}
                 </span>
 
+                {/* Not "Verified buyer": that badge is now earned from a paid
+                    order alongside this line, so using the same words for an
+                    account that simply has no display name would make the real
+                    badge meaningless. */}
                 <span className="font-clash text-base leading-[1.6] font-medium text-pdp-title">
-                  {review.user.name ?? "Verified buyer"}
+                  {review.user.name ?? "Meemi customer"}
                 </span>
+
+                {viewerId && review.userId === viewerId && (
+                  <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
+                    Your review
+                  </span>
+                )}
+
+                {verifiedReviewerIds?.has(review.userId) && (
+                  <span className="text-success inline-flex items-center gap-1 text-xs font-medium">
+                    <BadgeCheck className="size-3.5" aria-hidden />
+                    Verified purchase
+                  </span>
+                )}
 
                 <span aria-hidden className="size-1 rounded-full bg-pdp-border" />
 

@@ -10,6 +10,7 @@ import {
 } from "@/components/orders/order-status-badge";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { OrderItemReview } from "@/components/orders/order-item-review";
 import type { OrderDetail } from "@/lib/queries/orders";
 
 function Panel({
@@ -86,7 +87,21 @@ function Timeline({ order }: { order: OrderDetail }) {
   );
 }
 
-export function OrderDetailView({ order }: { order: OrderDetail }) {
+export function OrderDetailView({
+  order,
+  reviewable,
+}: {
+  order: OrderDetail;
+  /**
+   * Lines this viewer may review, keyed by productId, with their existing
+   * review when they have one. Computed server-side from the order's own
+   * status and payment — this component never decides eligibility.
+   */
+  reviewable?: Record<
+    string,
+    { rating: number; title: string; body: string } | null
+  >;
+}) {
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
@@ -159,6 +174,17 @@ export function OrderDetailView({ order }: { order: OrderDetail }) {
                 </Link>
                 <p className="mt-0.5 text-sm text-muted-foreground">Qty {item.quantity}</p>
                 <p className="mt-0.5 font-mono text-xs text-muted-foreground">{item.sku}</p>
+
+                {/* Only for lines the server marked reviewable. A product that
+                    was refunded, or an order that never completed, never
+                    reaches this branch. */}
+                {item.productId && reviewable && item.productId in reviewable && (
+                  <OrderItemReview
+                    productId={item.productId}
+                    productName={item.name}
+                    existing={reviewable[item.productId]}
+                  />
+                )}
               </div>
 
               <div className="text-right">

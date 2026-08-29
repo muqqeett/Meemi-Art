@@ -14,6 +14,8 @@ import {
   getAllProductSlugs,
 } from "@/lib/queries/products";
 import { getSoldCounts } from "@/lib/queries/sales";
+import { getVerifiedReviewerIds } from "@/lib/queries/reviews";
+import { getCurrentUser } from "@/lib/auth-guards";
 import { siteConfig } from "@/lib/config";
 
 export async function generateStaticParams() {
@@ -81,6 +83,14 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
     ...popular.map((item) => item.id),
   ]);
   const soldCount = soldCounts.get(product.id) ?? 0;
+
+  // Who wrote each review, and which of them actually bought this product.
+  // Both read-only; nothing here grants anything.
+  const viewer = await getCurrentUser();
+  const verifiedReviewerIds = await getVerifiedReviewerIds(
+    product.id,
+    product.reviews.map((review) => review.userId),
+  );
 
   /**
    * Product structured data. Rating and review fields are only emitted when
@@ -199,6 +209,8 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             reviews={product.reviews}
             average={product.ratingAvg}
             count={product.reviewCount}
+            viewerId={viewer?.id ?? null}
+            verifiedReviewerIds={verifiedReviewerIds}
           />
 
           <PdpProductRail
