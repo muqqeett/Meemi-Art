@@ -3,6 +3,7 @@ import "server-only";
 import { v2 as cloudinary } from "cloudinary";
 
 import { buildObjectName } from "@/lib/storage/types";
+import { formatExtension } from "@/lib/file-format";
 
 /**
  * Private storage for purchased files.
@@ -55,6 +56,20 @@ export const ALLOWED_DIGITAL_TYPES = [
 ] as const;
 
 export const MAX_DIGITAL_BYTES = 200 * 1024 * 1024; // 200 MB
+
+/**
+ * Above this, the route hands the buyer a signed Cloudinary URL instead of
+ * streaming the bytes itself.
+ *
+ * Streaming is what lets us set the original filename and the real content
+ * type, so it is the path every realistic pattern PDF takes. But a serverless
+ * function is a poor pipe for a very large file — memory, execution time and
+ * platform response limits all bite — so past this size the redirect is used
+ * and the buyer gets `file.pdf` rather than the original name. Correct
+ * extension either way; only the pretty name is lost, and only for files far
+ * larger than anything this shop sells today.
+ */
+export const MAX_PROXY_BYTES = 25 * 1024 * 1024; // 25 MB
 
 export type StoredDigitalFile = {
   storageKey: string;
@@ -112,24 +127,65 @@ export const digitalStorage = {
   /**
    * A short-lived, signed URL for one download.
    *
-   * Generated per request after authorisation, so a leaked link stops working
-   * within minutes and cannot be handed around.
+   * `format` matters and was the bug behind PDFs arriving as text. Cloudinary's
+   * signature is `private_download_url(public_id, format, options)` — the
+   * second argument is the *format*, not a filename. It used to be `""`, and
+   * because `buildObjectName` strips the extension from the public_id there was
+   * then nothing anywhere in the URL to say what kind of file this was.
+   * Cloudinary served it as:
+   *
+   *     Content-Disposition: attachment; filename="file"
+   *
+   * — no extension at all, so the browser and OS fell back to guessing, which
+   * is how a PDF ended up saved as text. Passing the real extension makes that
+   * `filename="file.pdf"`.
+   *
+   * That is the safety net rather than the main path: the route streams the
+   * file itself so the buyer gets the original filename. This URL is used when
+   * a file is too large to sensibly proxy.
    */
-  signedDownloadUrl(storageKey: string): string {
+  signedDownloadUrl(storageKey: string, filename?: string, contentType?: string): string {
     if (!configured) {
       throw new Error("Cloudinary is not configured.");
     }
 
-    // `attachment: true` sets Content-Disposition so the browser saves the
-    // file rather than trying to render it. Cloudinary names the download
-    // from the stored public_id, which is why `buildObjectName` keeps a
-    // readable slug of the original filename.
-    return cloudinary.utils.private_download_url(storageKey, "", {
+    const format = filename || contentType ? formatExtension(contentType ?? "", filename) : "";
+
+    return cloudinary.utils.private_download_url(storageKey, format.toLowerCase(), {
       resource_type: "raw",
       type: "private",
       expires_at: Math.floor(Date.now() / 1000) + SIGNED_URL_TTL_SECONDS,
       attachment: true,
     });
+  },
+
+  /**
+   * Open the stored object for streaming back to an authorised buyer.
+   *
+   * Fetched server-side with a signed URL that is created, used and discarded
+   * inside this call — it never reaches the browser, so there is no link to
+   * leak or forward, and the storage key stays server-side as before.
+   *
+   * This exists because Cloudinary cannot be made to serve both the original
+   * filename and the right extension at once: its download API names every
+   * file `file.<ext>`, and its `fl_attachment:<name>` flag rejects a name
+   * containing a dot. Streaming lets the route set `Content-Disposition` and
+   * `Content-Type` itself, which is the only way to deliver
+   * `Meemi-Art-Mini-Potted-Succulent-Letter.pdf` as a real PDF.
+   */
+  async openStream(storageKey: string): Promise<Response> {
+    if (!configured) {
+      throw new Error("Cloudinary is not configured.");
+    }
+
+    const url = cloudinary.utils.private_download_url(storageKey, "", {
+      resource_type: "raw",
+      type: "private",
+      expires_at: Math.floor(Date.now() / 1000) + SIGNED_URL_TTL_SECONDS,
+      attachment: true,
+    });
+
+    return fetch(url, { cache: "no-store" });
   },
 
   /** Best-effort delete. A file already gone must not block removing its row. */

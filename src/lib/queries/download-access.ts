@@ -34,6 +34,8 @@ export type DownloadableAsset = {
   storageKey: string;
   filename: string;
   contentType: string;
+  /** Drives the stream-vs-redirect decision in the download route. */
+  bytes: number;
 };
 
 export async function findDownloadableAsset(
@@ -53,7 +55,9 @@ export async function findDownloadableAsset(
       product: {
         select: {
           name: true,
-          asset: { select: { storageKey: true, filename: true, contentType: true } },
+          asset: {
+            select: { storageKey: true, filename: true, contentType: true, bytes: true },
+          },
         },
       },
     },
@@ -67,6 +71,7 @@ export async function findDownloadableAsset(
     storageKey: access.product.asset.storageKey,
     filename: access.product.asset.filename,
     contentType: access.product.asset.contentType,
+    bytes: access.product.asset.bytes,
   };
 }
 
