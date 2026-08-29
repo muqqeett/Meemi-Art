@@ -1,8 +1,10 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-
-const CANCELLED = "CANCELLED" as const;
+import {
+  SUCCESSFUL_ORDER,
+  SUCCESSFUL_ORDER_ITEM,
+} from "@/lib/queries/successful-order";
 
 /** Headline KPIs for the admin dashboard, with period-over-period change. */
 export async function getDashboardStats() {
@@ -22,24 +24,33 @@ export async function getDashboardStats() {
     productsActive,
     unsellable,
   ] = await Promise.all([
+    // Every figure below is scoped to `SUCCESSFUL_ORDER`. Revenue previously
+    // asked only for "not cancelled", which let PENDING, PROCESSING and
+    // REFUNDED orders through and never looked at the payment at all — an
+    // abandoned checkout that got as far as creating an order was counted as
+    // money. The order count asked for nothing whatsoever.
     prisma.order.aggregate({
-      where: { status: { not: CANCELLED } },
+      where: SUCCESSFUL_ORDER,
       _sum: { totalCents: true },
     }),
     prisma.order.aggregate({
-      where: { status: { not: CANCELLED }, placedAt: { gte: thirtyDaysAgo } },
+      where: { ...SUCCESSFUL_ORDER, placedAt: { gte: thirtyDaysAgo } },
       _sum: { totalCents: true },
     }),
     prisma.order.aggregate({
       where: {
-        status: { not: CANCELLED },
+        ...SUCCESSFUL_ORDER,
         placedAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
       },
       _sum: { totalCents: true },
     }),
-    prisma.order.count(),
-    prisma.order.count({ where: { placedAt: { gte: thirtyDaysAgo } } }),
-    prisma.order.count({ where: { placedAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
+    prisma.order.count({ where: SUCCESSFUL_ORDER }),
+    prisma.order.count({
+      where: { ...SUCCESSFUL_ORDER, placedAt: { gte: thirtyDaysAgo } },
+    }),
+    prisma.order.count({
+      where: { ...SUCCESSFUL_ORDER, placedAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } },
+    }),
     prisma.user.count({ where: { role: "CUSTOMER" } }),
     prisma.user.count({ where: { role: "CUSTOMER", createdAt: { gte: thirtyDaysAgo } } }),
     prisma.product.count({ where: { isActive: true } }),
@@ -66,6 +77,9 @@ export async function getDashboardStats() {
     customers30: customersCurrent,
     productsActive,
     unsellable,
+    // Both halves are now the same population. Previously this divided
+    // not-cancelled revenue by *every* order ever created, so it was wrong in
+    // both the numerator and the denominator.
     averageOrderCents:
       ordersTotal > 0 ? Math.round((revenueAll._sum.totalCents ?? 0) / ordersTotal) : 0,
   };
@@ -78,8 +92,10 @@ export async function getRevenueSeries() {
   start.setDate(1);
   start.setHours(0, 0, 0, 0);
 
+  // Feeds both the "Revenue — last 12 months" and "Orders per month" charts,
+  // so one filter fixes both. Each bucket is now paid money and paid orders.
   const orders = await prisma.order.findMany({
-    where: { placedAt: { gte: start }, status: { not: CANCELLED } },
+    where: { ...SUCCESSFUL_ORDER, placedAt: { gte: start } },
     select: { placedAt: true, totalCents: true },
   });
 
@@ -119,11 +135,11 @@ export async function getOrderStatusBreakdown() {
   }));
 }
 
-/** Best sellers by units sold, excluding cancelled orders. */
+/** Best sellers by units actually sold and paid for. */
 export async function getBestSellers(limit = 5) {
   const grouped = await prisma.orderItem.groupBy({
     by: ["productId", "name", "slug"],
-    where: { order: { status: { not: CANCELLED } }, productId: { not: null } },
+    where: { ...SUCCESSFUL_ORDER_ITEM, productId: { not: null } },
     _sum: { quantity: true, totalCents: true },
     orderBy: { _sum: { quantity: "desc" } },
     take: limit,
@@ -147,7 +163,7 @@ export async function getBestSellers(limit = 5) {
  */
 export async function getSalesByCategory() {
   const lines = await prisma.orderItem.findMany({
-    where: { order: { status: { not: CANCELLED } } },
+    where: SUCCESSFUL_ORDER_ITEM,
     select: {
       totalCents: true,
       quantity: true,

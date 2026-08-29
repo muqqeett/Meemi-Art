@@ -1,6 +1,10 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import {
+  SUCCESSFUL_ORDER,
+  isSuccessfulOrder,
+} from "@/lib/queries/successful-order";
 import type { Prisma } from "@/generated/prisma/client";
 import type { OrderStatus } from "@/generated/prisma/enums";
 
@@ -178,8 +182,11 @@ export async function listAdminCustomers(options: { q?: string; page?: number })
         image: true,
         createdAt: true,
         _count: { select: { orders: true, reviews: true } },
+        // What the customer actually paid, on the dashboard's one definition.
+        // Was "not cancelled", which counted pending and refunded orders as
+        // money the customer had spent.
         orders: {
-          where: { status: { not: "CANCELLED" } },
+          where: SUCCESSFUL_ORDER,
           select: { totalCents: true },
         },
       },
@@ -225,6 +232,10 @@ export async function getAdminCustomer(id: string) {
           product: { select: { name: true, slug: true } },
         },
       },
+      // The full history is listed whatever its status — an admin looking at a
+      // customer needs to see the cancelled and refunded ones. Only the
+      // `spent` total below is narrowed to successful orders, which is why the
+      // payment status is selected here.
       orders: {
         orderBy: { placedAt: "desc" },
         select: {
@@ -233,6 +244,7 @@ export async function getAdminCustomer(id: string) {
           status: true,
           totalCents: true,
           placedAt: true,
+          payment: { select: { status: true } },
           _count: { select: { items: true } },
         },
       },
@@ -242,7 +254,7 @@ export async function getAdminCustomer(id: string) {
   if (!customer) return null;
 
   const spent = customer.orders
-    .filter((order) => order.status !== "CANCELLED")
+    .filter(isSuccessfulOrder)
     .reduce((sum, order) => sum + order.totalCents, 0);
 
   return {
