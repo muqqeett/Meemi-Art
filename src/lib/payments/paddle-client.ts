@@ -1,6 +1,10 @@
 "use client";
 
-import { initializePaddle, type Paddle } from "@paddle/paddle-js";
+import {
+  initializePaddle,
+  type Paddle,
+  type PaddleEventData,
+} from "@paddle/paddle-js";
 
 /**
  * Paddle.js, loaded on demand.
@@ -14,7 +18,10 @@ import { initializePaddle, type Paddle } from "@paddle/paddle-js";
  *
  * The environment is derived from the token itself: Paddle issues distinct
  * `test_`-prefixed tokens for sandbox, so a live token cannot be opened against
- * the sandbox or the reverse.
+ * the sandbox or the reverse. There is deliberately no
+ * `Paddle.Environment.set(...)` call anywhere — that is the legacy Paddle
+ * Classic API, and `initializePaddle` takes the environment as a parameter, so
+ * there is no global switch that could be left on sandbox.
  *
  * Loaded lazily rather than in the root layout — the script is only needed by
  * someone who has reached checkout and pressed pay, so every other page avoids
@@ -23,27 +30,27 @@ import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 
 const CLIENT_TOKEN = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";
 
-/**
- * Which Paddle account this token belongs to.
- *
- * Paddle prefixes client-side tokens: `test_` for sandbox, `live_` for
- * production. The environment is read from the prefix rather than passed
- * separately, so the token and the environment can never disagree with each
- * other here — and the server refuses checkout outright when the token's
- * environment disagrees with `PADDLE_ENV` (see lib/payments/config.ts).
- *
- * There is deliberately no `Paddle.Environment.set(...)` call anywhere: that is
- * the legacy Paddle Classic API. `initializePaddle` takes the environment as a
- * parameter, so there is no global sandbox switch that could be left on.
- */
+/** Sandbox tokens are prefixed by Paddle. */
 export const isPaddleSandboxToken = CLIENT_TOKEN.startsWith("test_");
 
-/** Production unless the token explicitly says sandbox. */
 const paddleEnvironment: "sandbox" | "production" = isPaddleSandboxToken
   ? "sandbox"
   : "production";
 
 export const hasPaddleClientToken = CLIENT_TOKEN.length > 0;
+
+/**
+ * Checkout events are delivered to one callback registered at init, but the
+ * component that cares is mounted long afterwards. Paddle is initialised once
+ * per page and events are fanned out to whoever is currently listening.
+ */
+type Listener = (event: PaddleEventData) => void;
+const listeners = new Set<Listener>();
+
+export function onPaddleEvent(listener: Listener): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
 
 let cached: Promise<Paddle | undefined> | null = null;
 
@@ -53,6 +60,17 @@ export function loadPaddle(): Promise<Paddle | undefined> {
   cached ??= initializePaddle({
     token: CLIENT_TOKEN,
     environment: paddleEnvironment,
+    eventCallback: (event) => {
+      for (const listener of listeners) {
+        try {
+          listener(event);
+        } catch (error) {
+          // One listener throwing must not stop the others, and must never
+          // take down the payment flow.
+          console.error("[paddle.js] listener failed", error);
+        }
+      }
+    },
   }).catch((error) => {
     // Reset so a later attempt can retry a transient script failure rather
     // than being stuck with a rejected promise for the life of the page.
@@ -63,3 +81,11 @@ export function loadPaddle(): Promise<Paddle | undefined> {
 
   return cached;
 }
+
+/**
+ * The DOM class Paddle renders its inline checkout into.
+ *
+ * Paddle looks this up itself and injects an iframe. The element must exist
+ * and be visible before `open` is called, or Paddle has nowhere to mount.
+ */
+export const PADDLE_FRAME_CLASS = "paddle-checkout-frame";

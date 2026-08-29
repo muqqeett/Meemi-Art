@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { OrderSummary } from "@/components/cart/order-summary";
 import { CouponForm } from "@/components/cart/coupon-form";
 import { placeOrder } from "@/lib/actions/checkout";
-import { loadPaddle } from "@/lib/payments/paddle-client";
+import { PaddleCheckoutPanel } from "@/components/checkout/paddle-checkout-panel";
 import {
   checkoutSchema,
   type CheckoutInput,
@@ -80,6 +80,11 @@ export function CheckoutForm({
   const [pending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
+  /** Set once the server has created a Paddle transaction to pay for. */
+  const [checkout, setCheckout] = useState<{
+    transactionId: string;
+    orderNumber: string;
+  } | null>(null);
 
   const {
     register,
@@ -111,25 +116,23 @@ export function CheckoutForm({
 
       setRedirecting(true);
 
-      // Paddle: open the overlay on the transaction the server just priced.
-      // The browser is given a transaction id and nothing else — it cannot
-      // alter what is being bought or what it costs, and reaching the success
+      // Paddle: open checkout on the transaction the server just priced. The
+      // browser is given a transaction id and nothing else — it cannot alter
+      // what is being bought or what it costs, and reaching the success
       // callback grants nothing. Access is still only ever created by the
       // signed webhook.
+      //
+      // Rendered on this page rather than as Paddle's own overlay: the panel
+      // below is Meemi Art's, and Paddle's iframe sits inside it. The card
+      // fields remain Paddle's, which is the only arrangement that keeps card
+      // data out of this application entirely.
       if (result.provider === "paddle") {
-        const paddle = await loadPaddle();
-        if (paddle) {
-          paddle.Checkout.open({
-            transactionId: result.providerTransactionId,
-            settings: { displayMode: "overlay", theme: "light" },
-          });
-          // The overlay is now in charge. Stay on the page: closing it must
-          // leave the customer where they were, with the order still pending
-          // and retryable.
-          setRedirecting(false);
-          return;
-        }
-        // Paddle.js could not load — fall through to the hosted page.
+        setCheckout({
+          transactionId: result.providerTransactionId,
+          orderNumber: result.orderNumber,
+        });
+        setRedirecting(false);
+        return;
       }
 
       // A full navigation, not a router push: the destination is the
@@ -214,8 +217,8 @@ export function CheckoutForm({
                 Online payment via {providerLabel}
               </p>
               <p className="text-body mt-1 text-xs">
-                You&apos;ll be taken to {providerLabel} to pay securely. Card details are
-                entered there and never reach this site.
+                Payment is completed here on this page. Card details are entered
+                directly with {providerLabel} and never reach this site.
               </p>
               {isTestMode && (
                 <p className="mt-2 text-xs font-medium text-warning">
@@ -275,7 +278,7 @@ export function CheckoutForm({
             className={cn("mt-6 w-full")}
           >
             {busy && <Loader2 className="animate-spin" aria-hidden />}
-            {redirecting ? "Taking you to payment…" : "Continue to payment"}
+            {redirecting ? "Opening payment…" : "Continue to payment"}
           </Button>
 
           <p className="text-body mt-3 text-center text-xs">
@@ -283,6 +286,22 @@ export function CheckoutForm({
           </p>
         </div>
       </aside>
+
+      {/* Paddle's iframe mounts inside this panel, on this page. Rendered only
+          after the server has priced the order and returned a transaction id. */}
+      {checkout && (
+        <PaddleCheckoutPanel
+          transactionId={checkout.transactionId}
+          orderNumber={checkout.orderNumber}
+          totalCents={cart.totals.totalCents}
+          lines={cart.lines.map((item) => ({
+            name: item.name,
+            imageUrl: item.imageUrl,
+            quantity: item.quantity,
+          }))}
+          onClose={() => setCheckout(null)}
+        />
+      )}
     </form>
   );
 }
