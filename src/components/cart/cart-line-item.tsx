@@ -52,7 +52,7 @@ export function CartLineItem({ line }: { line: CartLineView }) {
             alt={line.name}
             fill
             sizes="112px"
-            className="object-cover"
+            className="object-contain"
           />
         )}
       </Link>

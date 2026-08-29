@@ -229,7 +229,7 @@ export function SearchDialog() {
                                   alt=""
                                   fill
                                   sizes="48px"
-                                  className="object-cover"
+                                  className="object-contain"
                                 />
                               )}
                             </span>

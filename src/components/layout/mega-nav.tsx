@@ -215,7 +215,10 @@ export function MegaNav({
                               alt=""
                               fill
                               sizes="160px"
-                              className="object-cover transition-transform duration-500 group-hover/feat:scale-[1.03]"
+                              /* A real product, so shown whole. The category
+                                 thumbnails above stay cropped — those are
+                                 decorative crops of scene photography. */
+                              className="object-contain transition-transform duration-500 group-hover/feat:scale-[1.03]"
                             />
                           )}
                         </span>

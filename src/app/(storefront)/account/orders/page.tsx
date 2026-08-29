@@ -89,7 +89,7 @@ export default async function AccountOrdersPage({
                           alt={item.name}
                           fill
                           sizes="56px"
-                          className="object-cover"
+                          className="object-contain"
                         />
                       )}
                       {item.quantity > 1 && (

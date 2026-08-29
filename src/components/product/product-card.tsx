@@ -53,6 +53,11 @@ export function ProductCard({
 
   return (
     <article className={cn("group/card relative flex flex-col", className)}>
+      {/* The 4:5 frame is kept — it sets the grid's rhythm and every other card
+          on the page — but the artwork is contained inside it rather than
+          filling it. These are crochet patterns: the cover is the product, and
+          `object-cover` was trimming 20% of the height off a square file. The
+          tinted panel is the frame the leftover space reads as. */}
       <div className="relative aspect-[4/5] overflow-hidden bg-surface-alt">
         {product.imageUrl ? (
           <>
@@ -67,7 +72,7 @@ export function ProductCard({
               sizes={sizes}
               priority={priority}
               className={cn(
-                "object-cover transition-[opacity,transform] duration-500 ease-out",
+                "object-contain transition-[opacity,transform] duration-500 ease-out",
                 "group-hover/card:scale-[1.03]",
                 product.hoverImageUrl && "group-hover/card:opacity-0",
               )}
@@ -79,7 +84,7 @@ export function ProductCard({
                 aria-hidden
                 fill
                 sizes={sizes}
-                className="object-cover opacity-0 transition-[opacity,transform] duration-500 ease-out group-hover/card:scale-[1.03] group-hover/card:opacity-100"
+                className="object-contain opacity-0 transition-[opacity,transform] duration-500 ease-out group-hover/card:scale-[1.03] group-hover/card:opacity-100"
               />
             )}
           </>

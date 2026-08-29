@@ -78,7 +78,7 @@ export default async function DownloadsPage() {
                       alt=""
                       fill
                       sizes="80px"
-                      className="object-cover"
+                      className="object-contain"
                     />
                   )}
                 </Link>

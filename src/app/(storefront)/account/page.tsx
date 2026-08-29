@@ -105,7 +105,7 @@ export default async function AccountPage() {
                             alt=""
                             fill
                             sizes="48px"
-                            className="object-cover"
+                            className="object-contain"
                           />
                         )}
                       </li>

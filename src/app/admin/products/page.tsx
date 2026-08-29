@@ -150,7 +150,7 @@ export default async function AdminProductsPage({
                               alt=""
                               fill
                               sizes="44px"
-                              className="object-cover"
+                              className="object-contain"
                             />
                           )}
                         </span>

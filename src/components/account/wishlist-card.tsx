@@ -49,7 +49,7 @@ export function WishlistCard({ product }: { product: ProductCardData }) {
             alt={product.imageAlt}
             fill
             sizes="96px"
-            className="object-cover"
+            className="object-contain"
           />
         )}
       </Link>

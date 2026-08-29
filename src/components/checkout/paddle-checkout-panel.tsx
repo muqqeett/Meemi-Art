@@ -164,7 +164,7 @@ export function PaddleCheckoutPanel({
                       alt=""
                       fill
                       sizes="48px"
-                      className="object-cover"
+                      className="object-contain"
                     />
                   )}
                 </span>

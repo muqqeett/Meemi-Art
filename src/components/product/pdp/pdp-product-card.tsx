@@ -41,7 +41,9 @@ export function PdpProductCard({
             alt=""
             fill
             sizes="(min-width: 1024px) 212px, 45vw"
-            className="object-cover transition-transform duration-500 ease-out group-hover/card:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100"
+            /* Contained, not cropped: the Figma frame is 212×284, which was
+               cutting a quarter of the height off a square cover. */
+            className="object-contain transition-transform duration-500 ease-out group-hover/card:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100"
           />
         )}
       </Link>

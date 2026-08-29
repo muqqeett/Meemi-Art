@@ -391,7 +391,7 @@ export function ProductImageManager({
                   alt={image.alt || "Product photo preview"}
                   fill
                   sizes="96px"
-                  className="object-cover"
+                  className="object-contain"
                   unoptimized
                 />
                 {index === 0 && (

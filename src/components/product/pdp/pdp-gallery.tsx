@@ -97,7 +97,11 @@ export function PdpGallery({
                 fill
                 priority
                 sizes="(min-width: 1440px) 458px, (min-width: 1024px) 40vw, (min-width: 640px) 458px, 92vw"
-                className="object-cover"
+                /* The image someone decides to buy from. It is shown whole:
+                   the drawn 458×610 frame stays, and a cover that is not that
+                   shape sits centred on the surface tint rather than losing
+                   its top and bottom. */
+                className="object-contain"
               />
             </motion.div>
           </AnimatePresence>
@@ -128,7 +132,9 @@ export function PdpGallery({
                     : "ring-1 ring-transparent hover:ring-pdp-border",
                 )}
               >
-                <Image src={image.url} alt="" fill sizes="76px" className="object-cover" />
+                {/* Contained too, so a thumbnail is a true index of the frame
+                    it selects rather than a differently-cropped picture. */}
+                <Image src={image.url} alt="" fill sizes="76px" className="object-contain" />
               </button>
             ))}
           </div>
