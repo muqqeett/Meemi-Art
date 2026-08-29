@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   Store,
   Percent,
@@ -229,9 +230,22 @@ export default async function AdminSettingsPage() {
           </div>
         )}
 
+        <Row
+          label="Missed a webhook?"
+          value={
+            <Link
+              href="/admin/payments/reconcile"
+              className="font-semibold text-brand-600 hover:underline"
+            >
+              Reconcile a Paddle transaction →
+            </Link>
+          }
+        />
+
         {/* Deliberately no "mark as paid" control anywhere in this dashboard.
-            An order becomes paid because Paddle said so over a signed webhook,
-            and for no other reason. */}
+            An order becomes paid because Paddle said so over a signed webhook —
+            or, on the reconciliation page, because Paddle's own API confirmed
+            it when asked directly. Never because someone clicked a button. */}
         <p className="text-muted-foreground pt-2 text-xs">
           Payment state is set only by verified Paddle webhooks. There is no manual
           override, by design.
