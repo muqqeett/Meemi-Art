@@ -145,6 +145,24 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           rel="stylesheet"
           href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600&display=swap"
         />
+
+        {/*
+          Google AdSense site verification.
+
+          Written as a plain tag in the document head rather than through
+          `next/script`, because AdSense's crawler looks for this exact snippet
+          inside `<head>` and that is the one place `next/script` does not
+          promise to put it. Being in the root layout, it is served on every
+          route.
+
+          `async` keeps it off the critical path, so a slow or blocked response
+          from Google cannot delay first render.
+        */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6533323345817151"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className="flex min-h-full flex-col">
         <MotionProvider>
