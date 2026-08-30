@@ -422,6 +422,28 @@
      below it reflows, so this cannot contribute to layout shift. */
   .page-enter {
     animation: page-enter 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+
+    /* Inherit the height `main` was already given, so a page can choose to
+       fill the space between header and footer. `display` stays block on
+       purpose: turning this into a flex container would stop margin collapsing
+       inside every page on the site, which is a spacing change nobody asked
+       for. Growing the box changes nothing for pages that ignore it. */
+    flex: 1 0 auto;
+  }
+
+  /* Opt-in fill, requested by a page marking its root `data-fill`.
+     `min-height: 100%` alone does not work here: the wrapper's own height comes
+     from `flex-grow`, so the percentage has nothing definite to resolve
+     against and the page stops at its content height — which left a visible
+     band of body background above the footer on a tall viewport.
+     `:has()` scopes the flex context to pages that ask for it, so every other
+     page keeps block layout and its margin collapsing exactly as before. */
+  .page-enter:has(> [data-fill]) {
+    display: flex;
+    flex-direction: column;
+  }
+  .page-enter > [data-fill] {
+    flex: 1 0 auto;
   }
 }
 
