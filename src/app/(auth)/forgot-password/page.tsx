@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 import { isEmailConfigured } from "@/lib/email";
+import { AuthScreen } from "@/components/auth/auth-visuals";
 
 export const metadata: Metadata = {
   title: "Reset your password",
@@ -11,7 +12,8 @@ export const metadata: Metadata = {
 
 export default function ForgotPasswordPage() {
   return (
-    <div>
+    <AuthScreen>
+      <div>
       <h1 className="heading-sub">
         Reset your password
       </h1>
@@ -33,5 +35,6 @@ export default function ForgotPasswordPage() {
         </Link>
       </p>
     </div>
+    </AuthScreen>
   );
 }

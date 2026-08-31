@@ -5,6 +5,7 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { ResendVerificationForm } from "@/components/auth/resend-verification-form";
 import { authConfig } from "@/lib/config";
 import { isEmailConfigured } from "@/lib/email";
+import { AuthScreen } from "@/components/auth/auth-visuals";
 
 export const metadata: Metadata = {
   title: "Check your email",
@@ -20,7 +21,8 @@ export default async function VerificationSentPage({
   const configured = isEmailConfigured();
 
   return (
-    <div>
+    <AuthScreen>
+      <div>
       <div className="text-center">
         <MailCheck className="mx-auto size-11 text-brand-700" aria-hidden />
         <h1 className="font-display mt-5 text-3xl leading-tight">Check your email</h1>
@@ -65,5 +67,6 @@ export default async function VerificationSentPage({
         </ButtonLink>
       </div>
     </div>
+    </AuthScreen>
   );
 }

@@ -5,6 +5,7 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { ResendVerificationForm } from "@/components/auth/resend-verification-form";
 import { verifyEmailToken } from "@/lib/actions/verification";
 import { siteConfig } from "@/lib/config";
+import { AuthScreen } from "@/components/auth/auth-visuals";
 
 export const metadata: Metadata = {
   title: "Verify your email",
@@ -70,7 +71,8 @@ export default async function VerifyEmailPage({
   }[result.reason];
 
   return (
-    <div>
+    <AuthScreen>
+      <div>
       <div className="text-center">
         <copy.Icon className="mx-auto size-11 text-warning" aria-hidden />
         <h1 className="font-display mt-5 text-3xl leading-tight">{copy.title}</h1>
@@ -88,5 +90,6 @@ export default async function VerifyEmailPage({
         </a>
       </p>
     </div>
+    </AuthScreen>
   );
 }

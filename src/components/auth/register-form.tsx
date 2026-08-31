@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, AlertCircle } from "lucide-react";
 
@@ -15,7 +16,7 @@ export function RegisterForm() {
   const kept = state && !state.ok ? state.values : undefined;
 
   return (
-    <form action={formAction} className="space-y-5" noValidate>
+    <form action={formAction} className="space-y-6" noValidate>
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
       {state && !state.ok && !state.fieldErrors && (
@@ -28,6 +29,7 @@ export function RegisterForm() {
         </div>
       )}
 
+      <div className="space-y-5">
       <FormField
         label="Full name"
         name="name"
@@ -67,24 +69,44 @@ export function RegisterForm() {
         placeholder="••••••••"
         autoComplete="new-password"
         required
-        error={state && !state.ok ? state.fieldErrors?.confirmPassword : undefined}
-      />
+          error={state && !state.ok ? state.fieldErrors?.confirmPassword : undefined}
+        />
+      </div>
 
-      <Button
-        type="submit"
-        variant="brand"
-        size="pill"
-        className="w-full"
-        disabled={pending}
-      >
-        {pending && <Loader2 className="animate-spin" aria-hidden />}
-        {pending ? "Creating your account…" : "Create account"}
-      </Button>
+      <div className="flex flex-col items-center gap-4">
+        <Button
+          type="submit"
+          variant="brand"
+          className="h-12 w-full rounded-lg text-base font-semibold tracking-normal normal-case"
+          disabled={pending}
+          aria-busy={pending}
+        >
+          {pending && <Loader2 className="animate-spin" aria-hidden />}
+          {pending ? "Creating your account…" : "Create account"}
+        </Button>
 
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        By creating an account you agree to our terms of sale and privacy policy. We&apos;ll
-        never share your details.
-      </p>
+        <p className="text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="text-royal-600 hover:text-royal-700 rounded-xs font-medium transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-500"
+          >
+            Log in
+          </Link>
+        </p>
+
+        <p className="text-center text-xs leading-relaxed text-muted-foreground">
+          By creating an account you agree to our{" "}
+          <Link href="/terms" className="underline hover:text-foreground">
+            terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline hover:text-foreground">
+            privacy policy
+          </Link>
+          .
+        </p>
+      </div>
     </form>
   );
 }

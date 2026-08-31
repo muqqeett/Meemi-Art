@@ -4,6 +4,7 @@ import { KeyRound } from "lucide-react";
 
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
 import { ButtonLink } from "@/components/ui/button-link";
+import { AuthScreen } from "@/components/auth/auth-visuals";
 
 export const metadata: Metadata = {
   title: "Set a new password",
@@ -35,7 +36,8 @@ export default async function ResetPasswordPage({
   }
 
   return (
-    <div>
+    <AuthScreen>
+      <div>
       <h1 className="heading-sub">
         Set a new password
       </h1>
@@ -54,5 +56,6 @@ export default async function ResetPasswordPage({
         </Link>
       </p>
     </div>
+    </AuthScreen>
   );
 }
