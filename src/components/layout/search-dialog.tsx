@@ -30,7 +30,7 @@ const EMPTY: Suggestions = { products: [], categories: [] };
  * Header search. Opens a dialog with debounced typeahead suggestions and hands
  * the full query off to `/search`, where the real server-side filtering runs.
  */
-export function SearchDialog() {
+export function SearchDialog({ variant = "icon" }: { variant?: "icon" | "pill" } = {}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -97,14 +97,42 @@ export function SearchDialog() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex size-11 items-center justify-center rounded-full text-brand-700 transition-colors hover:bg-surface-alt hover:text-royal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600"
-        aria-label="Search products"
-      >
-        <Search className="size-5" aria-hidden />
-      </button>
+      {/*
+        Two triggers, one dialog.
+
+        The Figma header (253:12) shows a permanent search field rather than an
+        icon, so `pill` renders a control shaped exactly like that field —
+        48px tall, fully rounded, hairline border, leading icon, "Search…"
+        placeholder. It is a `button`, not an `input`: the real field lives in
+        the dialog with the suggestion list attached to it, and two inputs
+        competing for the same query would be two places to type and one of
+        them wrong.
+
+        `icon` stays for the compact header row, where a 704px field cannot fit.
+      */}
+      {variant === "pill" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="group/search flex h-12 w-full items-center gap-3 rounded-full border border-near-black/25 bg-surface px-4 text-left transition-colors hover:border-near-black/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600"
+          aria-label="Search products"
+        >
+          <Search
+            className="size-5 shrink-0 text-muted-foreground transition-colors group-hover/search:text-near-black"
+            aria-hidden
+          />
+          <span className="truncate text-base text-muted-foreground">Search…</span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex size-11 items-center justify-center rounded-full text-brand-700 transition-colors hover:bg-surface-alt hover:text-royal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600"
+          aria-label="Search products"
+        >
+          <Search className="size-5" aria-hidden />
+        </button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent

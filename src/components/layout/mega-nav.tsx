@@ -3,13 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { ChevronDown, ArrowRight } from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/money";
-import { mainNav } from "@/lib/config";
 import { fadeUp, panelVariants, staggerContainer } from "@/lib/motion";
 
 export type MegaCategory = {
@@ -28,25 +26,6 @@ export type MegaProduct = {
 };
 
 /**
- * The rule that grows under a nav item.
- *
- * A scaled pseudo-element rather than an animated `width`, so it composites
- * instead of triggering layout on every frame of a hover. CSS handles it — no
- * observer, no JS timeline, nothing to schedule.
- */
-function NavIndicator({ active }: { active: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "absolute inset-x-4 bottom-3 h-px origin-center bg-royal-600 transition-transform duration-200 ease-out",
-        active ? "scale-x-100" : "scale-x-0 group-hover/nav:scale-x-100",
-      )}
-    />
-  );
-}
-
-/**
  * Desktop navigation with a single "Shop" mega-panel.
  *
  * Only one item opens a panel — a shop this size does not need a menu per
@@ -61,7 +40,6 @@ export function MegaNav({
   categories: MegaCategory[];
   featured: MegaProduct[];
 }) {
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<number | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -98,48 +76,39 @@ export function MegaNav({
         if (!containerRef.current?.contains(event.relatedTarget as Node)) setOpen(false);
       }}
     >
-      <nav aria-label="Main" className="h-full">
-        <ul className="flex h-full items-center gap-1">
-          <li className="h-full" onMouseEnter={() => { cancelClose(); setOpen(true); }}>
-            <button
-              type="button"
-              aria-expanded={open}
-              onClick={() => setOpen((value) => !value)}
-              className={cn(
-                "group/nav label-caps relative inline-flex h-full items-center gap-1.5 px-4 transition-colors",
-                "focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-royal-600",
-                open ? "text-royal-600" : "text-ink hover:text-royal-600",
-              )}
-            >
-              Shop
-              <ChevronDown
-                aria-hidden
-                className={cn("size-3 transition-transform duration-200", open && "rotate-180")}
-              />
-              <NavIndicator active={open} />
-            </button>
-          </li>
-
-          {mainNav.map((item) => {
-            const active = pathname === item.href.split("?")[0];
-            return (
-              <li key={item.href} className="h-full" onMouseEnter={scheduleClose}>
-                <Link
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "group/nav label-caps relative inline-flex h-full items-center px-4 transition-colors",
-                    "focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-royal-600",
-                    active ? "text-royal-600" : "text-ink hover:text-royal-600",
-                  )}
-                >
-                  {item.title}
-                  <NavIndicator active={active} />
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      {/*
+        The trigger is the Figma's menu button (253:7) — a 48px round control
+        beside the wordmark — not the horizontal list this used to be.
+        Those `mainNav` links have not been dropped: they moved to the category
+        rail below, which is where the design puts them, and rendering them
+        here as well would give the header two navigations saying the same
+        thing. The panel underneath is unchanged.
+      */}
+      <nav aria-label="Main" className="flex h-full items-center">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-haspopup="true"
+          aria-label={open ? "Close shop menu" : "Open shop menu"}
+          onMouseEnter={() => {
+            cancelClose();
+            setOpen(true);
+          }}
+          onClick={() => setOpen((value) => !value)}
+          className={cn(
+            "inline-flex size-12 items-center justify-center rounded-full transition-colors",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600",
+            open
+              ? "bg-near-black/8 text-royal-600"
+              : "text-near-black hover:bg-near-black/5 hover:text-royal-600",
+          )}
+        >
+          {open ? (
+            <X className="size-6" aria-hidden />
+          ) : (
+            <Menu className="size-6" aria-hidden />
+          )}
+        </button>
       </nav>
 
       <AnimatePresence>
