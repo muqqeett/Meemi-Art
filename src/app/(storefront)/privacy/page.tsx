@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/brand/breadcrumbs";
 import { ContentPage, ContentSection } from "@/components/layout/content-page";
-import { LegalReviewNotice, LAST_UPDATED } from "@/components/layout/legal-review-notice";
+import { LAST_UPDATED } from "@/lib/legal";
 import { siteConfig } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -42,7 +42,6 @@ export default function PrivacyPage() {
         title="Privacy Policy"
         intro={`What we collect, why we collect it, who else handles it, and what you can ask us to do with it. Last updated ${LAST_UPDATED}.`}
       >
-        <LegalReviewNotice />
 
         <ContentSection title="What we collect">
           <ul className="list-disc space-y-2 pl-5">

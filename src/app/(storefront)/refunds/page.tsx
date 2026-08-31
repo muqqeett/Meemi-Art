@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/brand/breadcrumbs";
 import { ContentPage, ContentSection } from "@/components/layout/content-page";
-import { LegalReviewNotice, LAST_UPDATED } from "@/components/layout/legal-review-notice";
+import { LAST_UPDATED } from "@/lib/legal";
 import { siteConfig } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -39,7 +39,6 @@ export default function RefundsPage() {
         title="Refund & Cancellation Policy"
         intro={`Meemi Art sells digital products that are delivered immediately. That changes how refunds work, so this page sets out exactly where you stand. Last updated ${LAST_UPDATED}.`}
       >
-        <LegalReviewNotice />
 
         <ContentSection title="Digital products, delivered immediately">
           <p>

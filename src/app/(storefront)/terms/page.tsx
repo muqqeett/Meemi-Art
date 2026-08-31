@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/brand/breadcrumbs";
 import { ContentPage, ContentSection } from "@/components/layout/content-page";
-import { LegalReviewNotice, LAST_UPDATED } from "@/components/layout/legal-review-notice";
+import { LAST_UPDATED } from "@/lib/legal";
 import { siteConfig } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -39,7 +39,6 @@ export default function TermsPage() {
         title="Terms & Conditions"
         intro={`These terms apply to every purchase made through ${siteConfig.name}. Last updated ${LAST_UPDATED}.`}
       >
-        <LegalReviewNotice />
 
         <ContentSection title="1. What we sell">
           <p>
