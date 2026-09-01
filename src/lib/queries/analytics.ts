@@ -186,8 +186,21 @@ export async function getSalesByCategory() {
     .sort((a, b) => b.revenueCents - a.revenueCents);
 }
 
+/**
+ * The latest genuine sales, for the dashboard.
+ *
+ * Filtered in SQL by `SUCCESSFUL_ORDER`, not in the component. Without it this
+ * returned the newest rows of any kind, which on a store that has been through
+ * payment testing means the panel fills with abandoned checkouts and pushes the
+ * real sales off the list entirely — the dashboard then reads as a queue of
+ * customers waiting to pay when nobody is waiting for anything.
+ *
+ * `/admin/orders` deliberately does not filter this way. Unpaid and failed
+ * attempts are exactly what an operator needs there.
+ */
 export async function getRecentOrders(limit = 6) {
   return prisma.order.findMany({
+    where: SUCCESSFUL_ORDER,
     orderBy: { placedAt: "desc" },
     take: limit,
     select: {

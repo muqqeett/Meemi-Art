@@ -7,7 +7,6 @@ import { Reveal, RevealGroup, RevealItem } from "@/components/motion/reveal";
 import {
   RevenueChart,
   OrdersChart,
-  OrderStatusChart,
   CustomerGrowthChart,
   SalesByCategoryChart,
 } from "@/components/admin/charts";
@@ -15,7 +14,6 @@ import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 import {
   getDashboardStats,
   getRevenueSeries,
-  getOrderStatusBreakdown,
   getBestSellers,
   getRecentOrders,
   getCustomerGrowth,
@@ -62,7 +60,6 @@ export default async function AdminDashboardPage() {
   const [
     stats,
     revenue,
-    statusBreakdown,
     bestSellers,
     recentOrders,
     growth,
@@ -70,7 +67,6 @@ export default async function AdminDashboardPage() {
   ] = await Promise.all([
     getDashboardStats(),
     getRevenueSeries(),
-    getOrderStatusBreakdown(),
     getBestSellers(5),
     getRecentOrders(6),
     getCustomerGrowth(),
@@ -140,15 +136,16 @@ export default async function AdminDashboardPage() {
         </RevealItem>
       </RevealGroup>
 
-      <div className="grid [&>*]:min-w-0 gap-6 xl:grid-cols-3">
-        <Panel title="Revenue — last 12 months" className="xl:col-span-2">
-          <RevenueChart data={revenue} />
-        </Panel>
-
-        <Panel title="Orders by status">
-          <OrderStatusChart data={statusBreakdown} />
-        </Panel>
-      </div>
+      {/* Revenue spans the full width now that the orders-by-status donut has
+          gone. That chart counted every order regardless of payment, so on a
+          store that has been through payment testing its largest slice was
+          PENDING — abandoned checkouts presented on the business overview as
+          though customers were queued up waiting to pay. It is a diagnostic
+          breakdown, not a business KPI, so it stays on /admin/analytics and on
+          /admin/orders and is no longer the first thing the dashboard says. */}
+      <Panel title="Revenue — last 12 months">
+        <RevenueChart data={revenue} />
+      </Panel>
 
       <div className="grid [&>*]:min-w-0 gap-6 xl:grid-cols-2">
         <Panel title="Orders per month">
@@ -180,8 +177,14 @@ export default async function AdminDashboardPage() {
           }
         >
           {recentOrders.length === 0 ? (
+            // "No orders yet" would be a lie on a store with unpaid attempts
+            // sitting in the table — this panel only ever counts paid ones.
             <p className="py-6 text-center text-sm text-muted-foreground">
-              No orders yet.
+              No completed sales yet.{" "}
+              <Link href="/admin/orders" className="text-brand-600 hover:underline">
+                See all orders
+              </Link>{" "}
+              for checkouts that were started but never paid.
             </p>
           ) : (
           <ul className="divide-y divide-border">
