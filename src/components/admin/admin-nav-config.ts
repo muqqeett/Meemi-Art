@@ -9,9 +9,11 @@ import {
   RefreshCw,
   MessageSquare,
   FileDown,
+  PackageCheck,
   Ticket,
   Mail,
   ChartColumn,
+  TrendingUp,
   Settings,
   History,
   type LucideIcon,
@@ -50,6 +52,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     items: [
       { href: "/admin/orders", label: "Orders", Icon: ShoppingCart },
       { href: "/admin/products", label: "Products", Icon: Package },
+      { href: "/admin/products/performance", label: "Performance", Icon: TrendingUp },
       { href: "/admin/categories", label: "Categories", Icon: FolderTree },
       { href: "/admin/customers", label: "Customers", Icon: Users },
     ],
@@ -67,6 +70,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     items: [
       { href: "/admin/reviews", label: "Reviews", Icon: MessageSquare },
       { href: "/admin/files", label: "Digital Files", Icon: FileDown },
+      { href: "/admin/delivery", label: "Delivery Health", Icon: PackageCheck },
     ],
   },
   {

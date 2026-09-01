@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Mail, TriangleAlert } from "lucide-react";
 
-import { AdminPageHeader, AdminTableCard } from "@/components/admin/admin-page-header";
+import {
+  AdminPageHeader,
+  AdminTableCard,
+  AdminSection,
+} from "@/components/admin/admin-page-header";
 import { StatusBadge } from "@/components/admin/admin-primitives";
 import { EmptyState } from "@/components/brand/empty-state";
 import { ButtonLink } from "@/components/ui/button-link";
@@ -13,7 +17,7 @@ import {
   parseEmailStatus,
 } from "@/lib/queries/admin-resources";
 import { buildBaseQuery, hasAnyParam } from "@/lib/shop-params";
-import { isEmailConfigured } from "@/lib/email";
+import { getEmailHealth, redactError } from "@/lib/queries/email-health";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Email Center" };
@@ -43,12 +47,14 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
 
   // `total` is the *filtered* count and is already folded into `pageCount`;
   // the heading counts every attempt, which is what `byStatus` sums to.
-  const { emails, page, pageCount, byStatus } = await listAdminEmails({
-    page: Number(first(raw.page)) || 1,
-    status,
-  });
+  const [{ emails, page, pageCount, byStatus }, health] = await Promise.all([
+    listAdminEmails({ page: Number(first(raw.page)) || 1, status }),
+    getEmailHealth(),
+  ]);
 
-  const configured = isEmailConfigured();
+  // Live provider state, which history cannot tell you: zero skipped rows only
+  // means no provider was missing when those rows were written.
+  const configured = health.provider.configured;
   const counts = new Map(byStatus.map((row) => [row.status, row.count]));
   const failed = counts.get("FAILED") ?? 0;
   const allTotal = byStatus.reduce((sum, row) => sum + row.count, 0);
@@ -69,6 +75,146 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
         description={`${allTotal.toLocaleString("en-US")} delivery ${allTotal === 1 ? "attempt" : "attempts"} recorded. Emails are logged, never re-sent from here.`}
       />
 
+
+      {/* ---- Operational overview -----------------------------------------
+          Every figure is a count of persisted rows. Deliberately no health
+          score: "6 accepted, 7 rejected, one cause" is actionable, and a
+          percentage badge would only hide which of those numbers moved. */}
+      <div className="admin-card admin-rise mb-4 grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
+        <div className="px-5 py-4">
+          <p className="admin-eyebrow">Attempts</p>
+          <p className="mt-1.5 text-xl font-semibold text-foreground tabular-nums">
+            {health.attempted}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Offered to provider</p>
+        </div>
+
+        <div className="px-5 py-4">
+          <p className="admin-eyebrow">Accepted</p>
+          <p className="mt-1.5 text-xl font-semibold text-success tabular-nums">
+            {health.counts.SENT}
+          </p>
+          {/* Not "delivered". The provider accepting a request is the furthest
+              this schema can see — there is no webhook, so no bounce, open or
+              complaint data exists anywhere. */}
+          <p className="mt-0.5 text-xs text-muted-foreground">Not confirmed delivered</p>
+        </div>
+
+        <div className="px-5 py-4">
+          <p className="admin-eyebrow">Rejected</p>
+          <p
+            className={cn(
+              "mt-1.5 text-xl font-semibold tabular-nums",
+              health.counts.FAILED > 0 ? "text-destructive" : "text-foreground",
+            )}
+          >
+            {health.counts.FAILED}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {health.failureRate === null
+              ? "No attempts yet"
+              : `${health.failureRate}% of attempts`}
+          </p>
+        </div>
+
+        <div className="px-5 py-4">
+          <p className="admin-eyebrow">Skipped</p>
+          <p className="mt-1.5 text-xl font-semibold text-foreground tabular-nums">
+            {health.counts.SKIPPED}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">No provider at the time</p>
+        </div>
+      </div>
+
+      {/* ---- Failure causes ------------------------------------------------
+          Grouped by the exact stored message, because seven failures sharing
+          one cause is one fix, not seven. */}
+      {health.causes.length > 0 && (
+        <AdminSection
+          title="Why sends are failing"
+          description={`${health.causes.length} distinct ${health.causes.length === 1 ? "cause" : "causes"} across ${health.counts.FAILED} rejected ${health.counts.FAILED === 1 ? "email" : "emails"}`}
+          className="admin-rise mb-4"
+          bodyClassName="p-0"
+        >
+          <ul className="divide-y divide-border">
+            {health.causes.map((cause) => (
+              <li
+                key={cause.reason}
+                className="flex flex-wrap items-start gap-x-4 gap-y-1.5 px-5 py-3.5"
+              >
+                <span
+                  aria-hidden
+                  className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-destructive/25 bg-destructive/8 text-destructive"
+                >
+                  <TriangleAlert className="size-3.5" />
+                </span>
+                {/* Provider text, passed through the redactor. Long messages
+                    wrap rather than widening the page on a phone. */}
+                <p className="min-w-0 flex-1 text-sm leading-relaxed break-words text-foreground">
+                  {redactError(cause.reason)}
+                </p>
+                <span className="shrink-0 text-sm font-medium text-destructive tabular-nums">
+                  {cause.count}×
+                </span>
+              </li>
+            ))}
+          </ul>
+        </AdminSection>
+      )}
+
+      {/* ---- Per template -------------------------------------------------
+          The template column is written from the canonical EMAIL_TEMPLATES
+          registry, so this is a real breakdown rather than subject-line
+          guesswork. */}
+      {health.templates.length > 0 && (
+        <AdminSection
+          title="By email type"
+          description="Only types this store has actually sent."
+          className="admin-rise mb-4"
+          bodyClassName="p-0"
+        >
+          <div className="w-full overflow-x-auto">
+            <table className="admin-table admin-table-stack sm:min-w-[560px]">
+              <caption className="sr-only">Email attempts by template</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Type</th>
+                  <th scope="col" className="text-right">Attempts</th>
+                  <th scope="col" className="text-right">Accepted</th>
+                  <th scope="col" className="text-right">Rejected</th>
+                </tr>
+              </thead>
+              <tbody>
+                {health.templates.map((row) => (
+                  <tr key={row.template}>
+                    <td data-label="Type">
+                      <code className="rounded-sm border border-border bg-[var(--admin-raised)] px-1.5 py-0.5 font-mono text-[0.6875rem] text-muted-foreground">
+                        {row.template}
+                      </code>
+                    </td>
+                    <td data-label="Attempts" className="text-right tabular-nums text-muted-foreground">
+                      {row.total}
+                    </td>
+                    <td data-label="Accepted" className="text-right tabular-nums text-muted-foreground">
+                      {row.sent}
+                    </td>
+                    <td
+                      data-label="Rejected"
+                      className={cn(
+                        "text-right tabular-nums",
+                        row.failed > 0 ? "font-medium text-destructive" : "text-muted-foreground",
+                      )}
+                    >
+                      {row.failed}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </AdminSection>
+      )}
+
       {!configured && (
         <div className="mb-6 flex items-start gap-3 rounded-md border border-warning/25 bg-warning/[0.06] px-4 py-3.5 text-sm">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
@@ -81,6 +227,18 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
             and{" "}
             <code className="rounded-sm border border-border bg-[var(--admin-raised)] px-1 py-0.5 font-mono text-[0.6875rem]">EMAIL_FROM</code>{" "}
             before relying on order confirmations.
+            {health.provider.from && (
+              <>
+                {" "}
+                The sending identity is already set to{" "}
+                {/* From config, never hard-coded. The API key is reported only
+                    as present or absent — never its value. */}
+                <span className="break-all font-medium text-foreground">
+                  {health.provider.from}
+                </span>
+                .
+              </>
+            )}
           </p>
         </div>
       )}

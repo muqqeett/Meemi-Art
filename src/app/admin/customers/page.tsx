@@ -9,6 +9,7 @@ import { PaginationNav } from "@/components/shop/pagination-nav";
 import { EmptyState } from "@/components/brand/empty-state";
 import { ButtonLink } from "@/components/ui/button-link";
 import { listAdminCustomers } from "@/lib/queries/admin";
+import { getCustomerListAggregates } from "@/lib/queries/customer-360";
 import { buildBaseQuery, hasAnyParam } from "@/lib/shop-params";
 import { formatMoney } from "@/lib/money";
 
@@ -27,6 +28,8 @@ export default async function AdminCustomersPage({
     q: first(raw.q),
     page: Number(first(raw.page)) || 1,
   });
+  const { byUser } = await getCustomerListAggregates(customers.map((c) => c.id));
+
 
   return (
     <div>
@@ -61,25 +64,16 @@ export default async function AdminCustomersPage({
       ) : (
         <>
           <AdminTableCard>
-            <table className="admin-table admin-table-stack min-w-[720px]">
+            <table className="admin-table admin-table-stack sm:min-w-[820px]">
               <caption className="sr-only">Registered customers</caption>
               <thead>
                 <tr>
-                  <th scope="col">
-                    Customer
-                  </th>
-                  <th scope="col">
-                    Joined
-                  </th>
-                  <th scope="col" className="text-right">
-                    Orders
-                  </th>
-                  <th scope="col" className="text-right">
-                    Reviews
-                  </th>
-                  <th scope="col" className="text-right">
-                    Lifetime value
-                  </th>
+                  <th scope="col">Customer</th>
+                  <th scope="col">Last order</th>
+                  <th scope="col">Joined</th>
+                  <th scope="col" className="text-right">Orders</th>
+                  <th scope="col" className="text-right">Downloads</th>
+                  <th scope="col" className="text-right">Lifetime value</th>
                 </tr>
               </thead>
 
@@ -119,6 +113,14 @@ export default async function AdminCustomersPage({
                       </div>
                     </td>
 
+                    <td data-label="Last order" className="text-muted-foreground whitespace-nowrap">
+                      {byUser.get(customer.id)?.lastOrderAt
+                        ? byUser
+                            .get(customer.id)!
+                            .lastOrderAt!.toLocaleDateString("en-US", { dateStyle: "medium" })
+                        : "—"}
+                    </td>
+
                     <td data-label="Joined" className="text-muted-foreground">
                       <time dateTime={customer.createdAt.toISOString()}>
                         {customer.createdAt.toLocaleDateString("en-US", {
@@ -130,8 +132,8 @@ export default async function AdminCustomersPage({
                     <td data-label="Orders" className="text-right tabular-nums">
                       {customer.orderCount}
                     </td>
-                    <td data-label="Reviews" className="text-right tabular-nums">
-                      {customer.reviewCount}
+                    <td data-label="Downloads" className="text-right tabular-nums text-muted-foreground">
+                      {byUser.get(customer.id)?.downloads ?? 0}
                     </td>
                     <td data-label="Lifetime value" className="text-right font-medium tabular-nums">
                       {formatMoney(customer.totalSpentCents)}
