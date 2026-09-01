@@ -14,8 +14,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FormGrid,
+  ToggleRow,
+  controlInput,
+  controlSelect,
+  describedBy,
+} from "@/components/admin/admin-form";
 import { Switch } from "@/components/ui/switch";
 import { EmptyState } from "@/components/brand/empty-state";
 import { AdminTableCard } from "@/components/admin/admin-page-header";
@@ -58,99 +65,97 @@ function CouponForm({ coupon, onDone }: { coupon: AdminCoupon | null; onDone: ()
   const errors = state && !state.ok ? state.fieldErrors : undefined;
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form action={formAction} noValidate>
       {coupon && <input type="hidden" name="couponId" value={coupon.id} />}
 
       {state && !state.ok && !state.fieldErrors && (
         <p
           role="alert"
-          className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+          className="mb-4 flex items-start gap-2 rounded-md border border-destructive/25 bg-destructive/[0.05] px-3 py-2.5 text-sm text-destructive"
         >
           <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
           {state.error}
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-code">Code</Label>
+      <FormGrid>
+        <Field id="cp-code" label="Code" required error={errors?.code}>
           <Input
             id="cp-code"
             name="code"
             defaultValue={coupon?.code ?? ""}
             placeholder="WELCOME15"
-            className="h-11 font-mono uppercase"
             aria-invalid={Boolean(errors?.code)}
+            aria-describedby={describedBy("cp-code", { error: errors?.code })}
+            className={cn(controlInput, "font-mono uppercase")}
           />
-          {errors?.code && (
-            <p role="alert" className="text-sm text-destructive">
-              {errors.code}
-            </p>
-          )}
-        </div>
+        </Field>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-type">Discount type</Label>
+        <Field id="cp-type" label="Discount type">
           <select
             id="cp-type"
             name="type"
             value={type}
             onChange={(event) => setType(event.target.value as "PERCENTAGE" | "FIXED")}
-            className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            className={controlSelect}
           >
             <option value="PERCENTAGE">Percentage off</option>
             <option value="FIXED">Fixed amount off</option>
           </select>
-        </div>
+        </Field>
 
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="cp-description">Description</Label>
+        <Field
+          id="cp-description"
+          label="Description"
+          hint="Internal only — shoppers never see this."
+          className="sm:col-span-2"
+        >
           <Input
             id="cp-description"
             name="description"
             defaultValue={coupon?.description ?? ""}
             placeholder="Internal note about this promotion"
-            className="h-11"
+            aria-describedby={describedBy("cp-description", { hint: true })}
+            className={controlInput}
           />
-        </div>
+        </Field>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-value">
-            {type === "PERCENTAGE" ? "Percentage off" : "Amount off (cents)"}
-          </Label>
+        <Field
+          id="cp-value"
+          label={type === "PERCENTAGE" ? "Percentage off" : "Amount off (cents)"}
+          required
+          hint={type === "PERCENTAGE" ? "1–100" : "e.g. 1000 = $10.00"}
+          error={errors?.value}
+        >
           <Input
             id="cp-value"
             name="value"
             type="number"
             min={1}
             defaultValue={coupon?.value ?? ""}
-            className="h-11"
             aria-invalid={Boolean(errors?.value)}
+            aria-describedby={describedBy("cp-value", { hint: true, error: errors?.value })}
+            className={cn(controlInput, "tabular-nums")}
           />
-          <p className="text-xs text-muted-foreground">
-            {type === "PERCENTAGE" ? "1–100" : "e.g. 1000 = $10.00"}
-          </p>
-          {errors?.value && (
-            <p role="alert" className="text-sm text-destructive">
-              {errors.value}
-            </p>
-          )}
-        </div>
+        </Field>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-min">Minimum order (cents)</Label>
+        <Field
+          id="cp-min"
+          label="Minimum order (cents)"
+          hint="0 for no minimum."
+        >
           <Input
             id="cp-min"
             name="minOrderCents"
             type="number"
             min={0}
             defaultValue={coupon?.minOrderCents ?? 0}
-            className="h-11"
+            aria-describedby={describedBy("cp-min", { hint: true })}
+            className={cn(controlInput, "tabular-nums")}
           />
-        </div>
+        </Field>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-max">Maximum uses</Label>
+        <Field id="cp-max" label="Maximum uses" hint="Leave blank for unlimited.">
           <Input
             id="cp-max"
             name="maxUses"
@@ -158,56 +163,61 @@ function CouponForm({ coupon, onDone }: { coupon: AdminCoupon | null; onDone: ()
             min={1}
             defaultValue={coupon?.maxUses ?? ""}
             placeholder="Unlimited"
-            className="h-11"
+            aria-describedby={describedBy("cp-max", { hint: true })}
+            className={cn(controlInput, "tabular-nums")}
           />
-        </div>
+        </Field>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-starts">Starts</Label>
+        <Field id="cp-starts" label="Starts">
           <Input
             id="cp-starts"
             name="startsAt"
             type="date"
             defaultValue={toDateInput(coupon?.startsAt ?? new Date())}
-            className="h-11"
+            className={controlInput}
           />
-        </div>
+        </Field>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-expires">Expires (optional)</Label>
+        <Field id="cp-expires" label="Expires" hint="Optional." error={errors?.expiresAt}>
           <Input
             id="cp-expires"
             name="expiresAt"
             type="date"
             defaultValue={toDateInput(coupon?.expiresAt ?? null)}
-            className="h-11"
             aria-invalid={Boolean(errors?.expiresAt)}
+            aria-describedby={describedBy("cp-expires", {
+              hint: true,
+              error: errors?.expiresAt,
+            })}
+            className={controlInput}
           />
-          {errors?.expiresAt && (
-            <p role="alert" className="text-sm text-destructive">
-              {errors.expiresAt}
-            </p>
-          )}
-        </div>
+        </Field>
+      </FormGrid>
 
-        <div className="flex items-end gap-2.5 pb-2">
-          <Checkbox
-            id="cp-active"
-            name="isActive"
-            defaultChecked={coupon?.isActive ?? true}
-            value="true"
-          />
-          <Label htmlFor="cp-active" className="cursor-pointer font-normal">
-            Active
-          </Label>
-        </div>
+      {/* Ruled off from the fields: this is a state change, not another value
+          to fill in, and it was previously bottom-aligned into a grid cell
+          with a padding hack that broke whenever a sibling field grew. */}
+      <div className="mt-5 border-t border-border pt-5">
+        <ToggleRow
+          htmlFor="cp-active"
+          label="Active"
+          description="Inactive coupons are rejected at checkout but keep their usage history."
+          control={
+            <Checkbox
+              id="cp-active"
+              name="isActive"
+              defaultChecked={coupon?.isActive ?? true}
+              value="true"
+            />
+          }
+        />
       </div>
 
-      <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" size="pill" onClick={onDone}>
+      <div className="mt-6 flex justify-end gap-2.5 border-t border-border pt-4">
+        <Button type="button" variant="outline" size="pillSm" onClick={onDone}>
           Cancel
         </Button>
-        <Button type="submit" variant="brand" size="pill" disabled={pending}>
+        <Button type="submit" variant="brand" size="pillSm" disabled={pending}>
           {pending && <Loader2 className="animate-spin" aria-hidden />}
           {coupon ? "Save changes" : "Create coupon"}
         </Button>

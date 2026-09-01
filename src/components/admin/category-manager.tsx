@@ -14,11 +14,17 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  controlInput,
+  controlSelect,
+  controlTextarea,
+} from "@/components/admin/admin-form";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/brand/empty-state";
 import { AdminTableCard } from "@/components/admin/admin-page-header";
 import { saveCategory, deleteCategory } from "@/lib/actions/admin/catalog";
+import { cn } from "@/lib/utils";
 
 export type AdminCategory = {
   id: string;
@@ -80,7 +86,7 @@ function CategoryForm({
             name="name"
             defaultValue={category?.name ?? ""}
             aria-invalid={Boolean(errors?.name)}
-            className="h-11"
+            className={controlInput}
           />
           {errors?.name && (
             <p role="alert" className="text-sm text-destructive">
@@ -96,7 +102,7 @@ function CategoryForm({
             name="slug"
             defaultValue={category?.slug ?? ""}
             aria-invalid={Boolean(errors?.slug)}
-            className="h-11 font-mono text-sm"
+            className={cn(controlInput, "font-mono")}
           />
           {errors?.slug && (
             <p role="alert" className="text-sm text-destructive">
@@ -112,7 +118,7 @@ function CategoryForm({
             name="description"
             rows={3}
             defaultValue={category?.description ?? ""}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            className={controlTextarea}
           />
         </div>
 
@@ -123,7 +129,7 @@ function CategoryForm({
             name="image"
             defaultValue={category?.image ?? ""}
             placeholder="https://…"
-            className="h-11"
+            className={controlInput}
           />
         </div>
 
@@ -133,7 +139,7 @@ function CategoryForm({
             id="c-icon"
             name="icon"
             defaultValue={category?.icon ?? ""}
-            className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            className={controlSelect}
           >
             <option value="">No icon</option>
             {ICON_CHOICES.map((icon) => (
@@ -150,7 +156,7 @@ function CategoryForm({
             id="c-parent"
             name="parentId"
             defaultValue={category?.parentId ?? ""}
-            className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            className={controlSelect}
           >
             <option value="">Top level</option>
             {categories
@@ -171,7 +177,7 @@ function CategoryForm({
             type="number"
             min={0}
             defaultValue={category?.sortOrder ?? 0}
-            className="h-11"
+            className={controlInput}
           />
         </div>
 
