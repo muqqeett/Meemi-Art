@@ -6,6 +6,8 @@ import { AdminPageHeader, AdminTableCard } from "@/components/admin/admin-page-h
 import { AdminFilters } from "@/components/admin/admin-filters";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/orders/order-status-badge";
 import { PaginationNav } from "@/components/shop/pagination-nav";
+import { OrderDeleteButton } from "@/components/admin/order-delete-button";
+import { canDeleteOrder } from "@/lib/actions/admin/order-deletion-policy";
 import { EmptyState } from "@/components/brand/empty-state";
 import { ButtonLink } from "@/components/ui/button-link";
 import { listAdminOrders } from "@/lib/queries/admin";
@@ -106,12 +108,15 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                   <th scope="col" className="text-right">
                     Total
                   </th>
+                  <th scope="col" className="w-12">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
                 {orders.map((order) => (
-                  <tr key={order.id}>
+                  <tr key={order.id} className="group/row">
                     <td data-label="Order">
                       <Link
                         href={`/admin/orders/${order.orderNumber}`}
@@ -159,6 +164,17 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
 
                     <td data-label="Total" className="text-right font-medium tabular-nums">
                       {formatMoney(order.totalCents)}
+                    </td>
+
+                    <td className="text-right">
+                      {canDeleteOrder(order) && (
+                        <div className="admin-row-actions flex justify-end">
+                          <OrderDeleteButton
+                            orderId={order.id}
+                            orderNumber={order.orderNumber}
+                          />
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

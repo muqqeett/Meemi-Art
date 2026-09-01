@@ -6,6 +6,8 @@ import { ArrowLeft, User, Mail, Calendar } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { OrderDetailView } from "@/components/orders/order-detail-view";
 import { OrderStatusForm } from "@/components/admin/order-status-form";
+import { OrderDeleteButton } from "@/components/admin/order-delete-button";
+import { orderDeletionBlockedReason } from "@/lib/actions/admin/order-deletion-policy";
 import { getAdminOrder } from "@/lib/queries/admin";
 import { formatMoney } from "@/lib/money";
 
@@ -18,6 +20,10 @@ export default async function AdminOrderPage({
   const order = await getAdminOrder(orderNumber);
 
   if (!order) notFound();
+
+  // Derived here so the panel below and the server action agree on the verdict
+  // — the action re-checks it against its own read regardless.
+  const deletionBlocked = orderDeletionBlockedReason(order);
 
   return (
     <div>
@@ -46,6 +52,28 @@ export default async function AdminOrderPage({
               orderId={order.id}
               currentStatus={order.status}
             />
+
+            <div className="mt-4 border-t border-border pt-4">
+              {deletionBlocked ? (
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  <span className="font-medium text-foreground">Protected order.</span>{" "}
+                  {deletionBlocked}
+                </p>
+              ) : (
+                <>
+                  <OrderDeleteButton
+                    orderId={order.id}
+                    orderNumber={order.orderNumber}
+                    variant="detail"
+                    redirectTo="/admin/orders"
+                  />
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    Permanently removes this unpaid order and its line items.
+                    Cannot be undone.
+                  </p>
+                </>
+              )}
+            </div>
           </section>
 
           <section className="admin-card p-5">
