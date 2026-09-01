@@ -49,11 +49,37 @@ export const metadata: Metadata = {
     title: `${siteConfig.name} — ${siteConfig.tagline}`,
     description: siteConfig.description,
     url: siteConfig.url,
+    /**
+     * The share image for every page that does not set its own.
+     *
+     * Product pages override this with their own photography via
+     * `generateMetadata`; everything else — the homepage, /shop, /about, the
+     * policy pages — had no image at all, which meant the `summary_large_image`
+     * card declared just below rendered as an empty box wherever the site was
+     * linked.
+     *
+     * This is the existing homepage hero asset, not a new one. It is 1200x1124
+     * rather than the 1200x630 the platforms crop to, so they will trim the top
+     * and bottom; that is preferable to inventing artwork for the sake of a
+     * ratio.
+     */
+    images: [
+      {
+        url: siteConfig.ogImage,
+        width: 1200,
+        height: 1124,
+        alt: `${siteConfig.name} — ${siteConfig.tagline}`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${siteConfig.name} — ${siteConfig.tagline}`,
     description: siteConfig.description,
+    // The card type above promises an image; without one the post renders as a
+    // blank panel. Same asset as `openGraph.images`, and product pages still
+    // override both with their own photography.
+    images: [siteConfig.ogImage],
   },
   robots: { index: true, follow: true },
 };

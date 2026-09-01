@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     title: `Privacy Policy | ${siteConfig.name}`,
     description: `What ${siteConfig.name} collects, why, and who processes it.`,
     url: `${siteConfig.url}/privacy`,
+    images: [siteConfig.ogImage],
   },
 };
 

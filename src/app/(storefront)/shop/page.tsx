@@ -26,6 +26,7 @@ export async function generateMetadata({
       title: `Shop All Handmade Crochet | ${siteConfig.name}`,
       description: `Every handmade piece from ${siteConfig.name}.`,
       url: `${siteConfig.url}/shop`,
+      images: [siteConfig.ogImage],
     },
   };
 }

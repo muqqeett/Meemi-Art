@@ -13,6 +13,7 @@ export const metadata: Metadata = {
     title: `Contact | ${siteConfig.name}`,
     description: `Get in touch with ${siteConfig.name}.`,
     url: `${siteConfig.url}/contact`,
+    images: [siteConfig.ogImage],
   },
 };
 

@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     title: `Refund & Cancellation Policy | ${siteConfig.name}`,
     description: `How refunds and cancellations work for digital products bought from ${siteConfig.name}.`,
     url: `${siteConfig.url}/refunds`,
+    images: [siteConfig.ogImage],
   },
 };
 

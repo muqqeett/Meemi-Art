@@ -17,6 +17,7 @@ export const metadata: Metadata = {
     title: `FAQ | ${siteConfig.name}`,
     description: `Common questions about buying digital products from ${siteConfig.name}.`,
     url: `${siteConfig.url}/faq`,
+    images: [siteConfig.ogImage],
   },
 };
 

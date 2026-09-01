@@ -13,6 +13,7 @@ export const metadata: Metadata = {
     title: `Our Story | ${siteConfig.name}`,
     description: `How ${siteConfig.name} makes handmade crochet.`,
     url: `${siteConfig.url}/about`,
+    images: [siteConfig.ogImage],
   },
 };
 

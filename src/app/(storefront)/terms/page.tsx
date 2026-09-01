@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     title: `Terms & Conditions | ${siteConfig.name}`,
     description: `The terms that apply when you buy a digital product from ${siteConfig.name}.`,
     url: `${siteConfig.url}/terms`,
+    images: [siteConfig.ogImage],
   },
 };
 

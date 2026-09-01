@@ -14,6 +14,18 @@ export const siteConfig = {
   description:
     "Meemi Art makes handmade crochet pieces — bags, flowers, plushies and gifts — worked stitch by stitch in small batches, designed to bring texture and warmth to everyday life.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  /**
+   * The share image for any page that has no picture of its own.
+   *
+   * Next replaces the `openGraph` object wholesale rather than merging it, so a
+   * page that declares its own block inherits nothing from the root layout —
+   * which is why every page below sets this explicitly instead of relying on
+   * the root. Product and category pages override it with real photography.
+   *
+   * The existing homepage hero asset, not a new one. 1200x1124, so the
+   * platforms trim top and bottom of the 1200x630 they crop to.
+   */
+  ogImage: "/home/hero-collage.png",
   /** The single mailbox for the whole business — see lib/email/config.ts. */
   email: "hello@meemiart.com",
   /**
