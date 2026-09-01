@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/brand/breadcrumbs";
 import { PdpGallery } from "@/components/product/pdp/pdp-gallery";
 import { PdpInfo } from "@/components/product/pdp/pdp-info";
+import { PdpBuyBlock } from "@/components/product/pdp/pdp-buy-block";
 import { PdpProductRail } from "@/components/product/pdp/pdp-product-rail";
 import { PdpReviews } from "@/components/product/pdp/pdp-reviews";
 import { RecentlyViewed } from "@/components/product/recently-viewed";
@@ -165,7 +166,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         empty margin around a column that no longer has room for it — the
         homepage keeps its own ladder, so nothing there moves.
       */}
-      <div className="mx-auto w-full max-w-[1440px] bg-white px-5 py-8 sm:max-lg:px-8 lg:max-wide:px-12 lg:py-10 wide:px-[120px]">
+      <div className="mx-auto w-full max-w-[1440px] bg-surface px-5 py-8 sm:max-lg:px-8 lg:max-wide:px-12 lg:py-10 wide:px-[135px]">
         <Breadcrumbs
           items={[
             { label: "Shop", href: "/shop" },
@@ -174,9 +175,9 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           ]}
         />
 
-        {/* The drawn split — 545 + 135 + 520 — needs 1200 of content to exist,
-            so it is held only from 1440 up, where it does. Between lg and there
-            the same two columns share the width by ratio; below lg they stack.
+        {/* The drawn split is 1170 of content: a gallery column, a 63px gap
+            and a 537px detail column. Held literally from 1440 up, shared by
+            ratio between lg and there, stacked below lg.
 
             The ranges are written disjoint (`lg:max-wide:` against `wide:`)
             rather than as a plain `lg:` that `wide:` overrides — see the note
@@ -185,10 +186,27 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             `[&>*]:min-w-0` because a grid item's automatic minimum is its
             min-content width, and the gallery's fixed 76px thumbnails would
             otherwise hold the column open at 364px on a 375px screen. */}
-        <div className="mt-8 grid items-start gap-10 [&>*]:min-w-0 lg:max-wide:grid-cols-[minmax(0,45fr)_minmax(0,55fr)] lg:max-wide:gap-12 wide:grid-cols-[545px_1fr] wide:gap-[135px]">
-          {/* Both columns are above the fold, so they animate on mount rather
-              than paying for a viewport observer that would fire immediately. */}
-          <Reveal variant="in" onMount>
+        {/*
+          Three blocks, two placements.
+
+          On a phone this is one column and the source order rules: gallery,
+          purchase, then everything to read. That is the point of the layout —
+          the image is the hero and the thing to do about it is the next thing
+          you meet, not something four screens down.
+
+          From `lg` the gallery spans both rows of column one while the detail
+          column stacks reading above buying, which puts the CTA where the eye
+          lands after the tabs. One `PdpBuyBlock` serves both, moved by grid
+          placement rather than rendered twice — see that component for why.
+
+          `[&>*]:min-w-0` because a grid item's automatic minimum is its
+          min-content width, and the gallery's fixed 76px thumbnails would
+          otherwise hold the column open at 364px on a 375px screen.
+        */}
+        <div className="mt-8 grid items-start gap-8 [&>*]:min-w-0 lg:max-wide:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:max-wide:gap-12 lg:gap-y-10 wide:grid-cols-[minmax(0,1fr)_537px] wide:gap-x-[63px]">
+          {/* Above the fold, so it animates on mount rather than paying for a
+              viewport observer that would fire immediately. */}
+          <Reveal variant="in" onMount className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
             <PdpGallery
               images={product.images}
               productId={product.id}
@@ -197,9 +215,18 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             />
           </Reveal>
 
-          <Reveal variant="in" onMount>
-            <PdpInfo
+          {/* Second on mobile, last in the detail column on desktop. */}
+          <div className="lg:col-start-2 lg:row-start-2">
+            <PdpBuyBlock
               productId={product.id}
+              productName={product.name}
+              isAvailable={product.isAvailable}
+              isWishlisted={product.isWishlisted}
+            />
+          </div>
+
+          <Reveal variant="in" onMount className="lg:col-start-2 lg:row-start-1">
+            <PdpInfo
               brand={product.brand}
               name={product.name}
               description={product.description}
@@ -207,8 +234,8 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
               compareAtCents={product.compareAtCents}
               ratingAvg={product.ratingAvg}
               reviewCount={product.reviewCount}
+              productName={product.name}
               soldCount={soldCount}
-              isAvailable={product.isAvailable}
               asset={product.asset}
             />
           </Reveal>

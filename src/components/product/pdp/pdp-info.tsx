@@ -1,22 +1,14 @@
 import Link from "next/link";
-import {
-  Star,
-  Zap,
-  Infinity as InfinityIcon,
-  FileText,
-  HardDrive,
-  Lock,
-  Download,
-} from "lucide-react";
+import { Star, Download, Check } from "lucide-react";
 
 import { PdpDescription } from "@/components/product/pdp/pdp-description";
-import { PdpBuyActions } from "@/components/product/pdp/pdp-buy-actions";
+import { PdpTabs } from "@/components/product/pdp/pdp-tabs";
 import { formatMoney, discountPercent } from "@/lib/money";
 import { formatBytes } from "@/lib/format-bytes";
 import { formatLabel } from "@/lib/file-format";
 
 type PdpInfoProps = {
-  productId: string;
+  productName: string;
   brand: string;
   name: string;
   description: string;
@@ -25,7 +17,6 @@ type PdpInfoProps = {
   ratingAvg: number;
   reviewCount: number;
   soldCount: number;
-  isAvailable: boolean;
   asset: {
     contentType: string;
     bytes: number;
@@ -35,27 +26,38 @@ type PdpInfoProps = {
 };
 
 /**
- * The product information column — Figma 79:666.
+ * The product information column — Figma "Details container" (8211:1462).
  *
- *   column   520 wide, 38 between the block and the "Delivery T&C" line
- *   brand    Clash Grotesk Medium 16/1.2, #8F8F8F, 0.16 tracking
- *   title    Clash Grotesk Semibold 36/1.2, #292929, -0.18 tracking
- *   was      Clash Grotesk Medium 18/1.2, #666, struck through
- *   price    Clash Grotesk Semibold 28/1.2, #141414
- *   meta     "N Sold" · star · rating, right-aligned on the same row
- *   rule     a hairline across the full 520
+ *   column   537 wide, 40 between blocks
+ *   title    Recoleta SemiBold 40/48 — a serif, so `font-display` (Fraunces)
+ *   meta     stars · "N reviews" · rule · spec, 18/28 Medium
+ *   price    32/40 SemiBold
+ *   rules    hairlines above and below the option row
+ *   buy row  pills, primary takes the remaining width
+ *   below    wishlist and a guarantee line, 40 apart
+ *   tabs     segmented control on a `#eaecf0` track
  *
- * Where the design has colour swatches and a size grid, this has the file
- * facts. A downloadable file has no size 12 and no "Royal Brown", and a
- * control offering them would be a control that lies; what a buyer of a
- * digital product actually needs to know is the format, the weight and the
- * edition. The rows keep the design's label-above-chips rhythm.
+ * The design's green (#1a432e / #39b856) is the template's brand, not this
+ * one; every colour here comes from the existing `pdp-*` and `brand-*` tokens
+ * so the page sits beside the new header and the auth screens rather than
+ * beside a vitamin shop.
  *
- * "Delivery T&C" points at the refunds page for the same reason — nothing is
- * delivered, so the link goes where the real terms are.
+ * Three of the design's controls describe a physical product and have been
+ * adapted rather than copied:
+ *
+ *   flavour swatches  → the file facts. A file has no "Orange", and a swatch
+ *                       row with nothing behind it is a control that lies.
+ *   volume dropdown   → dropped. There is one file per product;
+ *                       `DigitalAsset.productId` is unique.
+ *   quantity stepper  → dropped. Buying two copies of the same download is not
+ *                       a thing a shopper means to do, and the cart already
+ *                       treats this as quantity 1.
+ *
+ * "30 days money back guarantee" is likewise not reproduced: the real policy is
+ * 14 days and conditional (see /refunds), and printing a guarantee the shop
+ * does not offer would be a false promise on the page where money is asked for.
  */
 export function PdpInfo({
-  productId,
   brand,
   name,
   description,
@@ -64,7 +66,6 @@ export function PdpInfo({
   ratingAvg,
   reviewCount,
   soldCount,
-  isAvailable,
   asset,
 }: PdpInfoProps) {
   const off = discountPercent(priceCents, compareAtCents);
@@ -75,122 +76,143 @@ export function PdpInfo({
    * `DigitalAsset` records a filename, a MIME type, a byte count and a version
    * string — so those are the four facts that can be stated. There is no skill
    * level, no materials list and no tools list anywhere in the schema, so none
-   * is shown: a "Beginner" badge with no column behind it would be the same
-   * invention as a size chart on a file.
+   * is shown.
    */
   const facts = [
-    asset && { icon: FileText, label: formatLabel(asset.contentType, asset.filename) },
-    asset && asset.bytes > 0 && { icon: HardDrive, label: formatBytes(asset.bytes) },
-    { icon: Zap, label: "Instant download" },
-    { icon: InfinityIcon, label: "Yours to re-download" },
-    { icon: Lock, label: "Secure, expiring link" },
-  ].filter(Boolean) as { icon: typeof Zap; label: string }[];
+    asset && `${formatLabel(asset.contentType, asset.filename)} file${
+      asset.bytes > 0 ? ` · ${formatBytes(asset.bytes)}` : ""
+    }`,
+    "Instant download the moment payment clears",
+    "Yours to re-download, as often as you like",
+    "Secure, expiring download link",
+  ].filter(Boolean) as string[];
+
+  const format = asset ? formatLabel(asset.contentType, asset.filename) : null;
 
   return (
-    <div className="flex flex-col gap-[38px]">
-      <div className="flex flex-col gap-14">
-        <div className="flex flex-col gap-7">
-          <div className="flex flex-col gap-7">
-            {/* Says what kind of thing this is before anything else. A shopper
-                arriving from a search result should not have to reach the file
-                facts to learn nothing will be posted to them. */}
-            <span className="font-clash inline-flex w-fit items-center gap-2 rounded-full bg-pdp-surface px-3 py-1.5 text-sm leading-none font-semibold tracking-[0.02em] text-pdp-meta uppercase">
-              <Download className="size-3.5 shrink-0" aria-hidden />
-              Digital product
-            </span>
+    <div className="flex flex-col gap-8 lg:gap-10">
+      {/* ── Identity ─────────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-5">
+        <span className="inline-flex w-fit items-center gap-2 rounded-full bg-pdp-surface px-3 py-1.5 text-xs leading-none font-semibold tracking-[0.08em] text-pdp-meta uppercase">
+          <Download className="size-3.5 shrink-0" aria-hidden />
+          Digital product
+        </span>
 
-            <div className="flex flex-col gap-5">
-              <div className="flex flex-col gap-3">
-                <p className="font-clash text-base leading-[1.2] font-medium tracking-[0.16px] text-pdp-label">
-                  {brand}
-                </p>
-                <h1 className="font-clash text-[1.75rem] leading-[1.2] font-semibold tracking-[-0.18px] text-pdp-title sm:text-[2.25rem]">
-                  {name}
-                </h1>
-              </div>
+        <div className="flex flex-col gap-3">
+          <p className="text-sm leading-none font-medium tracking-[0.08em] text-pdp-label uppercase">
+            {brand}
+          </p>
+          {/* The design's dominant element, at 40/48. Capped at 2.25rem so a
+              long pattern name cannot swallow the fold on a laptop. */}
+          <h1 className="font-display text-[1.75rem] leading-[1.15] font-semibold tracking-[-0.01em] text-balance text-pdp-title sm:text-[2rem] lg:text-[2.25rem]">
+            {name}
+          </h1>
+        </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <p className="flex items-center gap-4">
-                  {compareAtCents && off !== null && (
-                    <span className="font-clash text-lg leading-[1.2] font-medium text-pdp-body line-through">
-                      {formatMoney(compareAtCents)}
-                    </span>
-                  )}
-                  <span className="font-clash text-[1.75rem] leading-[1.2] font-semibold text-pdp-price">
-                    {formatMoney(priceCents)}
-                  </span>
-                </p>
-
-                <div className="flex items-center gap-2">
-                  {/* Only shown once something has actually sold — the design's
-                      "1,238 Sold" is a real figure or it is not there. */}
-                  {soldCount > 0 && (
-                    <>
-                      <span className="font-clash text-xl leading-none text-pdp-body">
-                        {soldCount.toLocaleString("en-US")} Sold
-                      </span>
-                      <span aria-hidden className="size-1.5 rounded-full bg-pdp-border" />
-                    </>
-                  )}
-
-                  {reviewCount > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Star className="size-6 fill-pdp-star text-pdp-star" aria-hidden />
-                      <span className="font-clash text-2xl leading-none font-semibold text-pdp-price">
-                        {ratingAvg.toFixed(1)}
-                      </span>
-                      <span className="sr-only">
-                        out of 5, from {reviewCount} reviews
-                      </span>
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <hr className="border-pdp-hairline" />
-          </div>
-
-          <div className="flex flex-col gap-10">
-            <PdpDescription text={description} />
-
-            <div className="flex flex-col gap-[18px]">
-              <p className="font-clash text-xl leading-[1.2] font-medium text-pdp-label">
-                What you get:{" "}
-                <span className="font-semibold text-pdp-title">
-                  {asset
-                    ? `1 file${asset.version ? ` · version ${asset.version}` : ""}`
-                    : "Digital download"}
-                </span>
-              </p>
-
-              {/* The filename itself, because it is the most concrete thing we
-                  can honestly say about what arrives. One file per product —
-                  `DigitalAsset.productId` is unique, so there is never a
-                  bundle to enumerate. */}
-              {asset && (
-                <p className="font-clash text-base leading-[1.4] text-pdp-body">
-                  <span className="font-medium text-pdp-meta">{asset.filename}</span>
-                </p>
-              )}
-
-              <ul className="flex flex-wrap gap-x-[14px] gap-y-3">
-                {facts.map((fact) => (
-                  <li
-                    key={fact.label}
-                    className="font-clash inline-flex h-10 items-center gap-2 rounded-[8px] border border-pdp-hairline px-4 text-base leading-[1.2] font-medium text-pdp-meta"
-                  >
-                    <fact.icon className="size-4 shrink-0" aria-hidden />
-                    {fact.label}
-                  </li>
+        {/* Stars · review count · divider · spec — the design's meta row. */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {reviewCount > 0 ? (
+            <span className="flex items-center gap-2.5">
+              <span className="flex gap-0.5" aria-hidden>
+                {[1, 2, 3, 4, 5].map((step) => (
+                  <Star
+                    key={step}
+                    className={
+                      step <= Math.round(ratingAvg)
+                        ? "size-[18px] shrink-0 fill-pdp-star text-pdp-star"
+                        : "size-[18px] shrink-0 fill-pdp-track text-pdp-track"
+                    }
+                  />
                 ))}
-              </ul>
+              </span>
+              <a
+                href="#reviews"
+                className="text-base font-medium text-pdp-title underline-offset-4 hover:underline"
+              >
+                {reviewCount.toLocaleString("en-US")}{" "}
+                {reviewCount === 1 ? "review" : "reviews"}
+              </a>
+              <span className="sr-only">Rated {ratingAvg.toFixed(1)} out of 5</span>
+            </span>
+          ) : (
+            <span className="text-base text-pdp-body">No reviews yet</span>
+          )}
 
-              {/* How access actually works, stated once. Every clause here is
-                  enforced somewhere: the webhook grants access, the account
-                  page lists it, and the download route signs a URL that
-                  expires in five minutes. */}
-              <p className="font-clash text-base leading-[1.5] text-pdp-body">
+          {format && (
+            <>
+              <span aria-hidden className="h-4 w-px bg-pdp-border" />
+              <span className="text-base font-medium text-pdp-body">{format}</span>
+            </>
+          )}
+
+          {soldCount > 0 && (
+            <>
+              <span aria-hidden className="h-4 w-px bg-pdp-border" />
+              <span className="text-base text-pdp-body">
+                {soldCount.toLocaleString("en-US")} sold
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Price. Sits on its own line under the meta row, as drawn. */}
+        <p className="flex flex-wrap items-baseline gap-3">
+          <span className="font-display text-[2rem] leading-[1.2] font-semibold text-pdp-price">
+            {formatMoney(priceCents)}
+          </span>
+          {compareAtCents && off !== null && (
+            <>
+              <span className="text-lg font-medium text-pdp-body line-through">
+                {formatMoney(compareAtCents)}
+              </span>
+              <span className="rounded-full bg-brand-700 px-2.5 py-1 text-xs font-semibold text-white">
+                −{off}%
+              </span>
+            </>
+          )}
+        </p>
+
+        <hr className="border-pdp-hairline" />
+
+        <PdpDescription text={description} />
+      </div>
+
+      {/* ── What arrives ─────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-4 border-y border-pdp-hairline py-6">
+        <p className="text-xs leading-none font-semibold tracking-[0.1em] text-pdp-label uppercase">
+          What you get
+        </p>
+
+        {/* Ticked rows rather than a paragraph — each line is a fact the
+            schema actually holds, so the list is short, scannable, and never
+            padded out with specifications this shop does not record. */}
+        <ul className="flex flex-col gap-2.5">
+          {facts.map((fact) => (
+            <li key={fact} className="flex items-start gap-2.5 text-[0.9375rem]">
+              <Check className="mt-0.5 size-4 shrink-0 text-brand-600" aria-hidden />
+              <span className="text-pdp-body">{fact}</span>
+            </li>
+          ))}
+        </ul>
+
+        {asset && (
+          <p className="text-sm break-all text-pdp-meta">
+            {asset.filename}
+            {asset.version && (
+              <span className="text-pdp-subtle"> · version {asset.version}</span>
+            )}
+          </p>
+        )}
+      </div>
+
+      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
+      <PdpTabs
+        tabs={[
+          {
+            id: "details",
+            label: "Details",
+            panel: (
+              <p>
                 A digital download — nothing is posted. As soon as your payment is
                 confirmed the file appears in{" "}
                 <Link
@@ -202,22 +224,62 @@ export function PdpInfo({
                 , and you can download it again whenever you need to. Links are
                 generated fresh each time and expire after a few minutes.
               </p>
-            </div>
-          </div>
-        </div>
-
-        <PdpBuyActions
-          productId={productId}
-          isAvailable={isAvailable}
-        />
-      </div>
-
-      <Link
-        href="/refunds"
-        className="font-clash text-base leading-[1.2] font-medium text-pdp-subtle underline underline-offset-2 hover:text-pdp-price"
-      >
-        Refund policy
-      </Link>
+            ),
+          },
+          {
+            id: "file",
+            label: "The file",
+            panel: asset ? (
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2">
+                <dt className="text-pdp-meta">Format</dt>
+                <dd className="font-medium text-pdp-title">
+                  {formatLabel(asset.contentType, asset.filename)}
+                </dd>
+                {asset.bytes > 0 && (
+                  <>
+                    <dt className="text-pdp-meta">Size</dt>
+                    <dd className="font-medium text-pdp-title">
+                      {formatBytes(asset.bytes)}
+                    </dd>
+                  </>
+                )}
+                {asset.version && (
+                  <>
+                    <dt className="text-pdp-meta">Version</dt>
+                    <dd className="font-medium text-pdp-title">{asset.version}</dd>
+                  </>
+                )}
+                <dt className="text-pdp-meta">Filename</dt>
+                <dd className="font-medium break-all text-pdp-title">
+                  {asset.filename}
+                </dd>
+              </dl>
+            ) : (
+              <p>File details are added when the download is attached.</p>
+            ),
+          },
+          {
+            id: "refunds",
+            label: "Refunds",
+            panel: (
+              <p>
+                Because the file is available the moment payment clears, digital
+                purchases are not automatically refundable. We refund in full if the
+                file is faulty, will not open in the format stated, or is materially
+                different from its description — tell us within 14 days. The full
+                terms are on the{" "}
+                <Link
+                  href="/refunds"
+                  className="font-medium text-pdp-title underline underline-offset-2"
+                >
+                  refund policy
+                </Link>{" "}
+                page.
+              </p>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

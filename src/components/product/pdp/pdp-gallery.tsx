@@ -43,7 +43,7 @@ export function PdpGallery({
 
   if (images.length === 0) {
     return (
-      <div className="flex aspect-[458/610] w-full items-center justify-center rounded-[8px] bg-pdp-surface text-sm text-pdp-body">
+      <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-pdp-surface text-sm text-pdp-body lg:aspect-[458/610] lg:rounded-[8px]">
         No image available
       </div>
     );
@@ -80,8 +80,15 @@ export function PdpGallery({
        portrait scales with the column, and on a tablet a full-width gallery
        would stand 918px tall and push the price and buy buttons off screen. */
     <div className="mx-auto flex w-full min-w-0 flex-col gap-5 sm:max-w-[458px] lg:mx-0 lg:max-w-none lg:flex-row lg:gap-[35px]">
-      <div className="flex min-w-0 flex-1 flex-col gap-6 wide:w-[458px] wide:flex-none">
-        <div className="relative aspect-[458/610] w-full overflow-hidden rounded-[8px] bg-pdp-surface">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:gap-6 wide:w-[458px] wide:flex-none">
+        {/* Square below `lg`, the drawn 458×610 from there up.
+
+              Every product image in this catalogue is 1:1, and `object-contain`
+              inside a 0.75 frame therefore paid ~116px of empty band on a
+              phone — enough to push the purchase buttons out of the first
+              viewport at 390×844, which is the one thing this layout exists to
+              prevent. A non-square upload still fits: the frame contains it. */}
+          <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-pdp-surface lg:aspect-[458/610] lg:rounded-[8px]">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={active.id}
@@ -125,7 +132,7 @@ export function PdpGallery({
                 aria-label={`View image ${i + 1} of ${images.length}`}
                 onClick={() => setIndex(i)}
                 className={cn(
-                  "relative h-[101px] w-[76px] shrink-0 overflow-hidden rounded-[8px] bg-pdp-surface transition-shadow",
+                  "relative h-[68px] w-[52px] shrink-0 overflow-hidden rounded-lg bg-pdp-surface transition-shadow sm:h-[101px] sm:w-[76px] sm:rounded-[8px]",
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pdp-price",
                   i === index
                     ? "ring-2 ring-pdp-price"
