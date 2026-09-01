@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getAdminOrNull } from "@/lib/auth-guards";
+import { recordActivity } from "@/lib/admin/activity";
 import { reconcilePaddleTransaction, type ReconcileReport } from "@/lib/payments/reconcile";
 import { sendPurchaseReadyEmail } from "@/lib/email/order-mailer";
 
@@ -34,11 +35,22 @@ export async function reconcileTransaction(
   const report = await reconcilePaddleTransaction(transactionId);
 
   // Audit trail. `PaymentEvent` already records the fulfilment itself with a
-  // `reconcile:` event id; this line names who asked for it, which that table
-  // has no column for. No credential and no customer detail is logged.
+  // `reconcile:` event id; this names who asked for it, which that table has no
+  // column for. No credential and no customer detail is logged.
   console.info(
     `[reconcile] admin=${admin.email} txn=${transactionId.trim()} outcome=${report.outcome}`,
   );
+
+  // Every attempt is recorded, including the ones that changed nothing — "an
+  // admin tried to reconcile this and Paddle said it was not paid" is exactly
+  // the kind of thing someone needs to find later.
+  await recordActivity({
+    actorId: admin.id,
+    action: "payment.reconciled",
+    entityType: "payment",
+    entityId: report.transaction?.orderId ?? null,
+    meta: { transactionId: transactionId.trim(), outcome: report.outcome },
+  });
 
   // Sent outside and after fulfilment, exactly as the webhook does: the
   // purchase is already valid and a mail failure must not undo it. Only on a

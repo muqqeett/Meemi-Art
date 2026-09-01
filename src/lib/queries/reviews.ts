@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import { prisma } from "@/lib/prisma";
+import { PUBLIC_REVIEW } from "@/lib/queries/review-visibility";
 
 /**
  * Highly-rated recent reviews for the homepage.
@@ -13,7 +14,7 @@ import { prisma } from "@/lib/prisma";
  */
 export const getFeaturedReviews = cache(async (limit = 3) => {
   const reviews = await prisma.review.findMany({
-    where: { rating: { gte: 4 }, body: { not: "" } },
+    where: { ...PUBLIC_REVIEW, rating: { gte: 4 }, body: { not: "" } },
     orderBy: [{ rating: "desc" }, { createdAt: "desc" }],
     take: limit,
     select: {
@@ -33,7 +34,7 @@ export const getFeaturedReviews = cache(async (limit = 3) => {
 /** Aggregate rating across the whole catalogue, for the reviews section. */
 export const getReviewSummary = cache(async () => {
   const [agg, productCount] = await Promise.all([
-    prisma.review.aggregate({ _avg: { rating: true }, _count: true }),
+    prisma.review.aggregate({ where: PUBLIC_REVIEW, _avg: { rating: true }, _count: true }),
     prisma.product.count({ where: { isActive: true } }),
   ]);
 
@@ -58,7 +59,9 @@ export const getReviewSummary = cache(async () => {
  */
 export async function syncProductRating(productId: string): Promise<void> {
   const agg = await prisma.review.aggregate({
-    where: { productId },
+    // Only public reviews, so the cached average matches the list a shopper
+    // can actually read. Rejecting a review lowers the count it contributed to.
+    where: { ...PUBLIC_REVIEW, productId },
     _avg: { rating: true },
     _count: true,
   });

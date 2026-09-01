@@ -1,5 +1,7 @@
 import "server-only";
 
+import { PUBLIC_REVIEW } from "@/lib/queries/review-visibility";
+
 import { cache } from "react";
 
 import { prisma } from "@/lib/prisma";
@@ -395,7 +397,9 @@ export const getProductBySlug = cache(async (slug: string) => {
       // someone sign their own download URL.
       asset: { select: { filename: true, contentType: true, bytes: true, version: true } },
       reviews: {
-        orderBy: { createdAt: "desc" },
+        // Rejected and pending reviews are not public — see PUBLIC_REVIEW.
+        where: PUBLIC_REVIEW,
+        orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
         take: 8,
         include: { user: { select: { name: true, image: true } } },
       },

@@ -3,24 +3,17 @@
 import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
-import { getAdminOrNull } from "@/lib/auth-guards";
 import { getStorageProvider } from "@/lib/storage";
+import { recordActivity } from "@/lib/admin/activity";
+import { adminOrDenied, type AdminResult } from "@/lib/actions/admin/guard";
 import { productSchema, type ProductInput } from "@/lib/validations/admin";
 
-export type AdminResult<T = undefined> =
-  | { ok: true; message?: string; data?: T }
-  | { ok: false; error: string; fieldErrors?: Record<string, string> };
-
 /**
- * Every admin action re-checks the role itself. The admin layout also guards
- * the pages, but a server action is a separate entry point — it can be invoked
- * directly and must never rely on a layout having run.
+ * Re-exported so the many existing `import type { AdminResult } from
+ * "./products"` call sites keep working; the definition now lives in `guard.ts`
+ * alongside the gate that produces it.
  */
-async function assertAdmin(): Promise<AdminResult | null> {
-  const admin = await getAdminOrNull();
-  if (!admin) return { ok: false, error: "You don't have permission to do that." };
-  return null;
-}
+export type { AdminResult };
 
 /**
  * Destroy stored objects that no longer belong to any product.
@@ -57,7 +50,7 @@ function issuesToFields(issues: { path: PropertyKey[]; message: string }[]) {
 }
 
 export async function createProduct(input: ProductInput): Promise<AdminResult<{ id: string }>> {
-  const denied = await assertAdmin();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
   const parsed = productSchema.safeParse(input);
@@ -115,6 +108,14 @@ export async function createProduct(input: ProductInput): Promise<AdminResult<{ 
       select: { id: true },
     });
 
+    await recordActivity({
+      actorId: admin.id,
+      action: "product.created",
+      entityType: "product",
+      entityId: product.id,
+      meta: { name: data.name, sku: data.sku, published: data.isActive },
+    });
+
     revalidatePath("/admin/products");
     revalidatePath("/shop");
     return { ok: true, message: "Product created.", data: { id: product.id } };
@@ -128,7 +129,7 @@ export async function updateProduct(
   id: string,
   input: ProductInput,
 ): Promise<AdminResult<{ id: string }>> {
-  const denied = await assertAdmin();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
   const parsed = productSchema.safeParse(input);
@@ -241,6 +242,19 @@ export async function updateProduct(
     // The database is already consistent; storage cleanup is best-effort.
     await removeStoredObjects(orphanedKeys);
 
+    await recordActivity({
+      actorId: admin.id,
+      action: "product.updated",
+      entityType: "product",
+      entityId: id,
+      meta: {
+        name: data.name,
+        sku: data.sku,
+        published: data.isActive,
+        priceCents: data.priceCents,
+      },
+    });
+
     revalidatePath("/admin/products");
     revalidatePath(`/products/${data.slug}`);
     revalidatePath("/shop");
@@ -252,7 +266,7 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string): Promise<AdminResult> {
-  const denied = await assertAdmin();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
   const product = await prisma.product.findUnique({
@@ -260,6 +274,8 @@ export async function deleteProduct(id: string): Promise<AdminResult> {
     select: {
       id: true,
       slug: true,
+      name: true,
+      sku: true,
       images: { select: { storageKey: true } },
       _count: { select: { orderItems: true } },
     },
@@ -273,6 +289,19 @@ export async function deleteProduct(id: string): Promise<AdminResult> {
         where: { id },
         data: { isActive: false, featured: false },
       });
+
+      await recordActivity({
+        actorId: admin.id,
+        action: "product.archived",
+        entityType: "product",
+        entityId: product.id,
+        meta: {
+          name: product.name,
+          sku: product.sku,
+          reason: "appears in past orders",
+        },
+      });
+
       revalidatePath("/admin/products");
       revalidatePath("/shop");
       return {
@@ -282,6 +311,14 @@ export async function deleteProduct(id: string): Promise<AdminResult> {
     }
 
     await prisma.product.delete({ where: { id } });
+
+    await recordActivity({
+      actorId: admin.id,
+      action: "product.deleted",
+      entityType: "product",
+      entityId: product.id,
+      meta: { name: product.name, sku: product.sku },
+    });
 
     // Rows cascaded away with the product; their stored objects will not, so
     // reclaim them now that the delete has succeeded.
@@ -311,7 +348,7 @@ export async function deleteProduct(id: string): Promise<AdminResult> {
 export async function duplicateProduct(
   id: string,
 ): Promise<AdminResult<{ id: string }>> {
-  const denied = await assertAdmin();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
   const source = await prisma.product.findUnique({
@@ -363,6 +400,14 @@ export async function duplicateProduct(
       select: { id: true },
     });
 
+    await recordActivity({
+      actorId: admin.id,
+      action: "product.duplicated",
+      entityType: "product",
+      entityId: copy.id,
+      meta: { from: source.name, slug },
+    });
+
     revalidatePath("/admin/products");
     return {
       ok: true,
@@ -380,16 +425,33 @@ export async function toggleProductFlag(
   field: "featured" | "isActive",
   value: boolean,
 ): Promise<AdminResult> {
-  const denied = await assertAdmin();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
   const product = await prisma.product.findUnique({
     where: { id },
-    select: { id: true },
+    select: { id: true, name: true },
   });
   if (!product) return { ok: false, error: "That product no longer exists." };
 
   await prisma.product.update({ where: { id }, data: { [field]: value } });
+
+  // `isActive` is the one that takes a product off sale, so it is named as
+  // published/unpublished rather than logged as a generic field flip.
+  await recordActivity({
+    actorId: admin.id,
+    action:
+      field === "isActive"
+        ? value
+          ? "product.published"
+          : "product.unpublished"
+        : value
+          ? "product.featured"
+          : "product.unfeatured",
+    entityType: "product",
+    entityId: product.id,
+    meta: { name: product.name },
+  });
 
   revalidatePath("/admin/products");
   revalidatePath("/shop");

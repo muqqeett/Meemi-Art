@@ -1,6 +1,7 @@
 "use server";
 
 import { getAdminOrNull } from "@/lib/auth-guards";
+import { recordActivity } from "@/lib/admin/activity";
 import { emailSchema } from "@/lib/validations/auth";
 import {
   EMAIL_TEMPLATES,
@@ -83,6 +84,15 @@ export async function sendTestEmail(
   const result = await sendEmail({
     ...testEmailTemplate({ to, sentBy: admin.email }),
     template: EMAIL_TEMPLATES.test,
+  });
+
+  // `EmailLog` already records the message; this records who asked for it,
+  // which is the part the log has no column for.
+  await recordActivity({
+    actorId: admin.id,
+    action: "email.test_sent",
+    entityType: "email",
+    meta: { to, status: result.status },
   });
 
   switch (result.status) {

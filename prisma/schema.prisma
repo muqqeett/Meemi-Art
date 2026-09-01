@@ -24,6 +24,7 @@ model User {
   /// never be used as an identity or an authorisation key.
   paddleCustomerId        String?                  @unique
   accounts                Account[]
+  adminActivity           AdminActivity[]
   cart                    Cart?
   downloads               DigitalAccess[]
   emailVerificationTokens EmailVerificationToken[]
@@ -243,6 +244,14 @@ model Review {
   rating    Int
   title     String
   body      String
+  /// *
+  /// * Moderation state. Defaults to APPROVED so every review written before
+  /// * moderation existed stays visible — the storefront must not silently
+  /// * lose content the day this ships.
+  status    ReviewStatus @default(APPROVED)
+  /// * Orthogonal to `status`: a review is featured *and* approved, never
+  /// * featured instead of approved.
+  featured  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -251,6 +260,7 @@ model Review {
   @@unique([productId, userId])
   @@index([productId, createdAt])
   @@index([userId])
+  @@index([status, createdAt])
 }
 
 model Cart {
@@ -471,6 +481,37 @@ model Coupon {
   orders        Order[]
 
   @@index([isActive, expiresAt])
+}
+
+/// *
+/// * What an administrator did, recorded as it happens.
+/// *
+/// * Written only by admin server actions, never backfilled — an audit trail
+/// * that invents its own history is worse than none. `meta` carries the small
+/// * amount of context an entry needs to be readable later (a product name, an
+/// * order number); it never carries secrets.
+model AdminActivity {
+  id         String   @id @default(cuid())
+  actorId    String
+  /// * Machine-readable verb, e.g. "product.updated", "review.approved".
+  action     String
+  /// * "product" | "order" | "review" | "coupon" | "payment" | "category" | "email"
+  entityType String
+  /// * Null for actions that are not about one record, e.g. a bulk resync.
+  entityId   String?
+  meta       Json?
+  createdAt  DateTime @default(now())
+  actor      User     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum Role {

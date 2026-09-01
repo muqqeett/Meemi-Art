@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getAdminOrNull } from "@/lib/auth-guards";
+import { getAdminOrNull, type SessionUser } from "@/lib/auth-guards";
+import { recordActivity } from "@/lib/admin/activity";
 import { paymentConfig } from "@/lib/payments/config";
 import { syncAllProductsToPaddle, syncProductToPaddle } from "@/lib/payments/paddle-catalog";
 
@@ -32,10 +33,15 @@ export type SyncResult =
     }
   | { ok: false; error: string };
 
-async function assertAdmin(): Promise<SyncResult | null> {
+/** Returns the actor as well as the verdict, so the sync can be attributed. */
+async function adminOrDenied(): Promise<
+  { admin: SessionUser; denied?: never } | { admin?: never; denied: SyncResult }
+> {
   const admin = await getAdminOrNull();
-  if (!admin) return { ok: false, error: "You don't have permission to do that." };
-  return null;
+  if (!admin) {
+    return { denied: { ok: false, error: "You don't have permission to do that." } };
+  }
+  return { admin };
 }
 
 /** Guard so the button cannot fire pointless API calls when Paddle is off. */
@@ -50,14 +56,30 @@ function assertPaddle(): SyncResult | null {
 }
 
 export async function syncCatalogToPaddle(): Promise<SyncResult> {
-  const denied = (await assertAdmin()) ?? assertPaddle();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
+
+  const offline = assertPaddle();
+  if (offline) return offline;
 
   const results = await syncAllProductsToPaddle();
   const failed = results.filter((result) => !result.ok);
   const changed = results.filter(
     (result) => result.ok && result.action !== "unchanged",
   ).length;
+
+  await recordActivity({
+    actorId: admin.id,
+    action: "payment.catalog_synced",
+    entityType: "payment",
+    // The environment name, not a key. Nothing here identifies a credential.
+    meta: {
+      env: paymentConfig.paddle.env,
+      products: results.length,
+      changed,
+      failed: failed.length,
+    },
+  });
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin/products");
@@ -89,10 +111,24 @@ export async function syncCatalogToPaddle(): Promise<SyncResult> {
  * than duplicated in the Paddle catalogue.
  */
 export async function syncOneProductToPaddle(productId: string): Promise<SyncResult> {
-  const denied = (await assertAdmin()) ?? assertPaddle();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
+  const offline = assertPaddle();
+  if (offline) return offline;
+
   const result = await syncProductToPaddle(productId);
+
+  await recordActivity({
+    actorId: admin.id,
+    action: "payment.product_synced",
+    entityType: "product",
+    entityId: productId,
+    meta: {
+      env: paymentConfig.paddle.env,
+      outcome: result.ok ? result.action : "failed",
+    },
+  });
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin/products");

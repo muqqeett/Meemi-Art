@@ -5,8 +5,9 @@ import {
   SUCCESSFUL_ORDER,
   isSuccessfulOrder,
 } from "@/lib/queries/successful-order";
+import { PUBLIC_REVIEW } from "@/lib/queries/review-visibility";
 import type { Prisma } from "@/generated/prisma/client";
-import type { OrderStatus } from "@/generated/prisma/enums";
+import type { OrderStatus, ReviewStatus } from "@/generated/prisma/enums";
 
 const PER_PAGE = 15;
 
@@ -271,6 +272,7 @@ export async function listAdminReviews(options: {
   q?: string;
   rating?: number;
   productId?: string;
+  status?: ReviewStatus;
   page?: number;
 }) {
   const page = Math.max(1, options.page ?? 1);
@@ -288,11 +290,14 @@ export async function listAdminReviews(options: {
   }
   if (options.rating) where.rating = options.rating;
   if (options.productId) where.productId = options.productId;
+  if (options.status) where.status = options.status;
 
-  const [reviews, total, distribution] = await Promise.all([
+  const [reviews, total, distribution, statusCounts] = await Promise.all([
     prisma.review.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      // Anything waiting on a decision comes first regardless of age — the
+      // queue is the reason to open this page.
+      orderBy: [{ createdAt: "desc" }],
       take: PER_PAGE,
       skip: (page - 1) * PER_PAGE,
       select: {
@@ -300,6 +305,8 @@ export async function listAdminReviews(options: {
         rating: true,
         title: true,
         body: true,
+        status: true,
+        featured: true,
         createdAt: true,
         product: { select: { id: true, name: true, slug: true } },
         user: { select: { id: true, name: true, email: true } },
@@ -313,9 +320,15 @@ export async function listAdminReviews(options: {
       _count: { rating: true },
       orderBy: { rating: "desc" },
     }),
+    prisma.review.groupBy({ by: ["status"], _count: { status: true } }),
   ]);
 
-  const averageAgg = await prisma.review.aggregate({ _avg: { rating: true } });
+  // The headline average is what a shopper sees, so it counts only what a
+  // shopper can see — the same `PUBLIC_REVIEW` gate the storefront uses.
+  const averageAgg = await prisma.review.aggregate({
+    where: PUBLIC_REVIEW,
+    _avg: { rating: true },
+  });
 
   return {
     reviews,
@@ -325,6 +338,10 @@ export async function listAdminReviews(options: {
     distribution: distribution.map((row) => ({
       rating: row.rating,
       count: row._count.rating,
+    })),
+    statusCounts: statusCounts.map((row) => ({
+      status: row.status,
+      count: row._count.status,
     })),
     average: Math.round((averageAgg._avg.rating ?? 0) * 10) / 10,
   };

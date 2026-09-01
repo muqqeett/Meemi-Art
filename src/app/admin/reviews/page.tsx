@@ -1,21 +1,28 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { MessageSquare, ExternalLink } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 
 import { AdminPageHeader, AdminTableCard } from "@/components/admin/admin-page-header";
 import { AdminFilters } from "@/components/admin/admin-filters";
-import { ReviewRowActions } from "@/components/admin/review-row-actions";
+import { ReviewModerationTable } from "@/components/admin/review-moderation-table";
 import { PaginationNav } from "@/components/shop/pagination-nav";
 import { EmptyState } from "@/components/brand/empty-state";
 import { ButtonLink } from "@/components/ui/button-link";
 import { StarRating } from "@/components/brand/star-rating";
 import { listAdminReviews, listReviewedProducts } from "@/lib/queries/admin";
 import { buildBaseQuery, hasAnyParam } from "@/lib/shop-params";
+import type { ReviewStatus } from "@/generated/prisma/enums";
 
 export const metadata: Metadata = { title: "Reviews" };
 
+const REVIEW_STATUSES = ["APPROVED", "PENDING", "REJECTED"] as const;
+
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+/** Narrows an untrusted URL value so a hand-edited `?status=` cannot reach Prisma. */
+function parseStatus(value: string | undefined): ReviewStatus | undefined {
+  return REVIEW_STATUSES.find((status) => status === value);
 }
 
 export default async function AdminReviewsPage({
@@ -26,24 +33,30 @@ export default async function AdminReviewsPage({
   const ratingParam = Number(first(raw.rating));
   const rating = ratingParam >= 1 && ratingParam <= 5 ? ratingParam : undefined;
 
-  const [{ reviews, total, page, pageCount, distribution, average }, products] =
-    await Promise.all([
-      listAdminReviews({
-        q: first(raw.q),
-        rating,
-        productId: first(raw.productId),
-        page: Number(first(raw.page)) || 1,
-      }),
-      listReviewedProducts(),
-    ]);
+  const [
+    { reviews, page, pageCount, distribution, statusCounts, average },
+    products,
+  ] = await Promise.all([
+    listAdminReviews({
+      q: first(raw.q),
+      rating,
+      productId: first(raw.productId),
+      status: parseStatus(first(raw.status)),
+      page: Number(first(raw.page)) || 1,
+    }),
+    listReviewedProducts(),
+  ]);
 
   const distributionTotal = distribution.reduce((sum, row) => sum + row.count, 0);
+  const hidden =
+    (statusCounts.find((row) => row.status === "REJECTED")?.count ?? 0) +
+    (statusCounts.find((row) => row.status === "PENDING")?.count ?? 0);
 
   return (
     <div>
       <AdminPageHeader
         title="Reviews"
-        description="Customer reviews across the shop. Reviews can be removed, never edited — the product rating updates automatically."
+        description="Customer reviews across the shop. They can be approved, hidden or featured — never edited. The product rating recalculates on every change."
       />
 
       {distributionTotal > 0 && (
@@ -57,6 +70,15 @@ export default async function AdminReviewsPage({
             <p className="mt-1 text-xs text-muted-foreground">
               {distributionTotal} {distributionTotal === 1 ? "review" : "reviews"}
             </p>
+            {/* The average is what a shopper sees, so it counts only approved
+                reviews. The spread below is every review, which is why the two
+                can disagree — this says so rather than leaving it to be
+                discovered. */}
+            {hidden > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Average excludes {hidden} hidden
+              </p>
+            )}
           </div>
 
           <ul className="min-w-56 flex-1 space-y-1.5">
@@ -92,6 +114,16 @@ export default async function AdminReviewsPage({
         searchPlaceholder="Search reviews, products or customers…"
         selects={[
           {
+            name: "status",
+            label: "Any status",
+            options: REVIEW_STATUSES.map((status) => {
+              const count = statusCounts.find((row) => row.status === status)?.count ?? 0;
+              const label =
+                status === "APPROVED" ? "Visible" : status === "REJECTED" ? "Hidden" : "Pending";
+              return { value: status, label: `${label} (${count})` };
+            }),
+          },
+          {
             name: "rating",
             label: "Any rating",
             options: [5, 4, 3, 2, 1].map((star) => ({
@@ -112,10 +144,11 @@ export default async function AdminReviewsPage({
 
       {reviews.length === 0 ? (
         <AdminTableCard>
-          {/* `total` is the filtered count, so it cannot tell "no reviews at
-              all" from "the filters excluded everything" — the URL can. */}
-          {hasAnyParam(raw, ["q", "rating", "productId"]) ? (
+          {/* The filtered count cannot tell "no reviews at all" from "the
+              filters excluded everything" — the URL can. */}
+          {hasAnyParam(raw, ["q", "rating", "productId", "status"]) ? (
             <EmptyState
+              variant="inline"
               icon={MessageSquare}
               title="No reviews match"
               description="Try a different search term, or clear the filters to see every review."
@@ -127,6 +160,7 @@ export default async function AdminReviewsPage({
             />
           ) : (
             <EmptyState
+              variant="inline"
               icon={MessageSquare}
               title="No reviews yet"
               description="Reviews left by customers on product pages will appear here for moderation."
@@ -135,100 +169,15 @@ export default async function AdminReviewsPage({
         </AdminTableCard>
       ) : (
         <>
-          <AdminTableCard>
-            <table className="w-full min-w-[860px] text-sm">
-              <caption className="sr-only">Customer reviews</caption>
-              <thead className="bg-surface-alt text-left">
-                <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Product
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Customer
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Rating
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Review
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Date
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-border">
-                {reviews.map((review) => (
-                  <tr key={review.id} className="hover:bg-surface-alt/60">
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/products/${review.product.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 font-medium text-foreground hover:text-royal-600"
-                      >
-                        {review.product.name}
-                        <ExternalLink className="size-3" aria-hidden />
-                      </Link>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      {review.user ? (
-                        <Link
-                          href={`/admin/customers/${review.user.id}`}
-                          className="font-medium text-foreground hover:text-royal-600"
-                        >
-                          {review.user.name ?? "Unnamed"}
-                        </Link>
-                      ) : (
-                        <span className="text-muted-foreground">Deleted account</span>
-                      )}
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {review.user?.email}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <StarRating value={review.rating} size="sm" />
-                    </td>
-
-                    <td className="max-w-sm px-4 py-3">
-                      <span className="block font-medium text-foreground">
-                        {review.title}
-                      </span>
-                      <span className="line-clamp-2 text-xs text-muted-foreground">
-                        {review.body}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-3 text-muted-foreground">
-                      <time dateTime={review.createdAt.toISOString()}>
-                        {review.createdAt.toLocaleDateString("en-US", {
-                          dateStyle: "medium",
-                        })}
-                      </time>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end">
-                        <ReviewRowActions
-                          review={{
-                            id: review.id,
-                            title: review.title,
-                            productName: review.product.name,
-                          }}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </AdminTableCard>
+          {/* Dates cross the server/client boundary as ISO strings and are
+              formatted in the browser, so a row reads in the operator's own
+              locale rather than the server's. */}
+          <ReviewModerationTable
+            reviews={reviews.map((review) => ({
+              ...review,
+              createdAt: review.createdAt.toISOString(),
+            }))}
+          />
 
           <PaginationNav
             page={page}

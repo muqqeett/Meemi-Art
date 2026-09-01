@@ -3,15 +3,9 @@
 import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
-import { getAdminOrNull } from "@/lib/auth-guards";
+import { recordActivity } from "@/lib/admin/activity";
+import { adminOrDenied, type AdminResult } from "@/lib/actions/admin/guard";
 import { categorySchema, couponSchema } from "@/lib/validations/admin";
-import type { AdminResult } from "@/lib/actions/admin/products";
-
-async function assertAdmin(): Promise<AdminResult | null> {
-  const admin = await getAdminOrNull();
-  if (!admin) return { ok: false, error: "You don't have permission to do that." };
-  return null;
-}
 
 function issuesToFields(issues: { path: PropertyKey[]; message: string }[]) {
   const errors: Record<string, string> = {};
@@ -41,7 +35,7 @@ export async function saveCategory(
   _prev: AdminResult | null,
   formData: FormData,
 ): Promise<AdminResult> {
-  const denied = await assertAdmin();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
   const parsed = readCategoryForm(formData);
@@ -83,11 +77,17 @@ export async function saveCategory(
     isActive: data.isActive,
   };
 
-  if (categoryId) {
-    await prisma.category.update({ where: { id: categoryId }, data: payload });
-  } else {
-    await prisma.category.create({ data: payload });
-  }
+  const saved = categoryId
+    ? await prisma.category.update({ where: { id: categoryId }, data: payload })
+    : await prisma.category.create({ data: payload });
+
+  await recordActivity({
+    actorId: admin.id,
+    action: categoryId ? "category.updated" : "category.created",
+    entityType: "category",
+    entityId: saved.id,
+    meta: { name: data.name, slug: data.slug, visible: data.isActive },
+  });
 
   revalidatePath("/admin/categories");
   revalidatePath("/shop");
@@ -96,12 +96,17 @@ export async function saveCategory(
 }
 
 export async function deleteCategory(id: string): Promise<AdminResult> {
-  const denied = await assertAdmin();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
   const category = await prisma.category.findUnique({
     where: { id },
-    select: { id: true, _count: { select: { products: true, children: true } } },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      _count: { select: { products: true, children: true } },
+    },
   });
   if (!category) return { ok: false, error: "That category no longer exists." };
 
@@ -118,6 +123,14 @@ export async function deleteCategory(id: string): Promise<AdminResult> {
 
   await prisma.category.delete({ where: { id } });
 
+  await recordActivity({
+    actorId: admin.id,
+    action: "category.deleted",
+    entityType: "category",
+    entityId: category.id,
+    meta: { name: category.name, slug: category.slug },
+  });
+
   revalidatePath("/admin/categories");
   revalidatePath("/shop");
   return { ok: true, message: "Category deleted." };
@@ -129,7 +142,7 @@ export async function saveCoupon(
   _prev: AdminResult | null,
   formData: FormData,
 ): Promise<AdminResult> {
-  const denied = await assertAdmin();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
   const maxUsesRaw = formData.get("maxUses");
@@ -182,29 +195,46 @@ export async function saveCoupon(
     isActive: data.isActive,
   };
 
-  if (couponId) {
-    await prisma.coupon.update({ where: { id: couponId }, data: payload });
-  } else {
-    await prisma.coupon.create({ data: payload });
-  }
+  const saved = couponId
+    ? await prisma.coupon.update({ where: { id: couponId }, data: payload })
+    : await prisma.coupon.create({ data: payload });
+
+  await recordActivity({
+    actorId: admin.id,
+    action: couponId ? "coupon.updated" : "coupon.created",
+    entityType: "coupon",
+    entityId: saved.id,
+    // The code is the coupon's identity, not a secret — it is printed on the
+    // storefront the moment it is active.
+    meta: { code: data.code, type: data.type, value: data.value, active: data.isActive },
+  });
 
   revalidatePath("/admin/coupons");
   return { ok: true, message: couponId ? "Coupon updated." : "Coupon created." };
 }
 
 export async function deleteCoupon(id: string): Promise<AdminResult> {
-  const denied = await assertAdmin();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
   const coupon = await prisma.coupon.findUnique({
     where: { id },
-    select: { id: true, _count: { select: { orders: true } } },
+    select: { id: true, code: true, _count: { select: { orders: true } } },
   });
   if (!coupon) return { ok: false, error: "That coupon no longer exists." };
 
   if (coupon._count.orders > 0) {
     // Orders reference the coupon for reporting; deactivate instead.
     await prisma.coupon.update({ where: { id }, data: { isActive: false } });
+
+    await recordActivity({
+      actorId: admin.id,
+      action: "coupon.deactivated",
+      entityType: "coupon",
+      entityId: coupon.id,
+      meta: { code: coupon.code, reason: "used by existing orders" },
+    });
+
     revalidatePath("/admin/coupons");
     return {
       ok: true,
@@ -213,18 +243,39 @@ export async function deleteCoupon(id: string): Promise<AdminResult> {
   }
 
   await prisma.coupon.delete({ where: { id } });
+
+  await recordActivity({
+    actorId: admin.id,
+    action: "coupon.deleted",
+    entityType: "coupon",
+    entityId: coupon.id,
+    meta: { code: coupon.code },
+  });
+
   revalidatePath("/admin/coupons");
   return { ok: true, message: "Coupon deleted." };
 }
 
 export async function toggleCoupon(id: string, isActive: boolean): Promise<AdminResult> {
-  const denied = await assertAdmin();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
-  const coupon = await prisma.coupon.findUnique({ where: { id }, select: { id: true } });
+  const coupon = await prisma.coupon.findUnique({
+    where: { id },
+    select: { id: true, code: true },
+  });
   if (!coupon) return { ok: false, error: "That coupon no longer exists." };
 
   await prisma.coupon.update({ where: { id }, data: { isActive } });
+
+  await recordActivity({
+    actorId: admin.id,
+    action: isActive ? "coupon.activated" : "coupon.deactivated",
+    entityType: "coupon",
+    entityId: coupon.id,
+    meta: { code: coupon.code },
+  });
+
   revalidatePath("/admin/coupons");
   return { ok: true };
 }
@@ -245,7 +296,7 @@ export async function toggleCoupon(id: string, isActive: boolean): Promise<Admin
  * copy of the status.
  */
 export async function cancelUnpaidOrder(orderId: string): Promise<AdminResult> {
-  const denied = await assertAdmin();
+  const { admin, denied } = await adminOrDenied();
   if (denied) return denied;
 
   const order = await prisma.order.findUnique({
@@ -285,6 +336,14 @@ export async function cancelUnpaidOrder(orderId: string): Promise<AdminResult> {
           data: { status: "CANCELLED", cancelledAt: now },
         });
       }
+    });
+
+    await recordActivity({
+      actorId: admin.id,
+      action: "order.cancelled",
+      entityType: "order",
+      entityId: order.id,
+      meta: { orderNumber: order.orderNumber, from: order.status },
     });
 
     revalidatePath("/admin/orders");

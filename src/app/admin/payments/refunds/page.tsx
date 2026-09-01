@@ -1,0 +1,160 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { RotateCcw, Info } from "lucide-react";
+
+import { AdminPageHeader, AdminTableCard } from "@/components/admin/admin-page-header";
+import { EmptyState } from "@/components/brand/empty-state";
+import { PaginationNav } from "@/components/shop/pagination-nav";
+import { listAdminRefunds } from "@/lib/queries/admin-resources";
+import { buildBaseQuery } from "@/lib/shop-params";
+import { formatMoney } from "@/lib/money";
+
+export const metadata: Metadata = { title: "Refunds" };
+
+/**
+ * Refunds — reporting only.
+ *
+ * The schema records that a refund happened and when: `Payment.status` becomes
+ * REFUNDED and `refundedAt` is stamped by the `payment_refunded` webhook. It
+ * does not record a refunded amount, a reason, a requester, or a
+ * requested-vs-processed distinction, and it cannot represent a partial refund
+ * — there is no refunded-amount column.
+ *
+ * So this page reports the facts that are true and states plainly which columns
+ * do not exist, rather than printing empty "Reason" and "Requested" headers
+ * that would read as missing data instead of absent capability.
+ *
+ * Issuing a refund is not offered here. That needs a Paddle API call, and the
+ * payment layer is out of scope for this phase.
+ */
+export default async function AdminRefundsPage({
+  searchParams,
+}: PageProps<"/admin/payments/refunds">) {
+  const raw = await searchParams;
+  const { payments, total, page, pageCount } = await listAdminRefunds({
+    page: Number(raw.page) || 1,
+  });
+
+  const chargedOnThisPage = payments.reduce((sum, payment) => sum + payment.amountCents, 0);
+
+  return (
+    <div>
+      <AdminPageHeader
+        title="Refunds"
+        description={`${total.toLocaleString("en-US")} refunded ${total === 1 ? "payment" : "payments"}.`}
+      />
+
+      <div className="mb-6 flex items-start gap-3 rounded-xs border border-border bg-card px-4 py-3.5 shadow-card">
+        <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+        <p className="text-body text-sm">
+          Refunds are issued in Paddle and recorded here when its signed webhook
+          arrives. The amount shown is the <strong>original charge</strong> — the
+          database does not store a separate refunded amount, a reason, or partial
+          refunds, so those are not displayed rather than guessed.
+        </p>
+      </div>
+
+      {payments.length === 0 ? (
+        <AdminTableCard>
+          <EmptyState
+            variant="inline"
+            icon={RotateCcw}
+            title="No refunds"
+            description="Nothing has been refunded. Refunds appear here automatically when Paddle reports one."
+          />
+        </AdminTableCard>
+      ) : (
+        <>
+          <AdminTableCard>
+            <table className="w-full min-w-[760px] text-sm">
+              <caption className="sr-only">Refunded payments</caption>
+              <thead className="bg-surface-alt text-left">
+                <tr className="text-xs tracking-wide text-muted-foreground uppercase">
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Order
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Customer
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Original charge
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Paid
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Refunded
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-border">
+                {payments.map((payment) => (
+                  <tr key={payment.id} className="hover:bg-surface-alt/60">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/admin/orders/${payment.order.orderNumber}`}
+                        className="font-mono text-xs font-medium text-foreground hover:text-royal-600"
+                      >
+                        {payment.order.orderNumber}
+                      </Link>
+                    </td>
+
+                    <td className="max-w-56 px-4 py-3">
+                      <span className="block truncate text-foreground">
+                        {payment.order.customerName}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {payment.order.email}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3 font-medium tabular-nums">
+                      {formatMoney(payment.amountCents)}
+                    </td>
+
+                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                      {payment.paidAt ? (
+                        <time dateTime={payment.paidAt.toISOString()}>
+                          {payment.paidAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
+                        </time>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                      {payment.refundedAt ? (
+                        <time dateTime={payment.refundedAt.toISOString()}>
+                          {payment.refundedAt.toLocaleDateString("en-US", {
+                            dateStyle: "medium",
+                          })}
+                        </time>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="border-t border-border px-4 py-3 text-sm text-muted-foreground">
+              Original charge value on this page:{" "}
+              <span className="font-medium text-foreground tabular-nums">
+                {formatMoney(chargedOnThisPage)}
+              </span>
+            </div>
+          </AdminTableCard>
+
+          <PaginationNav
+            page={page}
+            pageCount={pageCount}
+            baseQuery={buildBaseQuery(raw)}
+            basePath="/admin/payments/refunds"
+          />
+        </>
+      )}
+    </div>
+  );
+}

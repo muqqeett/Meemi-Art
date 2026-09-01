@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import { prisma } from "@/lib/prisma";
+import { PUBLIC_REVIEW } from "@/lib/queries/review-visibility";
 
 /**
  * Figures for the homepage stat row. Derived from real rows so the numbers on
@@ -12,7 +13,7 @@ export const getStorefrontStats = cache(async () => {
   const [customers, products, ratingAgg] = await Promise.all([
     prisma.user.count({ where: { role: "CUSTOMER" } }),
     prisma.product.count({ where: { isActive: true } }),
-    prisma.review.aggregate({ _avg: { rating: true } }),
+    prisma.review.aggregate({ where: PUBLIC_REVIEW, _avg: { rating: true } }),
   ]);
 
   return {
