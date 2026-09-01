@@ -13,7 +13,20 @@ export const siteConfig = {
   shortDescription: "Premium handmade crochet.",
   description:
     "Meemi Art makes handmade crochet pieces — bags, flowers, plushies and gifts — worked stitch by stitch in small batches, designed to bring texture and warmth to everyday life.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  /**
+   * Absolute site origin. SERVER-ONLY.
+   *
+   * `SITE_URL` is deliberately not `NEXT_PUBLIC_`: every consumer is server
+   * side (metadata, sitemap, robots, JSON-LD, email links, provider return
+   * URLs), so the value has no reason to ship in the browser bundle.
+   *
+   * This module IS reachable from client components — they read `name`,
+   * `mainNav` and friends — so in the browser `process.env.SITE_URL` is
+   * undefined and this falls back to localhost. Nothing client-side reads
+   * `url` today; if you ever need an absolute URL in a Client Component, pass
+   * it down as a prop from a server component rather than reaching for this.
+   */
+  url: process.env.SITE_URL ?? "http://localhost:3000",
   /**
    * The share image for any page that has no picture of its own.
    *

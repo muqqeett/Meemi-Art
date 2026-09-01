@@ -8,7 +8,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   ArrowDownRight,
-  TriangleAlert,
 } from "lucide-react";
 
 import { AdminSection } from "@/components/admin/admin-page-header";
@@ -26,6 +25,8 @@ import {
   getCustomerGrowth,
   getSalesByCategory,
 } from "@/lib/queries/analytics";
+import { getOperationalAlerts } from "@/lib/queries/operational-alerts";
+import { ActionCenter } from "@/components/admin/action-center";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -110,7 +111,7 @@ function Metric({
  * what is counted has changed — only which of them the eye reaches first.
  */
 export default async function AdminDashboardPage() {
-  const [stats, revenue, bestSellers, recentOrders, growth, salesByCategory] =
+  const [stats, revenue, bestSellers, recentOrders, growth, salesByCategory, alerts] =
     await Promise.all([
       getDashboardStats(),
       getRevenueSeries(),
@@ -118,6 +119,7 @@ export default async function AdminDashboardPage() {
       getRecentOrders(6),
       getCustomerGrowth(),
       getSalesByCategory(),
+      getOperationalAlerts(),
     ]);
 
   const revenueUp = (stats.revenueDelta ?? 0) >= 0;
@@ -147,24 +149,11 @@ export default async function AdminDashboardPage() {
         </p>
       </div>
 
-      {stats.unsellable > 0 && (
-        <Link
-          href="/admin/products?fileState=unsellable"
-          className="admin-rise group flex items-center gap-3 rounded-md border border-warning/25 bg-warning/[0.06] px-4 py-3 text-sm transition-colors duration-150 hover:bg-warning/10"
-          style={step(1)}
-        >
-          <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden />
-          <span className="min-w-0 text-foreground">
-            <span className="font-semibold tabular-nums">{stats.unsellable}</span>{" "}
-            {stats.unsellable === 1 ? "product has" : "products have"} no file attached
-            and cannot be delivered.
-          </span>
-          <ArrowRight
-            className="ml-auto size-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:translate-x-0.5"
-            aria-hidden
-          />
-        </Link>
-      )}
+      {/* ---- Needs attention ---------------------------------------------
+          Replaces the standalone "products without a file" banner, which was
+          one of six real signals shown alone. Same link, same count, now
+          alongside stuck payments, undelivered orders and failed sends. */}
+      <ActionCenter alerts={alerts} style={step(1)} />
 
       {/* ---- Hero + feed, 2:1 ---------------------------------------------- */}
       <div className="grid gap-5 [&>*]:min-w-0 xl:grid-cols-3">

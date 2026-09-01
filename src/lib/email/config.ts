@@ -61,7 +61,7 @@ export const emailConfig = {
    */
   appUrl:
     process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.SITE_URL ??
     siteConfig.url,
 } as const;
 

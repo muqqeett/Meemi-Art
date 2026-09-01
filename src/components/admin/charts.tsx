@@ -327,3 +327,68 @@ export function CustomerGrowthChart({
     </div>
   );
 }
+
+/**
+ * Revenue by product.
+ *
+ * The same horizontal-bar treatment as `SalesByCategoryChart`, and for the same
+ * reason: product names are words, not dates, so they read along the axis
+ * rather than rotated beneath it. Kept as its own export because the label
+ * width and the tooltip's unit differ — a category axis can be narrower than
+ * one carrying full product names.
+ */
+export function ProductRevenueChart({
+  data,
+}: {
+  data: { name: string; revenueCents: number; unitsSold: number }[];
+}) {
+  const animate = !prefersReducedMotion();
+
+  if (data.length === 0) {
+    return (
+      <p className="py-10 text-center text-sm text-muted-foreground">
+        No sales in this period.
+      </p>
+    );
+  }
+
+  const chartData = data.map((row) => ({
+    // Long names would otherwise push the axis into the plot area.
+    name: row.name.length > 26 ? `${row.name.slice(0, 25)}…` : row.name,
+    revenue: row.revenueCents / 100,
+    units: row.unitsSold,
+  }));
+
+  return (
+    <div style={{ height: Math.max(200, chartData.length * 44) }} className="w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={chartData}
+          layout="vertical"
+          margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
+          <XAxis
+            type="number"
+            {...axisProps}
+            tickFormatter={(value: number) => formatMoneyCompact(value * 100)}
+          />
+          <YAxis type="category" dataKey="name" {...axisProps} width={132} />
+          <Tooltip
+            cursor={{ fill: "rgb(36 17 63 / 0.05)" }}
+            content={<ChartTooltip render={(v) => formatMoneyCompact(v * 100)} />}
+          />
+          <Bar
+            dataKey="revenue"
+            fill={BRAND}
+            radius={[0, 4, 4, 0]}
+            maxBarSize={20}
+            isAnimationActive={animate}
+            animationDuration={700}
+            animationEasing="ease-out"
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}

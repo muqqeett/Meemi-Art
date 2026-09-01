@@ -182,7 +182,10 @@ export async function listAdminCustomers(options: { q?: string; page?: number })
         email: true,
         image: true,
         createdAt: true,
-        _count: { select: { orders: true, reviews: true } },
+        // Counted on the same filter as `totalSpentCents` below. Counting
+        // every order here while summing only successful ones made a customer
+        // with an abandoned checkout read as "2 orders · $1.00".
+        _count: { select: { orders: { where: SUCCESSFUL_ORDER }, reviews: true } },
         // What the customer actually paid, on the dashboard's one definition.
         // Was "not cancelled", which counted pending and refunded orders as
         // money the customer had spent.
@@ -254,15 +257,18 @@ export async function getAdminCustomer(id: string) {
 
   if (!customer) return null;
 
-  const spent = customer.orders
-    .filter(isSuccessfulOrder)
-    .reduce((sum, order) => sum + order.totalCents, 0);
+  const successful = customer.orders.filter(isSuccessfulOrder);
+  const spent = successful.reduce((sum, order) => sum + order.totalCents, 0);
 
   return {
     ...customer,
     totalSpentCents: spent,
+    successfulOrderCount: successful.length,
+    // Both halves are the same population. This previously divided
+    // successful-only spend by *every* order, so a customer with one $1.00
+    // sale and one abandoned checkout showed a $0.50 average order.
     averageOrderCents:
-      customer.orders.length > 0 ? Math.round(spent / customer.orders.length) : 0,
+      successful.length > 0 ? Math.round(spent / successful.length) : 0,
   };
 }
 

@@ -76,7 +76,7 @@ export const paymentConfig = {
   /** Absolute base for return URLs handed to the provider. */
   appUrl: (
     process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.SITE_URL ??
     siteConfig.url
   ).replace(/\/+$/, ""),
 } as const;
