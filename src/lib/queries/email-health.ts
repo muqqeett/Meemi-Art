@@ -112,8 +112,34 @@ export async function getEmailHealth() {
    */
   const attempted = counts.SENT + counts.FAILED;
   const failureRate = attempted > 0 ? Math.round((counts.FAILED / attempted) * 1000) / 10 : null;
+  /**
+   * What has happened *since* the last failure.
+   *
+   * The one honest way to separate "working now" from "has failures on
+   * record" without inventing a time window. It asks the database a question
+   * it can actually answer — how many attempts came after the newest failure,
+   * and how many of those failed — rather than assuming a rolling 7 or 30 days
+   * that nothing in the schema defines.
+   *
+   * Null when nothing has ever failed: there is no "since" to report, and the
+   * caller shows plain totals instead.
+   */
+  const sinceLastFailure = lastFailure
+    ? await prisma.emailLog
+        .groupBy({
+          by: ["status"],
+          where: { createdAt: { gt: lastFailure.createdAt } },
+          _count: { _all: true },
+        })
+        .then((rows) => ({
+          attempts: rows.reduce((sum, r) => sum + r._count._all, 0),
+          failed: rows.find((r) => r.status === "FAILED")?._count._all ?? 0,
+          since: lastFailure.createdAt,
+        }))
+    : null;
 
   return {
+    sinceLastFailure,
     total,
     counts,
     attempted,

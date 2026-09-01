@@ -26,6 +26,13 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/** `purchase-ready` -> "Purchase ready". Presentation only — the stored
+ *  template slug is unchanged and still shown beneath. */
+function humaniseTemplate(template: string): string {
+  const words = template.replace(/[-._]/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 /** SENT is good; FAILED is a customer who did not get their download link. */
 function tone(status: string) {
   if (status === "SENT") return "positive" as const;
@@ -76,63 +83,152 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
       />
 
 
-      {/* ---- Operational overview -----------------------------------------
-          Every figure is a count of persisted rows. Deliberately no health
-          score: "6 accepted, 7 rejected, one cause" is actionable, and a
-          percentage badge would only hide which of those numbers moved. */}
-      <div className="admin-card admin-rise mb-4 grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
-        <div className="px-5 py-4">
-          <p className="admin-eyebrow">Attempts</p>
-          <p className="mt-1.5 text-xl font-semibold text-foreground tabular-nums">
-            {health.attempted}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">Offered to provider</p>
-        </div>
+      {/* ---- Configuration · current · historical ------------------------
+          Three separate questions, so an operator never reads a historical
+          failure as a live incident:
 
-        <div className="px-5 py-4">
-          <p className="admin-eyebrow">Accepted</p>
-          <p className="mt-1.5 text-xl font-semibold text-success tabular-nums">
-            {health.counts.SENT}
-          </p>
-          {/* Not "delivered". The provider accepting a request is the furthest
-              this schema can see — there is no webhook, so no bounce, open or
-              complaint data exists anywhere. */}
-          <p className="mt-0.5 text-xs text-muted-foreground">Not confirmed delivered</p>
-        </div>
+            1. Is sending configured right now?  (live env read)
+            2. Has anything failed since the last failure?  (real rows)
+            3. What is on record?  (totals, unchanged)
 
-        <div className="px-5 py-4">
-          <p className="admin-eyebrow">Rejected</p>
-          <p
-            className={cn(
-              "mt-1.5 text-xl font-semibold tabular-nums",
-              health.counts.FAILED > 0 ? "text-destructive" : "text-foreground",
+          The middle one is the important one, and it deliberately invents no
+          time window — "since the last failure" is a boundary the data
+          actually defines. */}
+      <div className="admin-rise mb-4 grid gap-3 lg:grid-cols-3">
+        {/* 1 · Configuration — the strongest card, because a working system
+            should outweigh old failures visually. */}
+        <section
+          className="admin-card p-5"
+          aria-labelledby="email-config-heading"
+        >
+          <p id="email-config-heading" className="admin-eyebrow">
+            Email configuration
+          </p>
+          <p className="mt-2.5 flex items-center gap-2">
+            <span
+              aria-hidden
+              className={cn(
+                "size-2 shrink-0 rounded-full",
+                configured ? "bg-success" : "bg-warning",
+              )}
+            />
+            <span
+              className={cn(
+                "text-lg font-semibold",
+                configured ? "text-success" : "text-warning",
+              )}
+            >
+              {configured ? "Configured" : "Not configured"}
+            </span>
+          </p>
+          {health.provider.from ? (
+            <dl className="mt-3 space-y-1.5 text-xs">
+              <div className="flex flex-wrap items-baseline gap-x-2">
+                <dt className="text-muted-foreground">Sending as</dt>
+                {/* Identity only — the API key is never read into the UI. */}
+                <dd className="min-w-0 break-all text-foreground">
+                  {health.provider.from}
+                </dd>
+              </div>
+              {health.provider.replyTo && (
+                <div className="flex flex-wrap items-baseline gap-x-2">
+                  <dt className="text-muted-foreground">Reply-to</dt>
+                  <dd className="min-w-0 break-all text-foreground">
+                    {health.provider.replyTo}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              No sending identity set.
+            </p>
+          )}
+        </section>
+
+        {/* 2 · Current health, bounded by a real event rather than a made-up
+            window. */}
+        <section className="admin-card p-5" aria-labelledby="email-current-heading">
+          <p id="email-current-heading" className="admin-eyebrow">
+            Since the last failure
+          </p>
+          {health.sinceLastFailure ? (
+            <>
+              <p className="mt-2.5 flex items-baseline gap-2">
+                <span
+                  className={cn(
+                    "text-lg font-semibold tabular-nums",
+                    health.sinceLastFailure.failed === 0
+                      ? "text-success"
+                      : "text-destructive",
+                  )}
+                >
+                  {health.sinceLastFailure.attempts}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {health.sinceLastFailure.attempts === 1 ? "attempt" : "attempts"},{" "}
+                  {health.sinceLastFailure.failed} failed
+                </span>
+              </p>
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                Counted from the most recent failure on{" "}
+                <time dateTime={health.sinceLastFailure.since.toISOString()}>
+                  {health.sinceLastFailure.since.toLocaleDateString("en-US", {
+                    dateStyle: "medium",
+                  })}
+                </time>
+                . Not a rolling window — the boundary is that failure itself.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-2.5 text-lg font-semibold text-success tabular-nums">
+                {health.counts.SENT}
+              </p>
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                Accepted by the provider. Nothing has ever failed.
+              </p>
+            </>
+          )}
+        </section>
+
+        {/* 3 · Historical record. Muted on purpose: it is context, not an
+            alarm, and the counts are never altered. */}
+        <section className="admin-card p-5" aria-labelledby="email-history-heading">
+          <p id="email-history-heading" className="admin-eyebrow">
+            On record
+          </p>
+          <p className="mt-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-lg font-semibold text-foreground tabular-nums">
+              {health.counts.SENT}
+            </span>
+            <span className="text-sm text-muted-foreground">accepted</span>
+            <span className="text-lg font-semibold text-muted-foreground tabular-nums">
+              {health.counts.FAILED}
+            </span>
+            <span className="text-sm text-muted-foreground">failed</span>
+            {health.counts.SKIPPED > 0 && (
+              <>
+                <span className="text-lg font-semibold text-muted-foreground tabular-nums">
+                  {health.counts.SKIPPED}
+                </span>
+                <span className="text-sm text-muted-foreground">skipped</span>
+              </>
             )}
-          >
-            {health.counts.FAILED}
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {health.failureRate === null
-              ? "No attempts yet"
-              : `${health.failureRate}% of attempts`}
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            Every attempt ever made is kept, including failures. Records are
+            never edited{health.failureRate !== null && <> · {health.failureRate}% of all attempts failed</>}.
           </p>
-        </div>
-
-        <div className="px-5 py-4">
-          <p className="admin-eyebrow">Skipped</p>
-          <p className="mt-1.5 text-xl font-semibold text-foreground tabular-nums">
-            {health.counts.SKIPPED}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">No provider at the time</p>
-        </div>
+        </section>
       </div>
-
       {/* ---- Failure causes ------------------------------------------------
           Grouped by the exact stored message, because seven failures sharing
           one cause is one fix, not seven. */}
       {health.causes.length > 0 && (
         <AdminSection
-          title="Why sends are failing"
-          description={`${health.causes.length} distinct ${health.causes.length === 1 ? "cause" : "causes"} across ${health.counts.FAILED} rejected ${health.counts.FAILED === 1 ? "email" : "emails"}`}
+          title="Recorded failure causes"
+          description="Grouped by the provider's own wording, exactly as recorded at the time."
           className="admin-rise mb-4"
           bodyClassName="p-0"
         >
@@ -142,24 +238,35 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
                 key={cause.reason}
                 className="flex flex-wrap items-start gap-x-4 gap-y-1.5 px-5 py-3.5"
               >
-                <span
-                  aria-hidden
-                  className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-destructive/25 bg-destructive/8 text-destructive"
-                >
-                  <TriangleAlert className="size-3.5" />
-                </span>
+                  {/* A dot, not a filled alert chip. These are records of
+                      what happened, not an incident happening now. */}
+                  <span
+                    aria-hidden
+                    className="mt-1.5 size-1.5 shrink-0 rounded-full bg-muted-foreground/50"
+                  />
                 {/* Provider text, passed through the redactor. Long messages
                     wrap rather than widening the page on a phone. */}
                 <p className="min-w-0 flex-1 text-sm leading-relaxed break-words text-foreground">
                   {redactError(cause.reason)}
                 </p>
-                <span className="shrink-0 text-sm font-medium text-destructive tabular-nums">
-                  {cause.count}×
+                <span className="shrink-0 text-sm font-medium text-muted-foreground tabular-nums">                  {cause.count}×
                 </span>
               </li>
             ))}
           </ul>
-        </AdminSection>
+
+            {/* Deliberately careful wording. The application has no live
+                domain-verification check, so it cannot assert that the
+                domain is verified now — only quote what each record says
+                and give the reader the date boundary to judge by. */}
+            <p className="border-t border-border px-5 py-3.5 text-xs leading-relaxed text-muted-foreground">
+              Failures are retained for operational accuracy and are never
+              edited. Each entry records the provider&rsquo;s reason at the time of
+              the attempt, which may no longer apply — a configuration or
+              domain issue since resolved would still leave its original
+              failures on record here.
+            </p>
+          </AdminSection>
       )}
 
       {/* ---- Per template -------------------------------------------------
@@ -341,10 +448,15 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
                 {emails.map((email) => (
                   <tr key={email.id}>
                     <td data-label="Template">
-                      <code className="rounded-sm border border-border bg-[var(--admin-raised)] px-1.5 py-0.5 font-mono text-[0.6875rem] text-muted-foreground">
-                        {email.template}
-                      </code>
-                    </td>
+                        <span className="admin-cell-primary block">
+                          {humaniseTemplate(email.template)}
+                        </span>
+                        {/* The stored slug, kept visible but secondary — it
+                            is what you would grep the log for. */}
+                        <span className="admin-mono mt-0.5 block">
+                          {email.template}
+                        </span>
+                      </td>
 
                     <td data-label="Recipient" className="max-w-56">
                       <span className="admin-cell-primary">{email.to}</span>
@@ -355,10 +467,13 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
                         {email.subject}
                       </span>
                       {email.error && (
-                        <span className="block truncate text-xs text-destructive">
-                          {email.error}
-                        </span>
-                      )}
+                          // Wrapped, not truncated — a clipped provider error
+                          // is useless for debugging. Redacted on the way out,
+                          // exactly as the causes list above does.
+                          <span className="mt-1 block text-xs leading-relaxed break-words text-destructive/90">
+                            {redactError(email.error)}
+                          </span>
+                        )}
                     </td>
 
                     <td data-label="Status">
