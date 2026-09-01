@@ -122,19 +122,6 @@ export async function getRevenueSeries() {
   return [...buckets.values()];
 }
 
-/** Order counts by status, for the dashboard breakdown. */
-export async function getOrderStatusBreakdown() {
-  const groups = await prisma.order.groupBy({
-    by: ["status"],
-    _count: { status: true },
-  });
-
-  return groups.map((group) => ({
-    status: group.status,
-    count: group._count.status,
-  }));
-}
-
 /** Best sellers by units actually sold and paid for. */
 export async function getBestSellers(limit = 5) {
   const grouped = await prisma.orderItem.groupBy({

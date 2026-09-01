@@ -7,13 +7,11 @@ import { StatCard } from "@/components/admin/stat-card";
 import {
   RevenueChart,
   OrdersChart,
-  OrderStatusChart,
   CustomerGrowthChart,
 } from "@/components/admin/charts";
 import {
   getDashboardStats,
   getRevenueSeries,
-  getOrderStatusBreakdown,
   getBestSellers,
   getCustomerGrowth,
 } from "@/lib/queries/analytics";
@@ -41,10 +39,9 @@ function Panel({
 }
 
 export default async function AdminAnalyticsPage() {
-  const [stats, revenue, statusBreakdown, bestSellers, growth] = await Promise.all([
+  const [stats, revenue, bestSellers, growth] = await Promise.all([
     getDashboardStats(),
     getRevenueSeries(),
-    getOrderStatusBreakdown(),
     getBestSellers(10),
     getCustomerGrowth(),
   ]);
@@ -91,14 +88,14 @@ export default async function AdminAnalyticsPage() {
         <RevenueChart data={revenue} />
       </Panel>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Panel title="Orders per month">
-          <OrdersChart data={revenue} />
-        </Panel>
-        <Panel title="Order status mix">
-          <OrderStatusChart data={statusBreakdown} />
-        </Panel>
-      </div>
+      {/* "Order status mix" used to sit beside this. It counted every order
+          regardless of payment, so on a store that has been through payment
+          testing it read as a backlog of customers waiting to pay. Order state
+          is an operational question and belongs on /admin/orders, which shows
+          it per row and can filter by it. */}
+      <Panel title="Orders per month">
+        <OrdersChart data={revenue} />
+      </Panel>
 
       <Panel title="Customer growth">
         <CustomerGrowthChart data={growth} />

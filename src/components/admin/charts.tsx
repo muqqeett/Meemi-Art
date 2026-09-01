@@ -6,9 +6,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -105,91 +102,6 @@ export function OrdersChart({
           <Bar dataKey="orders" fill={ROYAL} radius={[6, 6, 0, 0]} maxBarSize={36} />
         </BarChart>
       </ResponsiveContainer>
-    </div>
-  );
-}
-
-/**
- * Order status keeps its conventional signals at the ends of the lifecycle —
- * amber for waiting, green for completed, red for cancelled — because those
- * read faster than any brand colour. "Processing" sits in the brand family,
- * carrying no inherent colour meaning.
- *
- * These are the five members of `OrderStatus`. There is no SHIPPED or
- * DELIVERED: delivery is a download, so an order goes from paid straight to
- * completed with nothing in transit. Both were left here after the enum
- * changed, which meant a COMPLETED or REFUNDED slice had no colour at all.
- */
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "#8a5a12",
-  PROCESSING: "#3157c8",
-  COMPLETED: "#1f6b45",
-  CANCELLED: "#b3261e",
-  REFUNDED: "#7355b4",
-};
-
-export function OrderStatusChart({
-  data,
-}: {
-  data: { status: string; count: number }[];
-}) {
-  const total = data.reduce((sum, entry) => sum + entry.count, 0);
-
-  // An empty donut is a grey ring with no legend, which reads as a broken
-  // chart rather than as "nothing has happened yet".
-  if (total === 0) {
-    return (
-      <p className="py-14 text-center text-sm text-muted-foreground">No orders yet.</p>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-center gap-4 sm:flex-row">
-      <div className="h-48 w-48 shrink-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="count"
-              nameKey="status"
-              innerRadius={54}
-              outerRadius={82}
-              paddingAngle={2}
-              strokeWidth={0}
-            >
-              {data.map((entry) => (
-                <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? MUTED} />
-              ))}
-            </Pie>
-            <Tooltip contentStyle={tooltipStyle} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* `min-w-0` lets the legend shrink beside the fixed-width donut instead
-          of forcing the panel wider than its column. */}
-      <ul className="w-full min-w-0 flex-1 space-y-2 text-sm">
-        {data.map((entry) => (
-          <li key={entry.status} className="flex items-center justify-between gap-3">
-            <span className="flex min-w-0 items-center gap-2">
-              <span
-                aria-hidden
-                className="size-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: STATUS_COLORS[entry.status] ?? MUTED }}
-              />
-              <span className="truncate capitalize text-muted-foreground">
-                {entry.status.toLowerCase()}
-              </span>
-            </span>
-            <span className="shrink-0 font-medium tabular-nums">
-              {entry.count}
-              <span className="ml-1.5 text-xs text-muted-foreground">
-                {total > 0 ? `${Math.round((entry.count / total) * 100)}%` : "0%"}
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
