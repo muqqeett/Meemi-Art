@@ -298,7 +298,7 @@ export function CouponManager({ coupons }: { coupons: AdminCoupon[] }) {
         </AdminTableCard>
       ) : (
         <AdminTableCard>
-          <table className="admin-table min-w-[820px]">
+          <table className="admin-table admin-table-stack sm:min-w-[820px]">
             <caption className="sr-only">Discount coupons</caption>
             <thead>
               <tr>
@@ -334,7 +334,7 @@ export function CouponManager({ coupons }: { coupons: AdminCoupon[] }) {
 
                 return (
                   <tr key={coupon.id}>
-                    <td>
+                    <td data-label="Code">
                       <span className="block font-mono font-medium text-foreground">
                         {coupon.code}
                       </span>
@@ -345,24 +345,24 @@ export function CouponManager({ coupons }: { coupons: AdminCoupon[] }) {
                       )}
                     </td>
 
-                    <td className="font-medium">
+                    <td data-label="Type" className="font-medium">
                       {coupon.type === "PERCENTAGE"
                         ? `${coupon.value}%`
                         : formatMoney(coupon.value)}
                     </td>
 
-                    <td className="text-muted-foreground">
+                    <td data-label="Value" className="text-muted-foreground">
                       {coupon.minOrderCents > 0 ? formatMoney(coupon.minOrderCents) : "—"}
                     </td>
 
-                    <td className="tabular-nums">
+                    <td data-label="Used" className="tabular-nums">
                       {coupon.usedCount}
                       {coupon.maxUses !== null && (
                         <span className="text-muted-foreground"> / {coupon.maxUses}</span>
                       )}
                     </td>
 
-                    <td>
+                    <td data-label="Window">
                       {coupon.expiresAt ? (
                         <span className={cn(expired && "text-destructive")}>
                           {coupon.expiresAt.toLocaleDateString("en-US", {
@@ -378,7 +378,7 @@ export function CouponManager({ coupons }: { coupons: AdminCoupon[] }) {
                       )}
                     </td>
 
-                    <td>
+                    <td data-label="Status">
                       <Switch
                         checked={coupon.isActive}
                         onCheckedChange={(value) => toggle(coupon, value === true)}
@@ -387,7 +387,7 @@ export function CouponManager({ coupons }: { coupons: AdminCoupon[] }) {
                       />
                     </td>
 
-                    <td>
+                    <td data-label="Actions">
                       <div className="flex justify-end gap-1">
                         <Button
                           variant="ghost"

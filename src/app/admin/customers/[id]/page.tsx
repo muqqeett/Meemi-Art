@@ -78,7 +78,7 @@ export default async function AdminCustomerPage({
             </AdminTableCard>
           ) : (
             <AdminTableCard>
-              <table className="admin-table min-w-[560px]">
+              <table className="admin-table admin-table-stack sm:min-w-[560px]">
                 <caption className="sr-only">
                   Orders placed by {customer.name ?? customer.email}
                 </caption>
@@ -101,7 +101,7 @@ export default async function AdminCustomerPage({
                 <tbody>
                   {customer.orders.map((order) => (
                     <tr key={order.id}>
-                      <td>
+                      <td data-label="Order">
                         <Link
                           href={`/admin/orders/${order.orderNumber}`}
                           className="font-mono font-medium text-foreground hover:text-brand-600"
@@ -113,13 +113,13 @@ export default async function AdminCustomerPage({
                           {order._count.items === 1 ? "item" : "items"}
                         </span>
                       </td>
-                      <td className="text-muted-foreground">
+                      <td data-label="Date" className="text-muted-foreground">
                         {order.placedAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <OrderStatusBadge status={order.status} />
                       </td>
-                      <td className="text-right font-medium tabular-nums">
+                      <td data-label="Total" className="text-right font-medium tabular-nums">
                         {formatMoney(order.totalCents)}
                       </td>
                     </tr>

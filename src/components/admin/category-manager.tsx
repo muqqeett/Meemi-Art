@@ -266,7 +266,7 @@ export function CategoryManager({ categories }: { categories: AdminCategory[] })
         </AdminTableCard>
       ) : (
         <AdminTableCard>
-          <table className="admin-table min-w-[640px]">
+          <table className="admin-table admin-table-stack sm:min-w-[640px]">
             <caption className="sr-only">Product categories</caption>
             <thead>
               <tr>
@@ -291,7 +291,7 @@ export function CategoryManager({ categories }: { categories: AdminCategory[] })
             <tbody>
               {categories.map((category) => (
                 <tr key={category.id}>
-                  <td>
+                  <td data-label="Category">
                     <span className="block font-medium text-foreground">
                       {category.name}
                     </span>
@@ -299,13 +299,13 @@ export function CategoryManager({ categories }: { categories: AdminCategory[] })
                       /{category.slug}
                     </span>
                   </td>
-                  <td className="text-muted-foreground">
+                  <td data-label="Slug" className="text-muted-foreground">
                     {category.parent?.name ?? "—"}
                   </td>
-                  <td className="text-right tabular-nums">
+                  <td data-label="Products" className="text-right tabular-nums">
                     {category._count.products}
                   </td>
-                  <td>
+                  <td data-label="Status">
                     <span
                       className={
                         category.isActive
@@ -316,7 +316,7 @@ export function CategoryManager({ categories }: { categories: AdminCategory[] })
                       {category.isActive ? "Active" : "Hidden"}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Actions">
                     <div className="flex justify-end gap-1">
                       <Button
                         variant="ghost"

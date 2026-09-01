@@ -39,7 +39,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       >
         {/* 56px to match the sidebar's wordmark block, so the two rules meet
             in one continuous line across the top of the screen. */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-card/90 px-3 backdrop-blur-md sm:gap-3 sm:px-6">
+        <header className="admin-safe-top sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-card/90 px-3 backdrop-blur-md sm:gap-3 sm:px-6">
           <AdminMobileNav />
 
           {/* Breadcrumbs take the slack so the search and profile stay put as
@@ -82,7 +82,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
         {/* Capped so tables do not stretch to absurd measures on a 1920 screen
             while still using the width a dense admin needs. */}
-        <main id="main" className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:px-8 lg:py-7">
+        <main id="main" className="admin-safe-x mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:px-8 lg:py-7">
           {children}
         </main>
       </div>

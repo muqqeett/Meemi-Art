@@ -167,7 +167,7 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
 
       <div className="admin-card overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <table className="admin-table min-w-[980px]">
+          <table className="admin-table admin-table-stack admin-table-stack--select sm:min-w-[980px]">
             <caption className="sr-only">Customer reviews</caption>
             <thead>
               <tr>
@@ -210,7 +210,7 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                   // is declared here and wins on specificity of intent.
                   className={cn(selected.has(review.id) && "bg-brand-50/70")}
                 >
-                  <td>
+                  <td data-label="Select">
                     <Checkbox
                       checked={selected.has(review.id)}
                       onCheckedChange={() => toggle(review.id)}
@@ -218,7 +218,7 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     />
                   </td>
 
-                  <td>
+                  <td data-label="Product">
                     <Link
                       href={`/products/${review.product.slug}`}
                       target="_blank"
@@ -230,7 +230,7 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     </Link>
                   </td>
 
-                  <td>
+                  <td data-label="Customer">
                     {review.user ? (
                       <Link
                         href={`/admin/customers/${review.user.id}`}
@@ -246,11 +246,11 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     </span>
                   </td>
 
-                  <td>
+                  <td data-label="Rating">
                     <StarRating value={review.rating} size="sm" />
                   </td>
 
-                  <td className="max-w-sm">
+                  <td data-label="Review" className="max-w-sm sm:max-w-sm">
                     <span className="block font-medium text-foreground">
                       {review.title}
                     </span>
@@ -259,7 +259,7 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     </span>
                   </td>
 
-                  <td>
+                  <td data-label="Status">
                     <StatusBadge tone={statusTone(review.status)}>
                       {review.status.toLowerCase()}
                     </StatusBadge>
@@ -271,7 +271,7 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     )}
                   </td>
 
-                  <td className="text-muted-foreground">
+                  <td data-label="Date" className="text-muted-foreground">
                     <time dateTime={review.createdAt}>
                       {new Date(review.createdAt).toLocaleDateString("en-US", {
                         dateStyle: "medium",
@@ -279,8 +279,8 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     </time>
                   </td>
 
-                  <td>
-                    <div className="flex justify-end gap-0.5">
+                  <td data-label="Actions">
+                    <div className="flex flex-wrap justify-end gap-0.5">
                       {review.status !== "APPROVED" ? (
                         <Button
                           variant="ghost"

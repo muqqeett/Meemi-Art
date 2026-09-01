@@ -57,7 +57,13 @@ function DialogContent({
           // pop, and the brief asks for arrival, not bounce. Base UI drives
           // this through tw-animate-css, which is the right tool here — Framer
           // Motion must not own the exit of an element the library unmounts.
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200 ease-out outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-[0.98] data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-[0.98]",
+          // `max-h` + internal scroll: a tall dialog on a short screen — the
+          // delete confirmation with the keyboard up, a long form — otherwise
+          // extends past both edges of the viewport with its actions
+          // unreachable, because a centred fixed element has nowhere to go.
+          // `dvh` rather than `vh` so the mobile browser's collapsing toolbar
+          // is accounted for. Dialogs that already fit are unaffected.
+          "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-1.5rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto overscroll-contain rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200 ease-out outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-[0.98] data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-[0.98]",
           className
         )}
         {...props}

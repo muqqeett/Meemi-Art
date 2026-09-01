@@ -319,7 +319,7 @@ export function AdminMobileNav() {
             role="dialog"
             aria-modal="true"
             aria-label="Admin navigation"
-            className="absolute inset-y-0 left-0 flex w-[min(17rem,86vw)] flex-col border-r border-border bg-background shadow-xl"
+            className="admin-safe-top admin-safe-bottom absolute inset-y-0 left-0 flex w-[min(17rem,86vw)] flex-col border-r border-border bg-background shadow-xl"
           >
             <div className="flex items-center justify-between border-b border-border pr-2">
               <Wordmark collapsed={false} />

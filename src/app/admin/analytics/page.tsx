@@ -107,7 +107,7 @@ export default async function AdminAnalyticsPage() {
         </h2>
 
         <AdminTableCard>
-          <table className="admin-table min-w-[560px]">
+          <table className="admin-table admin-table-stack sm:min-w-[560px]">
             <caption className="sr-only">Best selling products</caption>
             <thead>
               <tr>
@@ -135,10 +135,10 @@ export default async function AdminAnalyticsPage() {
 
                 return (
                   <tr key={product.slug}>
-                    <td className="text-muted-foreground tabular-nums">
+                    <td data-label="Product" className="text-muted-foreground tabular-nums">
                       {index + 1}
                     </td>
-                    <td>
+                    <td data-label="Category">
                       <Link
                         href={`/products/${product.slug}`}
                         className="font-medium text-foreground hover:text-brand-600"
@@ -146,13 +146,13 @@ export default async function AdminAnalyticsPage() {
                         {product.name}
                       </Link>
                     </td>
-                    <td className="text-right tabular-nums">
+                    <td data-label="Units" className="text-right tabular-nums">
                       {product.unitsSold}
                     </td>
-                    <td className="text-right font-medium tabular-nums">
+                    <td data-label="Revenue" className="text-right font-medium tabular-nums">
                       {formatMoney(product.revenueCents)}
                     </td>
-                    <td>
+                    <td data-label="Share">
                       <div className="flex items-center gap-2">
                         <div
                           className="h-1.5 w-24 overflow-hidden rounded-full bg-border"
