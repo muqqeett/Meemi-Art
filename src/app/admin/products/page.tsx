@@ -113,37 +113,37 @@ export default async function AdminProductsPage({
       ) : (
         <>
           <AdminTableCard>
-            <table className="w-full min-w-[860px] text-sm">
+            <table className="admin-table min-w-[860px]">
               <caption className="sr-only">Product catalogue</caption>
-              <thead className="bg-surface-alt text-left">
-                <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                  <th scope="col" className="px-4 py-3 font-medium">
+              <thead>
+                <tr>
+                  <th scope="col">
                     Product
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Category
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Price
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     File
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Status
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                  <th scope="col" className="text-right">
                     Actions
                   </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-border">
+              <tbody>
                 {products.map((product) => (
-                  <tr key={product.id} className="hover:bg-surface-alt/60">
-                    <td className="px-4 py-3">
+                  <tr key={product.id}>
+                    <td>
                       <div className="flex items-center gap-3">
-                        <span className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-surface-alt">
+                        <span className="relative size-11 shrink-0 overflow-hidden rounded-md border border-border bg-[var(--admin-raised)]">
                           {product.images[0]?.url && (
                             <Image
                               src={product.images[0].url}
@@ -167,11 +167,11 @@ export default async function AdminProductsPage({
                       </div>
                     </td>
 
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="text-muted-foreground">
                       {product.category.name}
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       <span className="font-medium tabular-nums">
                         {formatMoney(product.priceCents)}
                       </span>
@@ -186,7 +186,7 @@ export default async function AdminProductsPage({
                         but it can be missing — and a published product with no
                         file is the one state that costs a customer money for
                         nothing. */}
-                    <td className="px-4 py-3">
+                    <td>
                       {product.hasFile ? (
                         <span className="text-xs text-muted-foreground">
                           {product.asset ? formatBytes(product.asset.bytes) : "—"}
@@ -198,7 +198,7 @@ export default async function AdminProductsPage({
                       )}
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       <span
                         className={cn(
                           "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset",
@@ -211,7 +211,7 @@ export default async function AdminProductsPage({
                       </span>
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       <ProductRowActions product={product} />
                     </td>
                   </tr>

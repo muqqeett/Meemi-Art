@@ -28,13 +28,18 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const admin = await requireAdmin();
 
   return (
-    <div className="min-h-dvh bg-surface-alt">
+    // `admin-root` scopes the admin's quieter hairlines and surface ladder —
+    // see the block in globals.css. It is set once, here, so every admin page
+    // inherits it and no storefront token is touched.
+    <div className="admin-root min-h-dvh bg-[var(--admin-canvas)]">
       <AdminSidebar />
 
       <div
         className="transition-[padding] duration-200 ease-out lg:pl-[var(--admin-rail,15rem)]"
       >
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/95 px-3 backdrop-blur sm:px-6">
+        {/* 56px to match the sidebar's wordmark block, so the two rules meet
+            in one continuous line across the top of the screen. */}
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-card/90 px-3 backdrop-blur-md sm:gap-3 sm:px-6">
           <AdminMobileNav />
 
           {/* Breadcrumbs take the slack so the search and profile stay put as
@@ -47,21 +52,26 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
             <AdminCommandPalette />
 
+            <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />
+
             <Link
               href="/account"
-              className="flex items-center gap-2.5 rounded-lg px-1.5 py-1 transition-colors hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+              className="flex items-center gap-2.5 rounded-md py-1 pr-1 pl-1.5 transition-colors duration-150 hover:bg-[var(--admin-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
             >
-              <span className="hidden text-right md:block">
-                <span className="block text-sm leading-tight font-medium text-foreground">
+              <span className="hidden max-w-40 text-right lg:block">
+                <span className="block truncate text-[0.8125rem] leading-tight font-medium text-foreground">
                   {admin.name ?? "Administrator"}
                 </span>
-                <span className="block text-xs leading-tight text-muted-foreground">
+                <span className="block truncate text-[0.6875rem] leading-tight text-muted-foreground">
                   {admin.email}
                 </span>
               </span>
+              {/* Hairline ring rather than a solid brand disc: at 32px a filled
+                  circle is the loudest thing in the bar, which the account
+                  link is not. */}
               <span
                 aria-hidden
-                className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold text-white"
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-brand-200 bg-brand-50 text-xs font-semibold text-brand-700"
               >
                 {(admin.name ?? admin.email).charAt(0).toUpperCase()}
               </span>
@@ -70,7 +80,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           </div>
         </header>
 
-        <main id="main" className="p-4 sm:p-6 lg:p-8">
+        {/* Capped so tables do not stretch to absurd measures on a 1920 screen
+            while still using the width a dense admin needs. */}
+        <main id="main" className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:px-8 lg:py-7">
           {children}
         </main>
       </div>

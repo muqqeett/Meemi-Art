@@ -32,7 +32,7 @@ export default async function ReconcilePage() {
         description="For an order that was paid but never completed, usually because a webhook was missed."
       />
 
-      <section className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
+      <section className="admin-card p-5 sm:p-6">
         <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
           <RefreshCcw className="size-4 text-brand-600" aria-hidden />
           Verify &amp; reconcile

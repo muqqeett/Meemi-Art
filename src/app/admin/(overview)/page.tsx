@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DollarSign, ShoppingCart, Users, Package, ArrowRight, TriangleAlert } from "lucide-react";
 
+import { AdminPageHeader, AdminSection } from "@/components/admin/admin-page-header";
 import { StatCard } from "@/components/admin/stat-card";
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/reveal";
 import {
@@ -24,34 +25,31 @@ import { formatMoney } from "@/lib/money";
 export const metadata: Metadata = { title: "Dashboard" };
 
 /**
- * Panels fade in as they reach the viewport — no travel, no stagger.
+ * The dashboard's panels reuse `AdminSection` rather than a local card, so a
+ * chart panel here and a table card on a resource page are the same surface.
  *
- * The admin is a workspace, not a campaign page: motion here exists only to
- * soften the arrival of charts that render after their data resolves. Anything
- * that made an operator wait to read a number would be a bug.
+ * `Reveal` wraps them for the one soft fade the admin allows — no travel, no
+ * stagger. This is a workspace: motion exists only to soften charts arriving
+ * after their data resolves, never to make an operator wait to read a number.
  */
 function Panel({
   title,
   action,
   children,
   className,
+  bodyClassName,
 }: {
   title: string;
   action?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  bodyClassName?: string;
 }) {
   return (
-    <Reveal
-      variant="in"
-      as="section"
-      className={`rounded-2xl border border-border bg-card p-5 shadow-card ${className ?? ""}`}
-    >
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-foreground">{title}</h2>
-        {action}
-      </div>
-      {children}
+    <Reveal variant="in" as="div" className={className}>
+      <AdminSection title={title} action={action} bodyClassName={bodyClassName}>
+        {children}
+      </AdminSection>
     </Reveal>
   );
 }
@@ -75,24 +73,26 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-        <p className="text-body mt-1">
-          Store performance at a glance. Comparisons are against the previous 30 days.
-        </p>
-      </header>
+      <AdminPageHeader
+        title="Overview"
+        description="Store performance at a glance. Comparisons are against the previous 30 days."
+        className="mb-0"
+      />
 
       {stats.unsellable > 0 && (
         <Link
           href="/admin/products?fileState=unsellable"
-          className="flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-sm transition-colors hover:bg-warning/10"
+          className="group flex items-center gap-3 rounded-md border border-warning/25 bg-warning/[0.06] px-4 py-3 text-sm transition-colors duration-150 hover:bg-warning/10"
         >
           <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden />
-          <span className="text-foreground">
-            <span className="font-semibold">{stats.unsellable}</span>{" "}
+          <span className="min-w-0 text-foreground">
+            <span className="font-semibold tabular-nums">{stats.unsellable}</span>{" "}
             {stats.unsellable === 1 ? "product has" : "products have"} no file attached and cannot be delivered.
           </span>
-          <ArrowRight className="ml-auto size-4 text-muted-foreground" aria-hidden />
+          <ArrowRight
+            className="ml-auto size-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:translate-x-0.5"
+            aria-hidden
+          />
         </Link>
       )}
 
@@ -169,17 +169,20 @@ export default async function AdminDashboardPage() {
           action={
             <Link
               href="/admin/orders"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:underline"
+              className="group inline-flex items-center gap-1 rounded-sm text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
             >
               View all
-              <ArrowRight className="size-3.5" aria-hidden />
+              <ArrowRight
+                className="size-3 transition-transform duration-150 group-hover:translate-x-0.5"
+                aria-hidden
+              />
             </Link>
           }
         >
           {recentOrders.length === 0 ? (
             // "No orders yet" would be a lie on a store with unpaid attempts
             // sitting in the table — this panel only ever counts paid ones.
-            <p className="py-6 text-center text-sm text-muted-foreground">
+            <p className="py-8 text-center text-sm text-balance text-muted-foreground">
               No completed sales yet.{" "}
               <Link href="/admin/orders" className="text-brand-600 hover:underline">
                 See all orders
@@ -187,7 +190,7 @@ export default async function AdminDashboardPage() {
               for checkouts that were started but never paid.
             </p>
           ) : (
-          <ul className="divide-y divide-border">
+          <ul className="-mx-2">
             {recentOrders.map((order) => (
               <li key={order.id}>
                 <Link
@@ -195,17 +198,17 @@ export default async function AdminDashboardPage() {
                   // The status pill and amount are unshrinkable, so on a phone
                   // they are allowed onto a second line rather than pushing the
                   // row past the viewport. Unchanged from sm up.
-                  className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3 transition-colors hover:text-brand-600 sm:flex-nowrap"
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-2 py-2.5 transition-colors duration-150 hover:bg-[var(--admin-hover)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-600 sm:flex-nowrap"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="font-mono text-sm font-medium">{order.orderNumber}</p>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="admin-mono text-foreground">{order.orderNumber}</p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
                       {order.user?.name ?? order.email} · {order._count.items}{" "}
                       {order._count.items === 1 ? "item" : "items"}
                     </p>
                   </div>
                   <OrderStatusBadge status={order.status} />
-                  <span className="text-sm font-medium tabular-nums">
+                  <span className="text-sm font-medium text-foreground tabular-nums">
                     {formatMoney(order.totalCents)}
                   </span>
                 </Link>
@@ -217,30 +220,33 @@ export default async function AdminDashboardPage() {
 
         <Panel title="Best sellers">
           {bestSellers.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
+            <p className="py-8 text-center text-sm text-muted-foreground">
               No sales recorded yet.
             </p>
           ) : (
-            <ol className="divide-y divide-border">
+            <ol className="-mx-2">
               {bestSellers.map((product, index) => (
                 <li key={product.productId ?? product.slug}>
                   <Link
                     href={`/products/${product.slug}`}
-                    className="flex items-center gap-3 py-3 transition-colors hover:text-brand-600"
+                    className="flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors duration-150 hover:bg-[var(--admin-hover)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-600"
                   >
+                    {/* Rank as a plain tabular numeral rather than a filled
+                        chip — five chips down the left edge read as a column of
+                        buttons, which none of them are. */}
                     <span
                       aria-hidden
-                      className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-alt text-xs font-semibold text-muted-foreground"
+                      className="w-4 shrink-0 text-xs font-medium text-muted-foreground/70 tabular-nums"
                     >
                       {index + 1}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                       {product.name}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                       {product.unitsSold} sold
                     </span>
-                    <span className="text-sm font-medium tabular-nums">
+                    <span className="shrink-0 text-sm font-medium text-foreground tabular-nums">
                       {formatMoney(product.revenueCents)}
                     </span>
                   </Link>

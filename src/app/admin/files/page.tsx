@@ -55,35 +55,35 @@ export default async function AdminFilesPage({ searchParams }: PageProps<"/admin
       ) : (
         <>
           <AdminTableCard>
-            <table className="w-full min-w-[880px] text-sm">
+            <table className="admin-table min-w-[880px]">
               <caption className="sr-only">Digital files</caption>
-              <thead className="bg-surface-alt text-left">
-                <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                  <th scope="col" className="px-4 py-3 font-medium">
+              <thead>
+                <tr>
+                  <th scope="col">
                     File
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Product
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Size
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Downloads
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Storage
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Updated
                   </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-border">
+              <tbody>
                 {assets.map((asset) => (
-                  <tr key={asset.id} className="hover:bg-surface-alt/60">
-                    <td className="max-w-72 px-4 py-3">
+                  <tr key={asset.id}>
+                    <td className="max-w-72">
                       <span className="block truncate font-medium text-foreground">
                         {asset.filename}
                       </span>
@@ -93,7 +93,7 @@ export default async function AdminFilesPage({ searchParams }: PageProps<"/admin
                       </span>
                     </td>
 
-                    <td className="max-w-64 px-4 py-3">
+                    <td className="max-w-64">
                       {asset.product ? (
                         <Link
                           href={`/admin/products/${asset.product.id}/edit`}
@@ -106,18 +106,18 @@ export default async function AdminFilesPage({ searchParams }: PageProps<"/admin
                       )}
                     </td>
 
-                    <td className="px-4 py-3 tabular-nums text-muted-foreground">
+                    <td className="tabular-nums text-muted-foreground">
                       {formatBytes(asset.bytes)}
                     </td>
 
-                    <td className="px-4 py-3 tabular-nums">
+                    <td className="tabular-nums">
                       <span className="font-medium text-foreground">{asset.downloads}</span>
                       <span className="block text-xs text-muted-foreground">
                         across {asset.grants} {asset.grants === 1 ? "grant" : "grants"}
                       </span>
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       {/* Not a database column — a statement of how these files
                           are stored, which is true of every one of them:
                           Cloudinary `type: private`, reachable only through a
@@ -128,7 +128,7 @@ export default async function AdminFilesPage({ searchParams }: PageProps<"/admin
                       </StatusBadge>
                     </td>
 
-                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                    <td className="whitespace-nowrap text-muted-foreground">
                       <time dateTime={asset.updatedAt.toISOString()}>
                         {asset.updatedAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
                       </time>

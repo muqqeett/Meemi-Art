@@ -61,32 +61,32 @@ export default async function AdminCustomersPage({
       ) : (
         <>
           <AdminTableCard>
-            <table className="w-full min-w-[720px] text-sm">
+            <table className="admin-table min-w-[720px]">
               <caption className="sr-only">Registered customers</caption>
-              <thead className="bg-surface-alt text-left">
-                <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                  <th scope="col" className="px-4 py-3 font-medium">
+              <thead>
+                <tr>
+                  <th scope="col">
                     Customer
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Joined
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                  <th scope="col" className="text-right">
                     Orders
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                  <th scope="col" className="text-right">
                     Reviews
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                  <th scope="col" className="text-right">
                     Lifetime value
                   </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-border">
+              <tbody>
                 {customers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-surface-alt/60">
-                    <td className="px-4 py-3">
+                  <tr key={customer.id}>
+                    <td>
                       <div className="flex items-center gap-3">
                         {customer.image ? (
                           <Image
@@ -119,7 +119,7 @@ export default async function AdminCustomersPage({
                       </div>
                     </td>
 
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="text-muted-foreground">
                       <time dateTime={customer.createdAt.toISOString()}>
                         {customer.createdAt.toLocaleDateString("en-US", {
                           dateStyle: "medium",
@@ -127,13 +127,13 @@ export default async function AdminCustomersPage({
                       </time>
                     </td>
 
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td className="text-right tabular-nums">
                       {customer.orderCount}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td className="text-right tabular-nums">
                       {customer.reviewCount}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium tabular-nums">
+                    <td className="text-right font-medium tabular-nums">
                       {formatMoney(customer.totalSpentCents)}
                     </td>
                   </tr>

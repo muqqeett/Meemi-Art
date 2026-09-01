@@ -88,7 +88,7 @@ export function DigitalFileField({
 
   if (!productId) {
     return (
-      <p className="text-body rounded-xs border border-border bg-surface-alt px-4 py-3 text-sm">
+      <p className="text-body rounded-md border border-border bg-[var(--admin-raised)] px-4 py-3 text-sm">
         Save the product first, then upload its file here. A product cannot be
         published until it has one.
       </p>
@@ -105,7 +105,7 @@ export function DigitalFileField({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: duration.fast, ease: ease.enter }}
-            className="flex items-start gap-3 rounded-xs border border-border bg-surface-alt px-4 py-3"
+            className="flex items-start gap-3 rounded-md border border-border bg-[var(--admin-raised)] px-4 py-3"
           >
             <FileCheck2 className="mt-0.5 size-5 shrink-0 text-success" aria-hidden />
             <div className="min-w-0">

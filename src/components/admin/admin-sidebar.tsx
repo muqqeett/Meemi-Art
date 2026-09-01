@@ -62,16 +62,24 @@ function NavList({
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Admin" className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
+    <nav
+      aria-label="Admin"
+      className={cn(
+        "flex flex-1 flex-col overflow-x-hidden overflow-y-auto py-4",
+        // Collapsed, the gutter is symmetric so the icons sit on the rail's
+        // centre line; expanded, it aligns labels with the wordmark above.
+        collapsed ? "gap-5 px-2.5" : "gap-6 px-3",
+      )}
+    >
       {ADMIN_NAV.map((group) => (
         <div key={group.label}>
-          {/* The group label is decoration when collapsed — the icons carry the
-              grouping through the gaps — so it is hidden rather than truncated
-              into an unreadable stub. */}
-          {!collapsed && (
-            <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-              {group.label}
-            </p>
+          {/* Collapsed, the label would truncate to an unreadable stub, so the
+              gap between groups carries the grouping instead. A hairline marks
+              the division that the label would otherwise have made. */}
+          {collapsed ? (
+            <div aria-hidden className="mx-auto mb-3 h-px w-6 bg-border first:hidden" />
+          ) : (
+            <p className="admin-eyebrow px-3 pb-2">{group.label}</p>
           )}
 
           <ul className="flex flex-col gap-0.5">
@@ -88,23 +96,39 @@ function NavList({
                     // costs nothing and works before hydration.
                     title={collapsed ? item.label : undefined}
                     className={cn(
-                      "group/nav relative flex h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
+                      "group/nav relative flex items-center rounded-md text-sm transition-colors duration-150",
                       "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
-                      collapsed && "justify-center px-0",
+                      // 40px expanded is comfortable without the airiness of 44
+                      // across eight groups; collapsed it is a square so the
+                      // icon is optically centred in the rail.
+                      collapsed ? "size-11 justify-center" : "h-10 gap-3 px-3",
                       active
-                        ? "bg-brand-50 font-medium text-brand-700"
-                        : "text-muted-foreground hover:bg-surface-alt hover:text-foreground",
+                        ? "font-medium text-brand-700"
+                        : "text-muted-foreground hover:bg-[var(--admin-hover)] hover:text-foreground",
+                      // Expanded, the active row gets the faintest tint — the
+                      // indicator rule is the signal, the tint just anchors it.
+                      active && !collapsed && "bg-brand-50/60",
+                      // Collapsed, there is no label to carry weight, so the
+                      // tint is the whole signal and has to be legible alone.
+                      active && collapsed && "bg-brand-50",
                     )}
                   >
-                    {/* The active marker is a rule on the rail's edge, not a
-                        filled block — it reads at a glance without shouting. */}
+                    {/* A 2px rule against the rail edge rather than a filled
+                        block. Expanded only: collapsed, it would sit against
+                        the icon and read as an artefact. */}
                     {active && !collapsed && (
                       <span
                         aria-hidden
-                        className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-brand-700"
+                        className="absolute inset-y-2 -left-3 w-0.5 rounded-r-full bg-brand-700"
                       />
                     )}
-                    <item.Icon className="size-4 shrink-0" aria-hidden />
+                    <item.Icon
+                      className={cn(
+                        "size-4 shrink-0 transition-colors duration-150",
+                        active ? "text-brand-700" : "text-muted-foreground/80",
+                      )}
+                      aria-hidden
+                    />
                     {!collapsed && <span className="truncate">{item.label}</span>}
                     {collapsed && <span className="sr-only">{item.label}</span>}
                   </Link>
@@ -122,7 +146,10 @@ function Wordmark({ collapsed }: { collapsed: boolean }) {
   return (
     <Link
       href="/admin"
-      className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-600"
+      className={cn(
+        "flex h-14 shrink-0 items-center gap-2 border-b border-border focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-600",
+        collapsed ? "justify-center px-0" : "px-4",
+      )}
     >
       <span className="font-wordmark text-lg whitespace-nowrap text-near-black">
         {collapsed ? (
@@ -135,7 +162,7 @@ function Wordmark({ collapsed }: { collapsed: boolean }) {
         )}
       </span>
       {!collapsed && (
-        <span className="rounded bg-brand-50 px-1.5 py-0.5 text-[0.625rem] font-semibold tracking-wider text-brand-700 uppercase">
+        <span className="rounded-sm border border-brand-200/70 px-1.5 py-px text-[0.5625rem] font-semibold tracking-[0.12em] text-brand-600 uppercase">
           Admin
         </span>
       )}
@@ -145,16 +172,16 @@ function Wordmark({ collapsed }: { collapsed: boolean }) {
 
 function StorefrontLink({ collapsed }: { collapsed: boolean }) {
   return (
-    <div className="shrink-0 border-t border-border p-3">
+    <div className={cn("shrink-0 pb-2", collapsed ? "px-2.5" : "px-3")}>
       <Link
         href="/"
         title={collapsed ? "View storefront" : undefined}
         className={cn(
-          "flex h-11 items-center gap-3 rounded-lg px-3 text-sm text-muted-foreground transition-colors hover:bg-surface-alt hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
-          collapsed && "justify-center px-0",
+          "flex items-center rounded-md text-sm text-muted-foreground transition-colors duration-150 hover:bg-[var(--admin-hover)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
+          collapsed ? "size-11 justify-center" : "h-10 gap-3 px-3",
         )}
       >
-        <ArrowUpRight className="size-4 shrink-0" aria-hidden />
+        <ArrowUpRight className="size-4 shrink-0 text-muted-foreground/80" aria-hidden />
         {collapsed ? (
           <span className="sr-only">View storefront</span>
         ) : (
@@ -179,7 +206,9 @@ export function AdminSidebar() {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--admin-rail",
-      collapsed ? "68px" : "15rem",
+      // Must match the rail's own width classes below, or the content column
+      // is offset by the wrong amount.
+      collapsed ? "64px" : "15rem",
     );
   }, [collapsed]);
 
@@ -189,30 +218,31 @@ export function AdminSidebar() {
     <aside
       data-collapsed={collapsed}
       className={cn(
-        "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-background transition-[width] duration-200 ease-out lg:flex",
-        collapsed ? "w-[68px]" : "w-60",
+        "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-card transition-[width] duration-200 ease-out lg:flex",
+        collapsed ? "w-[64px]" : "w-60",
       )}
     >
       <Wordmark collapsed={collapsed} />
       <NavList collapsed={collapsed} />
       <StorefrontLink collapsed={collapsed} />
 
-      <div className="shrink-0 border-t border-border p-3">
+      <div className={cn("shrink-0 border-t border-border py-2", collapsed ? "px-2.5" : "px-3")}>
         <button
           type="button"
           onClick={toggle}
           aria-expanded={!collapsed}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : undefined}
           className={cn(
-            "flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-muted-foreground transition-colors hover:bg-surface-alt hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
-            collapsed && "justify-center px-0",
+            "flex items-center rounded-md text-sm text-muted-foreground transition-colors duration-150 hover:bg-[var(--admin-hover)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
+            collapsed ? "size-11 justify-center" : "h-10 w-full gap-3 px-3",
           )}
         >
           {collapsed ? (
             <PanelLeftOpen className="size-4 shrink-0" aria-hidden />
           ) : (
             <>
-              <PanelLeftClose className="size-4 shrink-0" aria-hidden />
+              <PanelLeftClose className="size-4 shrink-0 text-muted-foreground/80" aria-hidden />
               Collapse
             </>
           )}
@@ -262,7 +292,7 @@ export function AdminMobileNav() {
         onClick={() => setOpen(true)}
         aria-label="Open admin menu"
         aria-expanded={open}
-        className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-alt hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 lg:hidden"
+        className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-[var(--admin-hover)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 lg:hidden"
       >
         <Menu className="size-5" aria-hidden />
       </button>
@@ -288,7 +318,7 @@ export function AdminMobileNav() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close admin menu"
-                className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-surface-alt hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-[var(--admin-hover)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
               >
                 <X className="size-5" aria-hidden />
               </button>

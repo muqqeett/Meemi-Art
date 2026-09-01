@@ -156,11 +156,11 @@ export function AdminCommandPalette() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-9 min-w-0 items-center gap-2 rounded-lg border border-border bg-surface-alt px-3 text-sm text-muted-foreground transition-colors hover:border-brand-300 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 sm:w-64"
+        className="flex h-8 min-w-0 items-center gap-2 rounded-md border border-border bg-[var(--admin-raised)] px-2.5 text-[0.8125rem] text-muted-foreground transition-colors duration-150 hover:border-brand-200 hover:bg-[var(--admin-hover)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 sm:w-56"
       >
-        <Search className="size-4 shrink-0" aria-hidden />
+        <Search className="size-3.5 shrink-0" aria-hidden />
         <span className="hidden truncate sm:inline">Search…</span>
-        <kbd className="ml-auto hidden shrink-0 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[0.625rem] text-muted-foreground sm:inline">
+        <kbd className="ml-auto hidden shrink-0 rounded-sm border border-border bg-card px-1.5 py-px font-mono text-[0.625rem] text-muted-foreground/80 sm:inline">
           ⌘K
         </kbd>
         <span className="sr-only">Search products, orders and customers</span>
@@ -169,7 +169,7 @@ export function AdminCommandPalette() {
       <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
         <DialogContent
           showCloseButton={false}
-          className="top-[12%] max-w-xl translate-y-0 gap-0 overflow-hidden p-0"
+          className="top-[12%] max-w-xl translate-y-0 gap-0 overflow-hidden rounded-lg p-0 shadow-[0_16px_48px_-12px_rgb(23_19_28/0.28)]"
         >
           <DialogTitle className="sr-only">Admin search</DialogTitle>
           <DialogDescription className="sr-only">
@@ -190,7 +190,7 @@ export function AdminCommandPalette() {
               autoFocus
               placeholder="Search orders, products, customers…"
               aria-label="Search"
-              className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/70"
             />
             {loading && (
               <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden />
@@ -213,9 +213,7 @@ export function AdminCommandPalette() {
                   return (
                     <li key={row.id}>
                       {heading && (
-                        <p className="px-3 pt-3 pb-1 text-[0.6875rem] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-                          {heading}
-                        </p>
+                        <p className="admin-eyebrow px-3 pt-3 pb-1">{heading}</p>
                       )}
                       <button
                         type="button"
@@ -224,10 +222,10 @@ export function AdminCommandPalette() {
                         onMouseEnter={() => setCursor(index)}
                         onClick={() => go(row)}
                         className={cn(
-                          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors",
+                          "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors duration-100",
                           index === active
-                            ? "bg-surface-alt text-foreground"
-                            : "text-muted-foreground hover:bg-surface-alt/60",
+                            ? "bg-brand-50/70 text-foreground"
+                            : "text-muted-foreground hover:bg-[var(--admin-hover)]",
                         )}
                       >
                         <span className="min-w-0 flex-1">

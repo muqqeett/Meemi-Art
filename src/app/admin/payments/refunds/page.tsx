@@ -44,7 +44,7 @@ export default async function AdminRefundsPage({
         description={`${total.toLocaleString("en-US")} refunded ${total === 1 ? "payment" : "payments"}.`}
       />
 
-      <div className="mb-6 flex items-start gap-3 rounded-xs border border-border bg-card px-4 py-3.5 shadow-card">
+      <div className="mb-6 flex items-start gap-3 admin-card px-4 py-3.5">
         <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
         <p className="text-body text-sm">
           Refunds are issued in Paddle and recorded here when its signed webhook
@@ -66,32 +66,32 @@ export default async function AdminRefundsPage({
       ) : (
         <>
           <AdminTableCard>
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="admin-table min-w-[760px]">
               <caption className="sr-only">Refunded payments</caption>
-              <thead className="bg-surface-alt text-left">
-                <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                  <th scope="col" className="px-4 py-3 font-medium">
+              <thead>
+                <tr>
+                  <th scope="col">
                     Order
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Customer
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Original charge
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Paid
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Refunded
                   </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-border">
+              <tbody>
                 {payments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-surface-alt/60">
-                    <td className="px-4 py-3">
+                  <tr key={payment.id}>
+                    <td>
                       <Link
                         href={`/admin/orders/${payment.order.orderNumber}`}
                         className="font-mono text-xs font-medium text-foreground hover:text-royal-600"
@@ -100,7 +100,7 @@ export default async function AdminRefundsPage({
                       </Link>
                     </td>
 
-                    <td className="max-w-56 px-4 py-3">
+                    <td className="max-w-56">
                       <span className="block truncate text-foreground">
                         {payment.order.customerName}
                       </span>
@@ -109,11 +109,11 @@ export default async function AdminRefundsPage({
                       </span>
                     </td>
 
-                    <td className="px-4 py-3 font-medium tabular-nums">
+                    <td className="font-medium tabular-nums">
                       {formatMoney(payment.amountCents)}
                     </td>
 
-                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                    <td className="whitespace-nowrap text-muted-foreground">
                       {payment.paidAt ? (
                         <time dateTime={payment.paidAt.toISOString()}>
                           {payment.paidAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
@@ -123,7 +123,7 @@ export default async function AdminRefundsPage({
                       )}
                     </td>
 
-                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                    <td className="whitespace-nowrap text-muted-foreground">
                       {payment.refundedAt ? (
                         <time dateTime={payment.refundedAt.toISOString()}>
                           {payment.refundedAt.toLocaleDateString("en-US", {

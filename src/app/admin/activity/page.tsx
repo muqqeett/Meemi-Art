@@ -94,18 +94,31 @@ export default async function AdminActivityPage({
       ) : (
         <>
           <AdminTableCard>
-            <ol className="divide-y divide-border">
+            {/* A continuous hairline runs behind the markers so the entries
+                read as one thread rather than as separate cards. It is drawn
+                on the list, not per row, so it never breaks between items —
+                and it stops short of the last marker via the final row's
+                own background, which is why markers carry a ring. */}
+            <ol className="relative px-4 py-2">
+              <span
+                aria-hidden
+                className="absolute top-6 bottom-6 left-[2.0625rem] w-px bg-border"
+              />
+
               {entries.map((entry) => {
                 const Icon = ENTITY_ICONS[entry.entityType] ?? History;
                 const meta = describeMeta(entry.meta);
 
                 return (
-                  <li key={entry.id} className="flex items-start gap-4 px-4 py-4">
+                  <li
+                    key={entry.id}
+                    className="group relative flex items-start gap-3.5 rounded-md py-3 pr-2 transition-colors duration-150 hover:bg-[var(--admin-hover)]"
+                  >
                     <span
                       aria-hidden
-                      className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600"
+                      className="relative z-10 mt-px flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors duration-150 group-hover:border-brand-200 group-hover:text-brand-600"
                     >
-                      <Icon className="size-4" />
+                      <Icon className="size-3.5" />
                     </span>
 
                     <div className="min-w-0 flex-1">
@@ -117,10 +130,17 @@ export default async function AdminActivityPage({
                           {meta}
                         </p>
                       )}
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {entry.actor.name ?? entry.actor.email}
-                        <span aria-hidden> · </span>
-                        <time dateTime={entry.createdAt.toISOString()}>
+                      <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground/80">
+                        <span className="truncate">
+                          {entry.actor.name ?? entry.actor.email}
+                        </span>
+                        <span aria-hidden className="text-muted-foreground/40">
+                          ·
+                        </span>
+                        <time
+                          dateTime={entry.createdAt.toISOString()}
+                          className="tabular-nums"
+                        >
                           {entry.createdAt.toLocaleString("en-US", {
                             dateStyle: "medium",
                             timeStyle: "short",

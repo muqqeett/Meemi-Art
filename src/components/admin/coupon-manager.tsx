@@ -288,43 +288,43 @@ export function CouponManager({ coupons }: { coupons: AdminCoupon[] }) {
         </AdminTableCard>
       ) : (
         <AdminTableCard>
-          <table className="w-full min-w-[820px] text-sm">
+          <table className="admin-table min-w-[820px]">
             <caption className="sr-only">Discount coupons</caption>
-            <thead className="bg-surface-alt text-left">
-              <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                <th scope="col" className="px-4 py-3 font-medium">
+            <thead>
+              <tr>
+                <th scope="col">
                   Code
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Discount
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Minimum
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Uses
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Expires
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Active
                 </th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">
+                <th scope="col" className="text-right">
                   Actions
                 </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-border">
+            <tbody>
               {coupons.map((coupon) => {
                 const expired = coupon.expiresAt ? coupon.expiresAt < now : false;
                 const exhausted =
                   coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses;
 
                 return (
-                  <tr key={coupon.id} className="hover:bg-surface-alt/60">
-                    <td className="px-4 py-3">
+                  <tr key={coupon.id}>
+                    <td>
                       <span className="block font-mono font-medium text-foreground">
                         {coupon.code}
                       </span>
@@ -335,24 +335,24 @@ export function CouponManager({ coupons }: { coupons: AdminCoupon[] }) {
                       )}
                     </td>
 
-                    <td className="px-4 py-3 font-medium">
+                    <td className="font-medium">
                       {coupon.type === "PERCENTAGE"
                         ? `${coupon.value}%`
                         : formatMoney(coupon.value)}
                     </td>
 
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="text-muted-foreground">
                       {coupon.minOrderCents > 0 ? formatMoney(coupon.minOrderCents) : "—"}
                     </td>
 
-                    <td className="px-4 py-3 tabular-nums">
+                    <td className="tabular-nums">
                       {coupon.usedCount}
                       {coupon.maxUses !== null && (
                         <span className="text-muted-foreground"> / {coupon.maxUses}</span>
                       )}
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       {coupon.expiresAt ? (
                         <span className={cn(expired && "text-destructive")}>
                           {coupon.expiresAt.toLocaleDateString("en-US", {
@@ -368,7 +368,7 @@ export function CouponManager({ coupons }: { coupons: AdminCoupon[] }) {
                       )}
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       <Switch
                         checked={coupon.isActive}
                         onCheckedChange={(value) => toggle(coupon, value === true)}
@@ -377,7 +377,7 @@ export function CouponManager({ coupons }: { coupons: AdminCoupon[] }) {
                       />
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       <div className="flex justify-end gap-1">
                         <Button
                           variant="ghost"

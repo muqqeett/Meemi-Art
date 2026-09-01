@@ -30,7 +30,7 @@ function Panel({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-border bg-card p-5 shadow-card ${className ?? ""}`}
+      className={`admin-card p-5 ${className ?? ""}`}
     >
       <h2 className="mb-4 text-base font-semibold text-foreground">{title}</h2>
       {children}
@@ -107,38 +107,38 @@ export default async function AdminAnalyticsPage() {
         </h2>
 
         <AdminTableCard>
-          <table className="w-full min-w-[560px] text-sm">
+          <table className="admin-table min-w-[560px]">
             <caption className="sr-only">Best selling products</caption>
-            <thead className="bg-surface-alt text-left">
-              <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                <th scope="col" className="px-4 py-3 font-medium">
+            <thead>
+              <tr>
+                <th scope="col">
                   #
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Product
                 </th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">
+                <th scope="col" className="text-right">
                   Units
                 </th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">
+                <th scope="col" className="text-right">
                   Revenue
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Share
                 </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-border">
+            <tbody>
               {bestSellers.map((product, index) => {
                 const share = totalUnits > 0 ? (product.unitsSold / totalUnits) * 100 : 0;
 
                 return (
-                  <tr key={product.slug} className="hover:bg-surface-alt/60">
-                    <td className="px-4 py-3 text-muted-foreground tabular-nums">
+                  <tr key={product.slug}>
+                    <td className="text-muted-foreground tabular-nums">
                       {index + 1}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <Link
                         href={`/products/${product.slug}`}
                         className="font-medium text-foreground hover:text-brand-600"
@@ -146,13 +146,13 @@ export default async function AdminAnalyticsPage() {
                         {product.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td className="text-right tabular-nums">
                       {product.unitsSold}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium tabular-nums">
+                    <td className="text-right font-medium tabular-nums">
                       {formatMoney(product.revenueCents)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <div className="flex items-center gap-2">
                         <div
                           className="h-1.5 w-24 overflow-hidden rounded-full bg-border"

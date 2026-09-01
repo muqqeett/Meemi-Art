@@ -314,6 +314,115 @@
 }
 
 @layer components {
+  /* ---- Admin surface system ----------------------------------------------
+     The admin is a workspace, not a storefront, and it needs quieter surfaces
+     than the shop: a hairline that separates without drawing the eye, and four
+     distinct grounds so a table header, a card and a hover row can be told
+     apart without a border between each of them.
+
+     Scoped to `.admin-root` (set once, on the admin layout) rather than
+     redefined globally, so `--border` and friends keep their storefront values
+     everywhere else. Everything below is a re-point of an existing token — no
+     new palette, no second design system.
+
+     The greys are the brand purple desaturated rather than neutral greys, so
+     the admin still reads as part of MeemiArt rather than as a bought-in
+     template. */
+  .admin-root {
+    /* Hairlines. The storefront's #d8d3e2 is a visible lilac rule; at the
+       density of an admin table that becomes a grid of lines you have to read
+       past. These are the same hue, dialled back. */
+    --border: #e7e3ee;
+    --input: #ded9e8;
+    /* One step stronger, for the few places that genuinely divide sections. */
+    --admin-rule: #d9d4e4;
+
+    /* Grounds, in depth order. */
+    --admin-canvas: #f6f4f8;
+    --admin-surface: #ffffff;
+    --admin-raised: #fbfafc;
+    --admin-hover: #f6f4f9;
+
+    /* Secondary text sits a touch lighter here than on the storefront: admin
+       screens carry far more metadata, and it should recede. */
+    --muted-foreground: #6b6478;
+  }
+
+  /* The one card. Border and ground do the work; the shadow is almost
+     subliminal and exists only to lift the card off the canvas. */
+  .admin-card {
+    @apply rounded-lg border border-border bg-card;
+    box-shadow: 0 1px 2px rgb(23 19 28 / 0.03);
+  }
+
+  /* Section label — the small tracked-out caps above a group of fields or a
+     table. Restrained on purpose: uppercase at full contrast shouts. */
+  .admin-eyebrow {
+    @apply text-[0.6875rem] font-semibold tracking-[0.08em] uppercase;
+    color: var(--muted-foreground);
+  }
+
+  /* Numbers that are the point of the card. Tight tracking, tabular figures,
+     so a column of them aligns and a large one does not sprawl. */
+  .admin-figure {
+    @apply text-[1.75rem] leading-[1.1] font-semibold tracking-[-0.02em] tabular-nums;
+    color: var(--foreground);
+  }
+
+  /* Identifiers — order numbers, transaction ids. Monospace and muted: they
+     are for matching against another system, not for reading. */
+  .admin-mono {
+    @apply font-mono text-xs tracking-tight;
+    color: var(--muted-foreground);
+  }
+
+  /* Table shell. Header is a ground rather than a boxed row, and only the
+     header carries a rule — body rows are separated by their own hairline so
+     the table reads as text, not as a grid. */
+  .admin-table {
+    @apply w-full text-sm;
+  }
+  .admin-table thead th {
+    @apply px-4 py-2.5 text-left font-medium whitespace-nowrap;
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    background: var(--admin-raised);
+    border-bottom: 1px solid var(--admin-rule);
+  }
+  .admin-table tbody td {
+    @apply px-4 py-3.5 align-middle;
+    border-top: 1px solid var(--border);
+  }
+  /* The first body row sits directly under the header's own rule. */
+  .admin-table tbody tr:first-child td {
+    border-top: 0;
+  }
+  .admin-table tbody tr {
+    transition: background-color 150ms ease;
+  }
+  .admin-table tbody tr:hover {
+    background: var(--admin-hover);
+  }
+
+  /* Row actions stay out of the way until the row is pointed at, and are
+     always present for keyboard users — `focus-within` keeps them from
+     vanishing mid-tab. Coarse pointers get them permanently, since there is
+     no hover to reveal them with. */
+  .admin-row-actions {
+    @apply opacity-0 transition-opacity duration-150;
+  }
+  tr:hover .admin-row-actions,
+  tr:focus-within .admin-row-actions {
+    @apply opacity-100;
+  }
+  @media (hover: none) {
+    .admin-row-actions {
+      @apply opacity-100;
+    }
+  }
+
   /* Page gutter used by every section so the storefront lines up vertically. */
   .container-page {
     @apply mx-auto w-full max-w-[1400px] px-5 sm:px-8 lg:px-12;

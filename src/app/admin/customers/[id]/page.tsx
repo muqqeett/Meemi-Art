@@ -78,30 +78,30 @@ export default async function AdminCustomerPage({
             </AdminTableCard>
           ) : (
             <AdminTableCard>
-              <table className="w-full min-w-[560px] text-sm">
+              <table className="admin-table min-w-[560px]">
                 <caption className="sr-only">
                   Orders placed by {customer.name ?? customer.email}
                 </caption>
-                <thead className="bg-surface-alt text-left">
-                  <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                    <th scope="col" className="px-4 py-3 font-medium">
+                <thead>
+                  <tr>
+                    <th scope="col">
                       Order
                     </th>
-                    <th scope="col" className="px-4 py-3 font-medium">
+                    <th scope="col">
                       Date
                     </th>
-                    <th scope="col" className="px-4 py-3 font-medium">
+                    <th scope="col">
                       Status
                     </th>
-                    <th scope="col" className="px-4 py-3 text-right font-medium">
+                    <th scope="col" className="text-right">
                       Total
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody>
                   {customer.orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-surface-alt/60">
-                      <td className="px-4 py-3">
+                    <tr key={order.id}>
+                      <td>
                         <Link
                           href={`/admin/orders/${order.orderNumber}`}
                           className="font-mono font-medium text-foreground hover:text-brand-600"
@@ -113,13 +113,13 @@ export default async function AdminCustomerPage({
                           {order._count.items === 1 ? "item" : "items"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="text-muted-foreground">
                         {order.placedAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
                       </td>
-                      <td className="px-4 py-3">
+                      <td>
                         <OrderStatusBadge status={order.status} />
                       </td>
-                      <td className="px-4 py-3 text-right font-medium tabular-nums">
+                      <td className="text-right font-medium tabular-nums">
                         {formatMoney(order.totalCents)}
                       </td>
                     </tr>
@@ -131,7 +131,7 @@ export default async function AdminCustomerPage({
         </section>
 
         <aside className="space-y-6">
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-card">
+          <section className="admin-card p-5">
             <h2 className="mb-3 text-sm font-semibold text-foreground">Recent reviews</h2>
             {customer.reviews.length === 0 ? (
               <p className="text-sm text-muted-foreground">No reviews written.</p>

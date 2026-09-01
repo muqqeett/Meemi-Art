@@ -84,35 +84,35 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
       ) : (
         <>
           <AdminTableCard>
-            <table className="w-full min-w-[820px] text-sm">
+            <table className="admin-table min-w-[820px]">
               <caption className="sr-only">All orders</caption>
-              <thead className="bg-surface-alt text-left">
-                <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                  <th scope="col" className="px-4 py-3 font-medium">
+              <thead>
+                <tr>
+                  <th scope="col">
                     Order
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Customer
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Placed
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Status
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Payment
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                  <th scope="col" className="text-right">
                     Total
                   </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-border">
+              <tbody>
                 {orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-surface-alt/60">
-                    <td className="px-4 py-3">
+                  <tr key={order.id}>
+                    <td>
                       <Link
                         href={`/admin/orders/${order.orderNumber}`}
                         className="font-mono font-medium text-foreground hover:text-brand-600"
@@ -124,7 +124,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                       </span>
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       {order.user ? (
                         <Link
                           href={`/admin/customers/${order.user.id}`}
@@ -143,21 +143,21 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                       </span>
                     </td>
 
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="text-muted-foreground">
                       <time dateTime={order.placedAt.toISOString()}>
                         {order.placedAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
                       </time>
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       <OrderStatusBadge status={order.status} />
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       {order.payment && <PaymentStatusBadge status={order.payment.status} />}
                     </td>
 
-                    <td className="px-4 py-3 text-right font-medium tabular-nums">
+                    <td className="text-right font-medium tabular-nums">
                       {formatMoney(order.totalCents)}
                     </td>
                   </tr>

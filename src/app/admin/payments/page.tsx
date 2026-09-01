@@ -55,35 +55,35 @@ export default async function AdminPaymentsPage({
       ) : (
         <>
           <AdminTableCard>
-            <table className="w-full min-w-[860px] text-sm">
+            <table className="admin-table min-w-[860px]">
               <caption className="sr-only">Payments</caption>
-              <thead className="bg-surface-alt text-left">
-                <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                  <th scope="col" className="px-4 py-3 font-medium">
+              <thead>
+                <tr>
+                  <th scope="col">
                     Order
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Customer
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Amount
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Method
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Status
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Date
                   </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-border">
+              <tbody>
                 {payments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-surface-alt/60">
-                    <td className="px-4 py-3">
+                  <tr key={payment.id}>
+                    <td>
                       <Link
                         href={`/admin/orders/${payment.order.orderNumber}`}
                         className="font-mono text-xs font-medium text-foreground hover:text-royal-600"
@@ -92,7 +92,7 @@ export default async function AdminPaymentsPage({
                       </Link>
                     </td>
 
-                    <td className="max-w-56 px-4 py-3">
+                    <td className="max-w-56">
                       <span className="block truncate text-foreground">
                         {payment.order.customerName}
                       </span>
@@ -101,14 +101,14 @@ export default async function AdminPaymentsPage({
                       </span>
                     </td>
 
-                    <td className="px-4 py-3 font-medium tabular-nums">
+                    <td className="font-medium tabular-nums">
                       {formatMoney(payment.amountCents)}
                       <span className="ml-1 text-xs font-normal text-muted-foreground">
                         {payment.currency}
                       </span>
                     </td>
 
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="text-muted-foreground">
                       <span className="capitalize">{payment.provider.toLowerCase()}</span>
                       {payment.cardLast4 && (
                         <span className="block text-xs">
@@ -117,7 +117,7 @@ export default async function AdminPaymentsPage({
                       )}
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       <StatusBadge tone={tone(payment.status)}>
                         {payment.status.toLowerCase()}
                       </StatusBadge>
@@ -128,7 +128,7 @@ export default async function AdminPaymentsPage({
                       )}
                     </td>
 
-                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                    <td className="whitespace-nowrap text-muted-foreground">
                       <time
                         dateTime={(payment.paidAt ?? payment.createdAt).toISOString()}
                       >

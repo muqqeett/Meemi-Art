@@ -249,7 +249,7 @@ export function ProductImageManager({
         }}
         className={cn(
           "flex flex-col items-center justify-center gap-3 border border-dashed px-6 py-10 text-center transition-colors",
-          dragging ? "border-brand-700 bg-brand-50" : "border-border bg-surface-alt",
+          dragging ? "border-brand-700 bg-brand-50" : "border-border bg-[var(--admin-raised)]",
           atCapacity && "opacity-60",
         )}
       >
@@ -385,7 +385,7 @@ export function ProductImageManager({
                 dragIndex === index && "opacity-50",
               )}
             >
-              <span className="relative size-24 shrink-0 overflow-hidden bg-surface-alt">
+              <span className="relative size-24 shrink-0 overflow-hidden bg-[var(--admin-raised)]">
                 <Image
                   src={image.url}
                   alt={image.alt || "Product photo preview"}

@@ -62,7 +62,7 @@ export default async function AdminReviewsPage({
       {distributionTotal > 0 && (
         <section
           aria-label="Rating summary"
-          className="mb-6 flex flex-wrap items-center gap-8 rounded-xs border border-border bg-card p-5 shadow-card"
+          className="mb-6 flex flex-wrap items-center gap-8 admin-card p-5"
         >
           <div>
             <p className="font-display text-4xl text-brand-700">{average.toFixed(1)}</p>

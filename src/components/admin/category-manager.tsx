@@ -260,32 +260,32 @@ export function CategoryManager({ categories }: { categories: AdminCategory[] })
         </AdminTableCard>
       ) : (
         <AdminTableCard>
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="admin-table min-w-[640px]">
             <caption className="sr-only">Product categories</caption>
-            <thead className="bg-surface-alt text-left">
-              <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                <th scope="col" className="px-4 py-3 font-medium">
+            <thead>
+              <tr>
+                <th scope="col">
                   Category
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Parent
                 </th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">
+                <th scope="col" className="text-right">
                   Products
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Status
                 </th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">
+                <th scope="col" className="text-right">
                   Actions
                 </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-border">
+            <tbody>
               {categories.map((category) => (
-                <tr key={category.id} className="hover:bg-surface-alt/60">
-                  <td className="px-4 py-3">
+                <tr key={category.id}>
+                  <td>
                     <span className="block font-medium text-foreground">
                       {category.name}
                     </span>
@@ -293,13 +293,13 @@ export function CategoryManager({ categories }: { categories: AdminCategory[] })
                       /{category.slug}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="text-muted-foreground">
                     {category.parent?.name ?? "—"}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
+                  <td className="text-right tabular-nums">
                     {category._count.products}
                   </td>
-                  <td className="px-4 py-3">
+                  <td>
                     <span
                       className={
                         category.isActive
@@ -310,7 +310,7 @@ export function CategoryManager({ categories }: { categories: AdminCategory[] })
                       {category.isActive ? "Active" : "Hidden"}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td>
                     <div className="flex justify-end gap-1">
                       <Button
                         variant="ghost"

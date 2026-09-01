@@ -35,20 +35,22 @@ export function AdminFilters({
     Boolean(get("q")) || selects.some((select) => Boolean(get(select.name)));
 
   return (
-    <div className="mb-4 flex flex-wrap items-end gap-3">
+    <div className="mb-4 flex flex-wrap items-center gap-2">
       <form
         onSubmit={(event) => {
           event.preventDefault();
           setFilters({ q: query || null });
         }}
-        className="min-w-56 flex-1"
+        // Caps the search field so it does not stretch across a wide screen and
+        // leave the selects stranded at the far edge.
+        className="min-w-52 flex-1 sm:max-w-xs"
       >
         <Label htmlFor="admin-search" className="sr-only">
           Search
         </Label>
         <div className="relative">
           <Search
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground/70"
             aria-hidden
           />
           <Input
@@ -56,7 +58,7 @@ export function AdminFilters({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={searchPlaceholder}
-            className="h-10 pl-9"
+            className="h-9 rounded-md border-border pl-8 text-[0.8125rem] transition-colors duration-150 placeholder:text-muted-foreground/70 hover:border-brand-200"
           />
         </div>
       </form>
@@ -70,7 +72,7 @@ export function AdminFilters({
             id={`filter-${select.name}`}
             value={get(select.name) ?? ""}
             onChange={(event) => setFilters({ [select.name]: event.target.value || null })}
-            className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            className="h-9 rounded-md border border-border bg-card px-2.5 text-[0.8125rem] text-foreground transition-colors duration-150 hover:border-brand-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
           >
             <option value="">{select.label}</option>
             {select.options.map((option) => (
@@ -86,7 +88,8 @@ export function AdminFilters({
         <Button
           type="button"
           variant="ghost"
-          size="pillSm"
+          size="sm"
+          className="h-9 px-2.5 text-[0.8125rem] text-muted-foreground hover:text-foreground"
           onClick={clearAll}
           disabled={pending}
         >

@@ -53,8 +53,14 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
   const failed = counts.get("FAILED") ?? 0;
   const allTotal = byStatus.reduce((sum, row) => sum + row.count, 0);
 
+  // Selected reads as a darker chip rather than a saturated brand pill — five
+  // filled pills in a row would be the loudest thing on a page whose point is
+  // the log beneath them.
   const tabClass =
-    "inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600";
+    "inline-flex h-8 items-center gap-2 rounded-md border px-3 text-[0.8125rem] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600";
+  const tabOn = "border-brand-300 bg-brand-50 font-medium text-brand-700";
+  const tabOff =
+    "border-border text-muted-foreground hover:border-brand-200 hover:bg-[var(--admin-hover)] hover:text-foreground";
 
   return (
     <div>
@@ -64,23 +70,23 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
       />
 
       {!configured && (
-        <div className="mb-6 flex items-start gap-3 rounded-xs border border-warning/40 bg-warning/10 px-4 py-3.5 text-sm">
+        <div className="mb-6 flex items-start gap-3 rounded-md border border-warning/25 bg-warning/[0.06] px-4 py-3.5 text-sm">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
           <p>
             <strong className="font-medium text-foreground">
               No email provider is configured.
             </strong>{" "}
             Nothing is being delivered — sends are recorded as skipped. Set{" "}
-            <code className="rounded bg-surface-alt px-1 py-0.5 text-xs">RESEND_API_KEY</code>{" "}
+            <code className="rounded-sm border border-border bg-[var(--admin-raised)] px-1 py-0.5 font-mono text-[0.6875rem]">RESEND_API_KEY</code>{" "}
             and{" "}
-            <code className="rounded bg-surface-alt px-1 py-0.5 text-xs">EMAIL_FROM</code>{" "}
+            <code className="rounded-sm border border-border bg-[var(--admin-raised)] px-1 py-0.5 font-mono text-[0.6875rem]">EMAIL_FROM</code>{" "}
             before relying on order confirmations.
           </p>
         </div>
       )}
 
       {configured && failed > 0 && (
-        <div className="mb-6 flex items-start gap-3 rounded-xs border border-destructive/30 bg-destructive/5 px-4 py-3.5 text-sm">
+        <div className="mb-6 flex items-start gap-3 rounded-md border border-destructive/25 bg-destructive/[0.05] px-4 py-3.5 text-sm">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
           <p>
             <strong className="font-medium text-foreground">
@@ -101,9 +107,7 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
           aria-current={status ? undefined : "page"}
           className={cn(
             tabClass,
-            status
-              ? "border-border text-muted-foreground hover:bg-surface-alt"
-              : "border-brand-600 bg-brand-600 font-medium text-white",
+            status ? tabOff : tabOn,
           )}
         >
           All
@@ -118,9 +122,7 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
             className={cn(
               tabClass,
               "capitalize",
-              status === value
-                ? "border-brand-600 bg-brand-600 font-medium text-white"
-                : "border-border text-muted-foreground hover:bg-surface-alt",
+              status === value ? tabOn : tabOff,
             )}
           >
             {value.toLowerCase()}
@@ -155,42 +157,42 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
       ) : (
         <>
           <AdminTableCard>
-            <table className="w-full min-w-[880px] text-sm">
+            <table className="admin-table min-w-[880px]">
               <caption className="sr-only">Email delivery log</caption>
-              <thead className="bg-surface-alt text-left">
-                <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                  <th scope="col" className="px-4 py-3 font-medium">
+              <thead>
+                <tr>
+                  <th scope="col">
                     Template
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Recipient
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Subject
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Status
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col">
                     Attempted
                   </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-border">
+              <tbody>
                 {emails.map((email) => (
-                  <tr key={email.id} className="hover:bg-surface-alt/60">
-                    <td className="px-4 py-3">
-                      <code className="rounded bg-surface-alt px-1.5 py-0.5 text-xs text-muted-foreground">
+                  <tr key={email.id}>
+                    <td>
+                      <code className="rounded-sm border border-border bg-[var(--admin-raised)] px-1.5 py-0.5 font-mono text-[0.6875rem] text-muted-foreground">
                         {email.template}
                       </code>
                     </td>
 
-                    <td className="max-w-56 px-4 py-3">
+                    <td className="max-w-56">
                       <span className="block truncate text-foreground">{email.to}</span>
                     </td>
 
-                    <td className="max-w-72 px-4 py-3">
+                    <td className="max-w-72">
                       <span className="block truncate text-muted-foreground">
                         {email.subject}
                       </span>
@@ -201,13 +203,13 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
                       )}
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td>
                       <StatusBadge tone={tone(email.status)}>
                         {email.status.toLowerCase()}
                       </StatusBadge>
                     </td>
 
-                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                    <td className="whitespace-nowrap text-muted-foreground">
                       <time dateTime={email.createdAt.toISOString()}>
                         {email.createdAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
                       </time>

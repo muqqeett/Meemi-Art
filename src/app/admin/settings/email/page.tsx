@@ -62,7 +62,7 @@ export default async function EmailTestPage() {
         description="Send a test message and see exactly what the provider said."
       />
 
-      <section className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
+      <section className="admin-card p-5 sm:p-6">
         <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
           <Mail className="size-4 text-brand-600" aria-hidden />
           Configuration
@@ -109,7 +109,7 @@ export default async function EmailTestPage() {
         <TestEmailForm configured={email.isConfigured} defaultEmail={admin.email ?? ""} />
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
+      <section className="admin-card p-5 sm:p-6">
         <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
           <ScrollText className="size-4 text-brand-600" aria-hidden />
           Recent attempts

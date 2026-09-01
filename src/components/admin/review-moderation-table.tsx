@@ -130,8 +130,8 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
       {/* The bulk bar takes the place of the toolbar rather than floating over
           the table, so nothing it covers can be mis-clicked underneath it. */}
       {selected.size > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xs border border-brand-700/30 bg-brand-50 px-4 py-3">
-          <p className="text-sm font-medium text-brand-800">
+        <div className="admin-card mb-4 flex flex-wrap items-center gap-3 border-brand-200 bg-brand-50/60 px-4 py-2.5">
+          <p className="text-sm font-medium text-brand-800 tabular-nums">
             {selected.size} selected
           </p>
           <div className="ml-auto flex flex-wrap gap-2">
@@ -165,53 +165,52 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-sm">
+      <div className="admin-card overflow-hidden">
+        <div className="w-full overflow-x-auto">
+          <table className="admin-table min-w-[980px]">
             <caption className="sr-only">Customer reviews</caption>
-            <thead className="bg-surface-alt text-left">
-              <tr className="text-xs tracking-wide text-muted-foreground uppercase">
-                <th scope="col" className="w-10 px-4 py-3">
+            <thead>
+              <tr>
+                <th scope="col" className="w-10">
                   <Checkbox
                     checked={allSelected}
                     onCheckedChange={toggleAll}
                     aria-label="Select every review on this page"
                   />
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Product
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Customer
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Rating
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Review
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Status
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium">
+                <th scope="col">
                   Date
                 </th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">
+                <th scope="col" className="text-right">
                   Actions
                 </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-border">
+            <tbody>
               {reviews.map((review) => (
                 <tr
                   key={review.id}
-                  className={cn(
-                    "hover:bg-surface-alt/60",
-                    selected.has(review.id) && "bg-brand-50/60",
-                  )}
+                  // Hover is `.admin-table`'s; selection has to beat it, so it
+                  // is declared here and wins on specificity of intent.
+                  className={cn(selected.has(review.id) && "bg-brand-50/70")}
                 >
-                  <td className="px-4 py-3">
+                  <td>
                     <Checkbox
                       checked={selected.has(review.id)}
                       onCheckedChange={() => toggle(review.id)}
@@ -219,7 +218,7 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     />
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td>
                     <Link
                       href={`/products/${review.product.slug}`}
                       target="_blank"
@@ -231,7 +230,7 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     </Link>
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td>
                     {review.user ? (
                       <Link
                         href={`/admin/customers/${review.user.id}`}
@@ -247,11 +246,11 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     </span>
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td>
                     <StarRating value={review.rating} size="sm" />
                   </td>
 
-                  <td className="max-w-sm px-4 py-3">
+                  <td className="max-w-sm">
                     <span className="block font-medium text-foreground">
                       {review.title}
                     </span>
@@ -260,7 +259,7 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     </span>
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td>
                     <StatusBadge tone={statusTone(review.status)}>
                       {review.status.toLowerCase()}
                     </StatusBadge>
@@ -272,7 +271,7 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     )}
                   </td>
 
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="text-muted-foreground">
                     <time dateTime={review.createdAt}>
                       {new Date(review.createdAt).toLocaleDateString("en-US", {
                         dateStyle: "medium",
@@ -280,7 +279,7 @@ export function ReviewModerationTable({ reviews }: { reviews: ModerationRow[] })
                     </time>
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td>
                     <div className="flex justify-end gap-0.5">
                       {review.status !== "APPROVED" ? (
                         <Button

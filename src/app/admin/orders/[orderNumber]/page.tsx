@@ -40,7 +40,7 @@ export default async function AdminOrderPage({
         </div>
 
         <aside className="space-y-6">
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-card">
+          <section className="admin-card p-5">
             <h2 className="mb-4 text-sm font-semibold text-foreground">Manage order</h2>
             <OrderStatusForm
               orderId={order.id}
@@ -48,7 +48,7 @@ export default async function AdminOrderPage({
             />
           </section>
 
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-card">
+          <section className="admin-card p-5">
             <h2 className="mb-4 text-sm font-semibold text-foreground">Customer</h2>
 
             <dl className="space-y-3 text-sm">

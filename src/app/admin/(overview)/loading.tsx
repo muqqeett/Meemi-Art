@@ -23,7 +23,7 @@ export default function AdminOverviewLoading() {
         {Array.from({ length: 2 }).map((_, index) => (
           <div
             key={index}
-            className="rounded-2xl border border-border bg-card p-5 shadow-card"
+            className="admin-card p-5"
           >
             <div className="h-4 w-32 animate-pulse rounded bg-border" />
             <div className="mt-5 h-56 animate-pulse rounded-lg bg-border/60" />

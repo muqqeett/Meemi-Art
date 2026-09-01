@@ -40,7 +40,7 @@ export function AdminBreadcrumbs() {
 
   return (
     <nav aria-label="Breadcrumb" className="min-w-0">
-      <ol className="flex items-center gap-1.5 text-sm">
+      <ol className="flex items-center gap-1.5 text-[0.8125rem]">
         {crumbs.map((crumb) => (
           <li key={crumb.href} className="flex min-w-0 items-center gap-1.5">
             {crumb.last ? (
@@ -54,12 +54,12 @@ export function AdminBreadcrumbs() {
               <>
                 <Link
                   href={crumb.href}
-                  className="truncate text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                  className="truncate rounded-sm text-muted-foreground transition-colors duration-150 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                 >
                   {crumb.label}
                 </Link>
                 <ChevronRight
-                  className="size-3.5 shrink-0 text-muted-foreground/50"
+                  className="size-3 shrink-0 text-muted-foreground/40"
                   aria-hidden
                 />
               </>
