@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Fraunces, Kalam, Caveat, Source_Sans_3, Raleway } from "next/font/google";
 
 import { siteConfig } from "@/lib/config";
 import { Toaster } from "@/components/ui/sonner";
@@ -8,77 +7,22 @@ import { MotionProvider } from "@/components/motion/motion-provider";
 
 import "./globals.css";
 
-/** UI and body copy — geometric, warm, excellent at small sizes. */
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
 /**
- * Display face. Fraunces carries the handmade character of the brand without
- * tipping into craft-fair territory — its soft, high-contrast forms do the
- * editorial work that the palette deliberately leaves alone.
- */
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-/**
- * Hero headline face.
+ * Typefaces.
  *
- * The design specifies Segoe Print, which ships only with Windows — on macOS,
- * iOS, Android and Linux it silently falls back to a generic cursive and the
- * headline stops looking designed. Kalam is the closest freely-servable match
- * (upright, casual print hand, has a real 700). The stack in `--font-hand`
- * lists Segoe Print first, so Windows still renders the exact drawn shapes and
- * everyone else gets a near match rather than a default.
- */
-const kalam = Kalam({
-  variable: "--font-kalam",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
-
-/**
- * The homepage's script and wordmark faces.
+ * All six faces — DM Sans, Fraunces, Kalam, Caveat, Source Sans 3 and Raleway —
+ * are self-hosted from `public/fonts` and declared in `src/app/fonts.css`,
+ * which also defines the `--font-*` custom properties this file used to inject
+ * through `next/font/google` classes on <html>.
  *
- * Same substitution problem as Kalam: the design is set in Segoe Script and
- * Source Sans 3, and Segoe Script ships only with Windows. Caveat is the
- * closest freely-servable connected script; Source Sans 3 is on Google Fonts
- * under its own name, so the wordmark is exact everywhere.
- */
-const caveat = Caveat({
-  variable: "--font-caveat",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
-
-const sourceSans = Source_Sans_3({
-  variable: "--font-source-sans",
-  subsets: ["latin"],
-  weight: ["600", "800"],
-  display: "swap",
-});
-
-/**
- * Product-detail headings — Figma "Description:", "Reviews Filter" etc.
+ * Nothing is imported here any more, and that is the point: `next/font/google`
+ * downloads each binary at compile time under a 3 s dev-only timeout, and a
+ * slow response leaves Turbopack caching a failed module resolution that 500s
+ * every route. See the header of `fonts.css` for the full explanation.
  *
- * Only the two weights the design uses, so the page does not download five it
- * never sets.
+ * Clash Grotesk is the exception and still comes from Fontshare's CDN — see the
+ * <head> below.
  */
-const raleway = Raleway({
-  variable: "--font-raleway",
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -125,7 +69,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${dmSans.variable} ${fraunces.variable} ${kalam.variable} ${caveat.variable} ${sourceSans.variable} ${raleway.variable} h-full`}
+      className="h-full"
     >
       <head>
         {/*

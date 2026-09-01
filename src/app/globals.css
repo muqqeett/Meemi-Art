@@ -1,8 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+/* Self-hosted @font-face rules and the --font-* variables they define. */
+@import "./fonts.css";
 
 @custom-variant dark (&:is(.dark *));
+
 
 /* ---------------------------------------------------------------------------
    Meemi Art — Handmade Crochet. Beautifully Crafted.
