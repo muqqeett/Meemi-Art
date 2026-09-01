@@ -113,7 +113,7 @@ export default async function AdminProductsPage({
       ) : (
         <>
           <AdminTableCard>
-            <table className="admin-table min-w-[860px]">
+            <table className="admin-table admin-table-stack min-w-[860px]">
               <caption className="sr-only">Product catalogue</caption>
               <thead>
                 <tr>
@@ -140,10 +140,10 @@ export default async function AdminProductsPage({
 
               <tbody>
                 {products.map((product) => (
-                  <tr key={product.id}>
-                    <td>
+                  <tr key={product.id} className="group/row">
+                    <td data-label="Product">
                       <div className="flex items-center gap-3">
-                        <span className="relative size-11 shrink-0 overflow-hidden rounded-md border border-border bg-[var(--admin-raised)]">
+                        <span className="relative size-12 shrink-0 overflow-hidden rounded-md border border-border bg-[var(--admin-raised)] transition-all duration-200 group-hover/row:border-brand-300 group-hover/row:shadow-[0_4px_12px_-6px_rgb(36_17_63/0.4)]">
                           {product.images[0]?.url && (
                             <Image
                               src={product.images[0].url}
@@ -157,21 +157,21 @@ export default async function AdminProductsPage({
                         <span className="min-w-0">
                           <Link
                             href={`/admin/products/${product.id}/edit`}
-                            className="block truncate font-medium text-foreground hover:text-brand-600"
+                            className="admin-cell-primary transition-colors duration-150 hover:text-brand-600"
                           >
                             {product.name}
                           </Link>
-                          <span className="block font-mono text-xs text-muted-foreground">
+                          <span className="admin-cell-meta font-mono">
                             {product.sku} · {product.asset?.version ? `v${product.asset.version}` : "—"}</span>
                         </span>
                       </div>
                     </td>
 
-                    <td className="text-muted-foreground">
+                    <td data-label="Category" className="text-muted-foreground">
                       {product.category.name}
                     </td>
 
-                    <td>
+                    <td data-label="Price">
                       <span className="font-medium tabular-nums">
                         {formatMoney(product.priceCents)}
                       </span>
@@ -186,7 +186,7 @@ export default async function AdminProductsPage({
                         but it can be missing — and a published product with no
                         file is the one state that costs a customer money for
                         nothing. */}
-                    <td>
+                    <td data-label="File">
                       {product.hasFile ? (
                         <span className="text-xs text-muted-foreground">
                           {product.asset ? formatBytes(product.asset.bytes) : "—"}
@@ -198,7 +198,7 @@ export default async function AdminProductsPage({
                       )}
                     </td>
 
-                    <td>
+                    <td data-label="Status">
                       <span
                         className={cn(
                           "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset",
@@ -211,7 +211,7 @@ export default async function AdminProductsPage({
                       </span>
                     </td>
 
-                    <td>
+                    <td data-label="Actions">
                       <ProductRowActions product={product} />
                     </td>
                   </tr>

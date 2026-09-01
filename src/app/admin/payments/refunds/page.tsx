@@ -66,7 +66,7 @@ export default async function AdminRefundsPage({
       ) : (
         <>
           <AdminTableCard>
-            <table className="admin-table min-w-[760px]">
+            <table className="admin-table admin-table-stack min-w-[760px]">
               <caption className="sr-only">Refunded payments</caption>
               <thead>
                 <tr>
@@ -91,29 +91,29 @@ export default async function AdminRefundsPage({
               <tbody>
                 {payments.map((payment) => (
                   <tr key={payment.id}>
-                    <td>
+                    <td data-label="Order">
                       <Link
                         href={`/admin/orders/${payment.order.orderNumber}`}
-                        className="font-mono text-xs font-medium text-foreground hover:text-royal-600"
+                        className="admin-mono font-medium text-foreground transition-colors duration-150 hover:text-brand-600"
                       >
                         {payment.order.orderNumber}
                       </Link>
                     </td>
 
-                    <td className="max-w-56">
-                      <span className="block truncate text-foreground">
+                    <td data-label="Customer" className="max-w-56">
+                      <span className="admin-cell-primary">
                         {payment.order.customerName}
                       </span>
-                      <span className="block truncate text-xs text-muted-foreground">
+                      <span className="admin-cell-meta">
                         {payment.order.email}
                       </span>
                     </td>
 
-                    <td className="font-medium tabular-nums">
+                    <td data-label="Original charge" className="font-medium tabular-nums">
                       {formatMoney(payment.amountCents)}
                     </td>
 
-                    <td className="whitespace-nowrap text-muted-foreground">
+                    <td data-label="Paid" className="whitespace-nowrap text-muted-foreground">
                       {payment.paidAt ? (
                         <time dateTime={payment.paidAt.toISOString()}>
                           {payment.paidAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
@@ -123,7 +123,7 @@ export default async function AdminRefundsPage({
                       )}
                     </td>
 
-                    <td className="whitespace-nowrap text-muted-foreground">
+                    <td data-label="Refunded" className="whitespace-nowrap text-muted-foreground">
                       {payment.refundedAt ? (
                         <time dateTime={payment.refundedAt.toISOString()}>
                           {payment.refundedAt.toLocaleDateString("en-US", {

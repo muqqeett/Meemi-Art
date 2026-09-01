@@ -157,7 +157,7 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
       ) : (
         <>
           <AdminTableCard>
-            <table className="admin-table min-w-[880px]">
+            <table className="admin-table admin-table-stack min-w-[880px]">
               <caption className="sr-only">Email delivery log</caption>
               <thead>
                 <tr>
@@ -182,17 +182,17 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
               <tbody>
                 {emails.map((email) => (
                   <tr key={email.id}>
-                    <td>
+                    <td data-label="Template">
                       <code className="rounded-sm border border-border bg-[var(--admin-raised)] px-1.5 py-0.5 font-mono text-[0.6875rem] text-muted-foreground">
                         {email.template}
                       </code>
                     </td>
 
-                    <td className="max-w-56">
-                      <span className="block truncate text-foreground">{email.to}</span>
+                    <td data-label="Recipient" className="max-w-56">
+                      <span className="admin-cell-primary">{email.to}</span>
                     </td>
 
-                    <td className="max-w-72">
+                    <td data-label="Subject" className="max-w-72">
                       <span className="block truncate text-muted-foreground">
                         {email.subject}
                       </span>
@@ -203,13 +203,13 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
                       )}
                     </td>
 
-                    <td>
+                    <td data-label="Status">
                       <StatusBadge tone={tone(email.status)}>
                         {email.status.toLowerCase()}
                       </StatusBadge>
                     </td>
 
-                    <td className="whitespace-nowrap text-muted-foreground">
+                    <td data-label="Attempted" className="whitespace-nowrap text-muted-foreground">
                       <time dateTime={email.createdAt.toISOString()}>
                         {email.createdAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
                       </time>

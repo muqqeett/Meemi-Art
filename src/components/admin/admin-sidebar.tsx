@@ -79,7 +79,7 @@ function NavList({
           {collapsed ? (
             <div aria-hidden className="mx-auto mb-3 h-px w-6 bg-border first:hidden" />
           ) : (
-            <p className="admin-eyebrow px-3 pb-2">{group.label}</p>
+            <p className="admin-rubric px-3 pb-2.5">{group.label}</p>
           )}
 
           <ul className="flex flex-col gap-0.5">
@@ -103,29 +103,38 @@ function NavList({
                       // icon is optically centred in the rail.
                       collapsed ? "size-11 justify-center" : "h-10 gap-3 px-3",
                       active
-                        ? "font-medium text-brand-700"
-                        : "text-muted-foreground hover:bg-[var(--admin-hover)] hover:text-foreground",
-                      // Expanded, the active row gets the faintest tint — the
-                      // indicator rule is the signal, the tint just anchors it.
-                      active && !collapsed && "bg-brand-50/60",
-                      // Collapsed, there is no label to carry weight, so the
-                      // tint is the whole signal and has to be legible alone.
-                      active && collapsed && "bg-brand-50",
+                        ? "font-semibold text-brand-700"
+                        : "font-medium text-muted-foreground hover:bg-[var(--admin-hover)] hover:text-foreground",
+                      // The active row is a lavender capsule that fades out to
+                      // the right, so it reads as light coming off the edge
+                      // indicator rather than as a filled block.
+                      active &&
+                        !collapsed &&
+                        "bg-gradient-to-r from-brand-100/90 via-brand-50/60 to-transparent",
+                      active && collapsed && "bg-brand-100/80",
                     )}
                   >
-                    {/* A 2px rule against the rail edge rather than a filled
-                        block. Expanded only: collapsed, it would sit against
-                        the icon and read as an artefact. */}
+                    {/* The indicator: a short violet bar on the rail edge with
+                        a soft bloom around it. This is the "energy" — it is the
+                        only lit thing in the sidebar at any moment. */}
                     {active && !collapsed && (
                       <span
                         aria-hidden
-                        className="absolute inset-y-2 -left-3 w-0.5 rounded-r-full bg-brand-700"
+                        className="absolute inset-y-1.5 -left-3 w-[3px] rounded-r-full bg-brand-600 shadow-[0_0_10px_1px_rgb(123_95_191/0.55)]"
+                      />
+                    )}
+                    {active && collapsed && (
+                      <span
+                        aria-hidden
+                        className="absolute inset-y-2 -left-2.5 w-[3px] rounded-r-full bg-brand-600 shadow-[0_0_10px_1px_rgb(123_95_191/0.55)]"
                       />
                     )}
                     <item.Icon
                       className={cn(
-                        "size-4 shrink-0 transition-colors duration-150",
-                        active ? "text-brand-700" : "text-muted-foreground/80",
+                        "size-[1.05rem] shrink-0 transition-all duration-200",
+                        active
+                          ? "text-brand-600"
+                          : "text-muted-foreground/70 group-hover/nav:translate-x-px group-hover/nav:text-brand-500",
                       )}
                       aria-hidden
                     />
@@ -147,7 +156,7 @@ function Wordmark({ collapsed }: { collapsed: boolean }) {
     <Link
       href="/admin"
       className={cn(
-        "flex h-14 shrink-0 items-center gap-2 border-b border-border focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-600",
+        "flex h-14 shrink-0 items-center gap-2 border-b border-border transition-colors duration-150 hover:bg-[var(--admin-hover)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-600",
         collapsed ? "justify-center px-0" : "px-4",
       )}
     >
@@ -208,7 +217,7 @@ export function AdminSidebar() {
       "--admin-rail",
       // Must match the rail's own width classes below, or the content column
       // is offset by the wrong amount.
-      collapsed ? "64px" : "15rem",
+      collapsed ? "68px" : "16rem",
     );
   }, [collapsed]);
 
@@ -218,8 +227,8 @@ export function AdminSidebar() {
     <aside
       data-collapsed={collapsed}
       className={cn(
-        "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-card transition-[width] duration-200 ease-out lg:flex",
-        collapsed ? "w-[64px]" : "w-60",
+        "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-[var(--admin-rail-bg)] transition-[width] duration-260 ease-[cubic-bezier(0.16,1,0.3,1)] lg:flex",
+        collapsed ? "w-[68px]" : "w-64",
       )}
     >
       <Wordmark collapsed={collapsed} />

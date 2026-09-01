@@ -337,7 +337,10 @@
     /* One step stronger, for the few places that genuinely divide sections. */
     --admin-rule: #d9d4e4;
 
-    /* Grounds, in depth order. */
+    /* Grounds, in depth order. The rail is a shade warmer than the canvas so
+       the white content column reads as the working surface and the rail as
+       chrome around it. */
+    --admin-rail-bg: #fbfafd;
     --admin-canvas: #f6f4f8;
     --admin-surface: #ffffff;
     --admin-raised: #fbfafc;
@@ -348,11 +351,94 @@
     --muted-foreground: #6b6478;
   }
 
-  /* The one card. Border and ground do the work; the shadow is almost
-     subliminal and exists only to lift the card off the canvas. */
+  /* ---- Three surface tiers ------------------------------------------------
+     The admin previously had one card used for everything, which is why every
+     screen read as a grid of equal boxes. Three tiers, used deliberately:
+
+       .admin-hero     deep violet. ONE per screen, for the thing that matters
+       .admin-card     the standard information surface
+       .admin-plate    minimal — a ground with no border, for dense sub-blocks
+
+     The hero is the only place the brand purple appears at full strength. It
+     works because everything around it is near-neutral; the moment a second
+     violet panel appears on a screen, both stop meaning anything. */
+
+  .admin-hero {
+    @apply relative overflow-hidden rounded-xl;
+    background:
+      radial-gradient(120% 140% at 88% -10%, #3b2a73 0%, transparent 55%),
+      linear-gradient(158deg, #2f1a55 0%, #24113f 46%, #1a0c2e 100%);
+    color: #e3daf5;
+    box-shadow:
+      0 1px 2px rgb(23 19 28 / 0.16),
+      0 24px 48px -28px rgb(36 17 63 / 0.55);
+  }
+  /* A single hairline of lavender along the top edge catches the light and
+     keeps the panel from reading as a flat block of colour. */
+  .admin-hero::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(199 182 232 / 0.55) 22%,
+      rgb(255 166 30 / 0.35) 52%,
+      transparent 88%
+    );
+  }
+
   .admin-card {
     @apply rounded-lg border border-border bg-card;
     box-shadow: 0 1px 2px rgb(23 19 28 / 0.03);
+    transition:
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      transform 180ms ease;
+  }
+  /* Lift is opt-in: only surfaces that actually go somewhere get it. */
+  .admin-card-interactive:hover {
+    border-color: var(--color-brand-300);
+    box-shadow: 0 1px 2px rgb(23 19 28 / 0.04), 0 12px 24px -18px rgb(36 17 63 / 0.35);
+    transform: translateY(-2px);
+  }
+
+  .admin-plate {
+    @apply rounded-md;
+    background: var(--admin-raised);
+  }
+
+  /* ---- Editorial type -----------------------------------------------------
+     Fraunces carries the display sizes. It is the storefront's headline face,
+     so a number set in it reads as MeemiArt rather than as a dashboard widget —
+     which is the whole point of using type as the primary design element. */
+
+  /* The hero figure. Deliberately enormous. */
+  .admin-display {
+    font-family: var(--font-display);
+    @apply text-[3rem] leading-[0.92] font-semibold tracking-[-0.03em] tabular-nums sm:text-[4rem] lg:text-[4.75rem];
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* Secondary figures — subordinate to the hero by an order of magnitude. */
+  .admin-figure {
+    @apply text-[1.5rem] leading-[1.1] font-semibold tracking-[-0.02em] tabular-nums;
+    color: var(--foreground);
+  }
+
+  /* Section labels get real editorial treatment: wide tracking, a hairline
+     rule that runs to the end of the column. */
+  .admin-rubric {
+    @apply flex items-center gap-3 text-[0.625rem] font-semibold tracking-[0.22em] uppercase;
+    color: var(--muted-foreground);
+  }
+  .admin-rubric::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
   }
 
   /* Section label — the small tracked-out caps above a group of fields or a
@@ -400,10 +486,201 @@
     border-top: 0;
   }
   .admin-table tbody tr {
-    transition: background-color 150ms ease;
+    transition:
+      background-color 150ms ease,
+      box-shadow 150ms ease;
   }
+  /* Hover lights the row and runs a violet rule down its leading edge via an
+     inset shadow — no layout shift, and it reads as the row being picked up
+     rather than merely tinted. */
   .admin-table tbody tr:hover {
     background: var(--admin-hover);
+    box-shadow: inset 2px 0 0 var(--color-brand-400);
+  }
+
+  /* ---- Tables on a phone --------------------------------------------------
+     Below 640px a seven-column table is a horizontal scroll nobody performs.
+     `.admin-table-stack` restacks it into one card per record: the header is
+     dropped, each row becomes a bordered block, and each cell puts its column
+     name — carried in `data-label`, which the markup already needs for nothing
+     else — on the left with its value on the right.
+
+     The first cell keeps the full width and no label, because it is the
+     record's identity and reads as the card's heading.
+
+     Opt-in per table, since a two-column table is fine as it is. Above `sm`
+     this rule set does not exist and the table is a table. */
+  @media (max-width: 639px) {
+    .admin-table-stack,
+    .admin-table-stack tbody,
+    .admin-table-stack tr,
+    .admin-table-stack td {
+      display: block;
+      width: 100%;
+    }
+    .admin-table-stack {
+      min-width: 0 !important;
+    }
+    .admin-table-stack thead {
+      display: none;
+    }
+    .admin-table-stack tbody tr {
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 0.25rem 0.875rem 0.5rem;
+      margin-bottom: 0.625rem;
+      background: var(--card);
+    }
+    /* The inset hover rule would land on a corner here. */
+    .admin-table-stack tbody tr:hover {
+      box-shadow: none;
+    }
+    .admin-table-stack tbody td {
+      border-top: 1px solid var(--border);
+      padding: 0.5rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      text-align: right;
+    }
+    .admin-table-stack tbody td::before {
+      content: attr(data-label);
+      flex: none;
+      font-size: 0.6875rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted-foreground);
+      text-align: left;
+    }
+    /* Identity cell: full width, no label, no rule above it. */
+    .admin-table-stack tbody td:first-child {
+      border-top: 0;
+      display: block;
+      text-align: left;
+      padding-top: 0.75rem;
+    }
+    .admin-table-stack tbody td:first-child::before {
+      content: none;
+    }
+    /* Cells that hold controls rather than values keep them right-aligned but
+       let the control size itself. */
+    .admin-table-stack tbody td:last-child {
+      justify-content: flex-end;
+    }
+  }
+
+  /* ---- Row hierarchy ------------------------------------------------------
+     A table row carries two classes of information and they should not look
+     alike: what the row IS, and what is true about it. */
+
+  /* The identifying value — product name, order number, customer. */
+  .admin-cell-primary {
+    @apply block truncate text-[0.875rem] font-medium;
+    color: var(--foreground);
+    letter-spacing: -0.006em;
+  }
+  /* Everything under it: sku, email, timestamps, counts. */
+  .admin-cell-meta {
+    @apply mt-0.5 block truncate text-xs;
+    color: var(--muted-foreground);
+  }
+
+  /* ---- Motion -------------------------------------------------------------
+     Fast and flat. Everything lands inside 420ms, nothing overshoots, nothing
+     bounces: this is a workspace, and an operator should never wait on an
+     animation to read a number. The global `prefers-reduced-motion` block at
+     the foot of this file neutralises all of it.
+
+     `admin-rise` is the entrance. Children stagger by index through
+     `--admin-i`, set inline where a list needs it — 40ms apart, so a row of
+     four KPIs is fully settled in 320ms. */
+  .admin-rise {
+    animation: admin-rise 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--admin-i, 0) * 40ms);
+  }
+  @keyframes admin-rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* The headline figure counts itself in by scaling very slightly and
+     clearing a blur — reads as the number resolving rather than sliding. */
+  .admin-reveal-figure {
+    animation: admin-reveal-figure 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes admin-reveal-figure {
+    from {
+      opacity: 0;
+      filter: blur(6px);
+      transform: translateY(8px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      filter: none;
+      transform: none;
+    }
+  }
+
+  /* Live indicator. A slow double-beat, not a blink. */
+  .admin-pulse::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    animation: admin-pulse 2.4s ease-out infinite;
+  }
+  @keyframes admin-pulse {
+    0% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    70%,
+    100% {
+      opacity: 0;
+      transform: scale(2.6);
+    }
+  }
+
+  /* Skeletons sweep rather than pulse — a block that fades in and out reads as
+     a fault; a sweep reads as loading. */
+  .admin-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--admin-raised) 0%,
+      var(--admin-hover) 38%,
+      var(--border) 50%,
+      var(--admin-hover) 62%,
+      var(--admin-raised) 100%
+    );
+    background-size: 260% 100%;
+    animation: admin-shimmer 1.5s ease-in-out infinite;
+  }
+  @keyframes admin-shimmer {
+    from {
+      background-position: 130% 0;
+    }
+    to {
+      background-position: -130% 0;
+    }
+  }
+
+  /* Every admin button gives 1% on press. CSS, because a two-property
+     transition does not justify a JS animation on every control. */
+  .admin-root button:not(:disabled):active,
+  .admin-root [role="button"]:not([aria-disabled="true"]):active {
+    transform: scale(0.985);
+  }
+  .admin-root button,
+  .admin-root [role="button"] {
+    transition: transform 120ms ease;
   }
 
   /* Row actions stay out of the way until the row is pointed at, and are

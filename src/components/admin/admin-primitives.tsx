@@ -76,7 +76,7 @@ export function AdminTableSkeleton({
   return (
     <AdminTableCard>
       <div className="border-b border-[var(--admin-rule)] bg-[var(--admin-raised)] px-4 py-2.5">
-        <div className="h-3 w-24 animate-pulse rounded-sm bg-border" />
+        <div className="h-3 w-24 admin-shimmer rounded-sm" />
       </div>
       <div>
         {Array.from({ length: rows }).map((_, row) => (
@@ -91,7 +91,7 @@ export function AdminTableSkeleton({
               <div
                 key={col}
                 className={cn(
-                  "h-3.5 animate-pulse rounded-sm bg-border",
+                  "h-3.5 admin-shimmer rounded-sm",
                   col === 0 ? "w-40" : "w-20",
                   col === columns - 1 && "ml-auto",
                 )}
@@ -114,11 +114,11 @@ export function AdminStatSkeleton({ count = 4 }: { count?: number }) {
       {Array.from({ length: count }).map((_, index) => (
         <div key={index} className="admin-card p-5">
           <div className="flex items-start justify-between">
-            <div className="h-3 w-20 animate-pulse rounded-sm bg-border" />
-            <div className="size-4 animate-pulse rounded-sm bg-border" />
+            <div className="h-3 w-20 admin-shimmer rounded-sm" />
+            <div className="size-4 admin-shimmer rounded-sm" />
           </div>
-          <div className="mt-3 h-7 w-28 animate-pulse rounded-sm bg-border" />
-          <div className="mt-2.5 h-3 w-24 animate-pulse rounded-sm bg-border" />
+          <div className="mt-3 h-7 w-28 admin-shimmer rounded-sm" />
+          <div className="mt-2.5 h-3 w-24 admin-shimmer rounded-sm" />
         </div>
       ))}
     </div>
@@ -129,8 +129,8 @@ export function AdminStatSkeleton({ count = 4 }: { count?: number }) {
 export function AdminHeaderSkeleton() {
   return (
     <div className="mb-6">
-      <div className="h-7 w-44 animate-pulse rounded-sm bg-border" />
-      <div className="mt-2 h-3.5 w-72 max-w-full animate-pulse rounded-sm bg-border" />
+      <div className="h-7 w-44 admin-shimmer rounded-sm" />
+      <div className="mt-2 h-3.5 w-72 max-w-full admin-shimmer rounded-sm" />
     </div>
   );
 }

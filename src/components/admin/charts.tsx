@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   Area,
   AreaChart,
@@ -24,6 +25,8 @@ import { formatMoneyCompact } from "@/lib/money";
  * data is the only saturated thing on the canvas.
  */
 const BRAND = "#24113f"; // brand purple
+const VIOLET = "#7b5fbf"; // the lit accent, for a series drawn on dark ground
+const LAVENDER = "#c7b6e8";
 const ROYAL = "#3157c8"; // sapphire
 const GRID = "#e3daf5";
 const MUTED = "#6f6a75";
@@ -35,46 +38,149 @@ const axisProps = {
   axisLine: false,
 } as const;
 
-const tooltipStyle = {
-  borderRadius: 12,
-  border: `1px solid ${GRID}`,
-  boxShadow: "0 12px 40px -12px rgb(36 17 63 / 0.28)",
-  fontSize: 13,
-} as const;
+/** True when the viewer has asked for less motion. Read at render time. */
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
+  );
+}
 
+/**
+ * One tooltip for every chart.
+ *
+ * Recharts' default is a bordered box with a label and a coloured key, which
+ * reads as a library default wherever it appears. This is a small card: the
+ * value first at reading weight, the period beneath it. `onDark` flips it for
+ * the dashboard hero, where a white tooltip would be the brightest thing on
+ * the panel.
+ */
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  render,
+  onDark = false,
+}: {
+  active?: boolean;
+  payload?: { value?: number | string }[];
+  label?: string | number;
+  render: (value: number) => string;
+  onDark?: boolean;
+}): ReactNode {
+  if (!active || !payload?.length) return null;
+  const value = Number(payload[0]?.value ?? 0);
+
+  return (
+    <div
+      className={
+        onDark
+          ? "rounded-md border border-white/15 bg-[#1a0c2e]/95 px-3 py-2 shadow-[0_12px_32px_-12px_rgb(0_0_0/0.6)] backdrop-blur-sm"
+          : "rounded-md border border-border bg-card px-3 py-2 shadow-[0_12px_32px_-14px_rgb(36_17_63/0.35)]"
+      }
+    >
+      <p
+        className={
+          onDark
+            ? "text-sm font-semibold text-white tabular-nums"
+            : "text-sm font-semibold text-foreground tabular-nums"
+        }
+      >
+        {render(value)}
+      </p>
+      <p
+        className={
+          onDark
+            ? "mt-0.5 text-[0.6875rem] tracking-wide text-brand-300 uppercase"
+            : "mt-0.5 text-[0.6875rem] tracking-wide text-muted-foreground uppercase"
+        }
+      >
+        {label}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Revenue over twelve months.
+ *
+ * `onDark` renders it for the dashboard hero — lavender line on the deep violet
+ * panel, no gridlines, dimmed axes. The light rendering is kept for
+ * `/admin/analytics`, which has no hero to sit on.
+ *
+ * The line draws itself in over 900ms on mount. Recharts animates an SVG path
+ * from JavaScript, which the global `prefers-reduced-motion` CSS override
+ * cannot reach, so the preference is read here and the animation is switched
+ * off rather than merely shortened.
+ */
 export function RevenueChart({
   data,
+  onDark = false,
+  height = "h-72",
 }: {
   data: { month: string; revenue: number; orders: number }[];
+  onDark?: boolean;
+  height?: string;
 }) {
+  const animate = !prefersReducedMotion();
+  const line = onDark ? LAVENDER : BRAND;
+  const axis = onDark ? { ...axisProps, stroke: "rgb(199 182 232 / 0.55)" } : axisProps;
+  const fillId = onDark ? "revenueFillDark" : "revenueFill";
+
   return (
-    <div className="h-72 w-full">
+    <div className={`${height} w-full`}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 10, right: 8, left: -8, bottom: 0 }}>
           <defs>
-            <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={BRAND} stopOpacity={0.28} />
-              <stop offset="100%" stopColor={BRAND} stopOpacity={0.02} />
+            <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset="0%"
+                stopColor={onDark ? VIOLET : BRAND}
+                stopOpacity={onDark ? 0.5 : 0.26}
+              />
+              <stop offset="100%" stopColor={onDark ? VIOLET : BRAND} stopOpacity={0.01} />
             </linearGradient>
           </defs>
 
-          <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-          <XAxis dataKey="month" {...axisProps} />
+          {/* The hero has no gridlines — the panel is already a strong ground
+              and rules across it would fight the line. */}
+          {!onDark && (
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+          )}
+          <XAxis dataKey="month" {...axis} />
           <YAxis
-            {...axisProps}
+            {...axis}
             tickFormatter={(value: number) => formatMoneyCompact(value * 100)}
             width={64}
           />
           <Tooltip
-            contentStyle={tooltipStyle}
-            formatter={(value) => [formatMoneyCompact(Number(value ?? 0) * 100), "Revenue"]}
+            cursor={{
+              stroke: onDark ? "rgb(199 182 232 / 0.45)" : GRID,
+              strokeWidth: 1,
+              strokeDasharray: "4 4",
+            }}
+            content={
+              <ChartTooltip onDark={onDark} render={(v) => formatMoneyCompact(v * 100)} />
+            }
           />
           <Area
             type="monotone"
             dataKey="revenue"
-            stroke={BRAND}
-            strokeWidth={2}
-            fill="url(#revenueFill)"
+            stroke={line}
+            strokeWidth={2.25}
+            fill={`url(#${fillId})`}
+            isAnimationActive={animate}
+            animationDuration={900}
+            animationEasing="ease-out"
+            // No dot until the pointer is on the series: twelve permanent dots
+            // is clutter, one lit dot is a reading.
+            dot={false}
+            activeDot={{
+              r: 4.5,
+              fill: onDark ? "#ffffff" : BRAND,
+              stroke: onDark ? VIOLET : "#ffffff",
+              strokeWidth: 2.5,
+            }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -87,19 +193,30 @@ export function OrdersChart({
 }: {
   data: { month: string; revenue: number; orders: number }[];
 }) {
+  const animate = !prefersReducedMotion();
+
   return (
-    <div className="h-72 w-full">
+    <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
           <XAxis dataKey="month" {...axisProps} />
           <YAxis {...axisProps} allowDecimals={false} width={40} />
           <Tooltip
-            contentStyle={tooltipStyle}
-            cursor={{ fill: "rgb(49 87 200 / 0.07)" }}
-            formatter={(value) => [Number(value ?? 0), "Orders"]}
+            cursor={{ fill: "rgb(49 87 200 / 0.06)" }}
+            content={
+              <ChartTooltip render={(v) => `${v} ${v === 1 ? "order" : "orders"}`} />
+            }
           />
-          <Bar dataKey="orders" fill={ROYAL} radius={[6, 6, 0, 0]} maxBarSize={36} />
+          <Bar
+            dataKey="orders"
+            fill={ROYAL}
+            radius={[4, 4, 0, 0]}
+            maxBarSize={30}
+            isAnimationActive={animate}
+            animationDuration={700}
+            animationEasing="ease-out"
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -115,6 +232,8 @@ export function SalesByCategoryChart({
 }: {
   data: { category: string; revenueCents: number; units: number }[];
 }) {
+  const animate = !prefersReducedMotion();
+
   if (data.length === 0) {
     return (
       <p className="py-10 text-center text-sm text-muted-foreground">
@@ -145,14 +264,18 @@ export function SalesByCategoryChart({
           />
           <YAxis type="category" dataKey="category" {...axisProps} width={112} />
           <Tooltip
-            contentStyle={tooltipStyle}
-            cursor={{ fill: "rgb(36 17 63 / 0.06)" }}
-            formatter={(value) => [
-              formatMoneyCompact(Number(value ?? 0) * 100),
-              "Revenue",
-            ]}
+            cursor={{ fill: "rgb(36 17 63 / 0.05)" }}
+            content={<ChartTooltip render={(v) => formatMoneyCompact(v * 100)} />}
           />
-          <Bar dataKey="revenue" fill={BRAND} radius={[0, 4, 4, 0]} maxBarSize={22} />
+          <Bar
+            dataKey="revenue"
+            fill={BRAND}
+            radius={[0, 4, 4, 0]}
+            maxBarSize={20}
+            isAnimationActive={animate}
+            animationDuration={700}
+            animationEasing="ease-out"
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -164,6 +287,8 @@ export function CustomerGrowthChart({
 }: {
   data: { month: string; customers: number }[];
 }) {
+  const animate = !prefersReducedMotion();
+
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -171,15 +296,19 @@ export function CustomerGrowthChart({
           <defs>
             <linearGradient id="customerFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={ROYAL} stopOpacity={0.22} />
-              <stop offset="100%" stopColor={ROYAL} stopOpacity={0.02} />
+              <stop offset="100%" stopColor={ROYAL} stopOpacity={0.01} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
           <XAxis dataKey="month" {...axisProps} />
           <YAxis {...axisProps} allowDecimals={false} width={40} />
           <Tooltip
-            contentStyle={tooltipStyle}
-            formatter={(value) => [Number(value ?? 0), "New customers"]}
+            cursor={{ stroke: GRID, strokeWidth: 1, strokeDasharray: "4 4" }}
+            content={
+              <ChartTooltip
+                render={(v) => `${v} new ${v === 1 ? "customer" : "customers"}`}
+              />
+            }
           />
           <Area
             type="monotone"
@@ -187,10 +316,14 @@ export function CustomerGrowthChart({
             stroke={ROYAL}
             strokeWidth={2}
             fill="url(#customerFill)"
+            isAnimationActive={animate}
+            animationDuration={800}
+            animationEasing="ease-out"
+            dot={false}
+            activeDot={{ r: 4, fill: ROYAL, stroke: "#ffffff", strokeWidth: 2.5 }}
           />
         </AreaChart>
       </ResponsiveContainer>
     </div>
   );
 }
-

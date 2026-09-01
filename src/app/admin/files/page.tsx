@@ -55,7 +55,7 @@ export default async function AdminFilesPage({ searchParams }: PageProps<"/admin
       ) : (
         <>
           <AdminTableCard>
-            <table className="admin-table min-w-[880px]">
+            <table className="admin-table admin-table-stack min-w-[880px]">
               <caption className="sr-only">Digital files</caption>
               <thead>
                 <tr>
@@ -83,17 +83,17 @@ export default async function AdminFilesPage({ searchParams }: PageProps<"/admin
               <tbody>
                 {assets.map((asset) => (
                   <tr key={asset.id}>
-                    <td className="max-w-72">
-                      <span className="block truncate font-medium text-foreground">
+                    <td data-label="File" className="max-w-72">
+                      <span className="admin-cell-primary">
                         {asset.filename}
                       </span>
-                      <span className="block text-xs text-muted-foreground">
+                      <span className="admin-cell-meta">
                         {formatLabel(asset.contentType, asset.filename)}
                         {asset.version ? ` · v${asset.version}` : ""}
                       </span>
                     </td>
 
-                    <td className="max-w-64">
+                    <td data-label="Product" className="max-w-64">
                       {asset.product ? (
                         <Link
                           href={`/admin/products/${asset.product.id}/edit`}
@@ -106,18 +106,18 @@ export default async function AdminFilesPage({ searchParams }: PageProps<"/admin
                       )}
                     </td>
 
-                    <td className="tabular-nums text-muted-foreground">
+                    <td data-label="Size" className="tabular-nums text-muted-foreground">
                       {formatBytes(asset.bytes)}
                     </td>
 
-                    <td className="tabular-nums">
+                    <td data-label="Downloads" className="tabular-nums">
                       <span className="font-medium text-foreground">{asset.downloads}</span>
-                      <span className="block text-xs text-muted-foreground">
+                      <span className="admin-cell-meta">
                         across {asset.grants} {asset.grants === 1 ? "grant" : "grants"}
                       </span>
                     </td>
 
-                    <td>
+                    <td data-label="Storage">
                       {/* Not a database column — a statement of how these files
                           are stored, which is true of every one of them:
                           Cloudinary `type: private`, reachable only through a
@@ -128,7 +128,7 @@ export default async function AdminFilesPage({ searchParams }: PageProps<"/admin
                       </StatusBadge>
                     </td>
 
-                    <td className="whitespace-nowrap text-muted-foreground">
+                    <td data-label="Updated" className="whitespace-nowrap text-muted-foreground">
                       <time dateTime={asset.updatedAt.toISOString()}>
                         {asset.updatedAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
                       </time>

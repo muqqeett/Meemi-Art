@@ -25,7 +25,7 @@ export default function AdminOverviewLoading() {
             key={index}
             className="admin-card p-5"
           >
-            <div className="h-4 w-32 animate-pulse rounded bg-border" />
+            <div className="h-4 w-32 admin-shimmer rounded-sm" />
             <div className="mt-5 h-56 animate-pulse rounded-lg bg-border/60" />
           </div>
         ))}

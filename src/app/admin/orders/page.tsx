@@ -84,7 +84,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
       ) : (
         <>
           <AdminTableCard>
-            <table className="admin-table min-w-[820px]">
+            <table className="admin-table admin-table-stack min-w-[820px]">
               <caption className="sr-only">All orders</caption>
               <thead>
                 <tr>
@@ -112,19 +112,19 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
               <tbody>
                 {orders.map((order) => (
                   <tr key={order.id}>
-                    <td>
+                    <td data-label="Order">
                       <Link
                         href={`/admin/orders/${order.orderNumber}`}
                         className="font-mono font-medium text-foreground hover:text-brand-600"
                       >
                         {order.orderNumber}
                       </Link>
-                      <span className="block text-xs text-muted-foreground">
+                      <span className="admin-cell-meta">
                         {order._count.items} {order._count.items === 1 ? "item" : "items"}
                       </span>
                     </td>
 
-                    <td>
+                    <td data-label="Customer">
                       {order.user ? (
                         <Link
                           href={`/admin/customers/${order.user.id}`}
@@ -137,27 +137,27 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                           {order.customerName}
                         </span>
                       )}
-                      <span className="block truncate text-xs text-muted-foreground">
+                      <span className="admin-cell-meta">
                         {order.email}
                         {!order.user && " · guest"}
                       </span>
                     </td>
 
-                    <td className="text-muted-foreground">
+                    <td data-label="Placed" className="text-muted-foreground">
                       <time dateTime={order.placedAt.toISOString()}>
                         {order.placedAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
                       </time>
                     </td>
 
-                    <td>
+                    <td data-label="Status">
                       <OrderStatusBadge status={order.status} />
                     </td>
 
-                    <td>
+                    <td data-label="Payment">
                       {order.payment && <PaymentStatusBadge status={order.payment.status} />}
                     </td>
 
-                    <td className="text-right font-medium tabular-nums">
+                    <td data-label="Total" className="text-right font-medium tabular-nums">
                       {formatMoney(order.totalCents)}
                     </td>
                   </tr>

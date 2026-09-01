@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -86,6 +86,7 @@ export function AdminSection({
   children,
   className,
   bodyClassName,
+  style,
 }: {
   title?: string;
   description?: string;
@@ -93,9 +94,11 @@ export function AdminSection({
   children: ReactNode;
   className?: string;
   bodyClassName?: string;
+  /** Carries the `--admin-i` stagger index where a page sequences sections. */
+  style?: CSSProperties;
 }) {
   return (
-    <section className={cn("admin-card", className)}>
+    <section className={cn("admin-card", className)} style={style}>
       {title && (
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border px-5 py-3.5">
           <div className="min-w-0">
