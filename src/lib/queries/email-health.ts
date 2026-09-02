@@ -169,6 +169,33 @@ export async function getEmailHealth() {
 }
 
 /**
+ * The failed records an admin may clear, oldest first.
+ *
+ * Read-only, like everything else here — it returns ids, and deleting them is
+ * the deletion action's job, never this module's.
+ *
+ * It exists so the page can hand the delete action an explicit list rather than
+ * letting the server decide for itself what "all the failures" means at the
+ * moment the button is pressed. Oldest first because the historical records are
+ * the ones an operator is clearing; capped so a store with a long failure
+ * history never builds an unbounded payload, and the caller can tell it was
+ * capped by comparing the length against the FAILED count.
+ *
+ * SKIPPED rows are equally deletable by policy but are deliberately not
+ * gathered here: this list backs a control labelled "failed records", and it
+ * should delete exactly what it says.
+ */
+export async function listDeletableFailedEmailIds(limit = 500): Promise<string[]> {
+  const rows = await prisma.emailLog.findMany({
+    where: FAILED_EMAIL,
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take: limit,
+    select: { id: true },
+  });
+  return rows.map((row) => row.id);
+}
+
+/**
  * Redacts anything credential-shaped from a stored provider error before it
  * reaches the browser.
  *

@@ -17,7 +17,14 @@ import {
   parseEmailStatus,
 } from "@/lib/queries/admin-resources";
 import { buildBaseQuery, hasAnyParam } from "@/lib/shop-params";
-import { getEmailHealth, redactError } from "@/lib/queries/email-health";
+import {
+  getEmailHealth,
+  listDeletableFailedEmailIds,
+  redactError,
+} from "@/lib/queries/email-health";
+import { isEmailLogDeletable } from "@/lib/actions/admin/email-log-deletion-policy";
+import { EmailLogDeleteButton } from "@/components/admin/email-log-delete-button";
+import { EmailLogBulkDelete } from "@/components/admin/email-log-bulk-delete";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Email Center" };
@@ -54,10 +61,17 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
 
   // `total` is the *filtered* count and is already folded into `pageCount`;
   // the heading counts every attempt, which is what `byStatus` sums to.
-  const [{ emails, page, pageCount, byStatus }, health] = await Promise.all([
-    listAdminEmails({ page: Number(first(raw.page)) || 1, status }),
-    getEmailHealth(),
-  ]);
+  const [{ emails, page, pageCount, byStatus }, health, deletableFailedIds] =
+    await Promise.all([
+      listAdminEmails({ page: Number(first(raw.page)) || 1, status }),
+      getEmailHealth(),
+      /**
+       * Gathered here, at render, so the delete control carries the exact set
+       * the admin is looking at. The action never re-derives "everything that
+       * failed" for itself — see `actions/admin/email-logs.ts`.
+       */
+      listDeletableFailedEmailIds(),
+    ]);
 
   // Live provider state, which history cannot tell you: zero skipped rows only
   // means no provider was missing when those rows were written.
@@ -186,7 +200,8 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
                 {health.counts.SENT}
               </p>
               <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                Accepted by the provider. Nothing has ever failed.
+                No failed records. Every attempt on record was accepted by
+                the provider.
               </p>
             </>
           )}
@@ -229,6 +244,7 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
         <AdminSection
           title="Recorded failure causes"
           description="Grouped by the provider's own wording, exactly as recorded at the time."
+          action={<EmailLogBulkDelete ids={deletableFailedIds} />}
           className="admin-rise mb-4"
           bodyClassName="p-0"
         >
@@ -439,8 +455,13 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
                     Status
                   </th>
                   <th scope="col">
-                    Attempted
-                  </th>
+                      Attempted
+                    </th>
+                    <th scope="col" className="w-12">
+                      {/* Named for assistive tech; the column reads as a
+                          row of icon buttons visually. */}
+                      <span className="sr-only">Actions</span>
+                    </th>
                 </tr>
               </thead>
 
@@ -487,10 +508,40 @@ export default async function AdminEmailsPage({ searchParams }: PageProps<"/admi
                         {email.createdAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
                       </time>
                     </td>
+
+                    {/* No `data-label`, matching the orders table: on mobile
+                        every labelled cell prints its column name, and an
+                        accepted email would otherwise show an "ACTIONS" row
+                        with nothing beside it. `admin-row-actions` is the
+                        house pattern — hidden until the row is hovered or
+                        focused, always visible on touch. */}
+                    <td className="text-right">
+                      {isEmailLogDeletable(email) && (
+                        <div className="admin-row-actions flex justify-end">
+                          <EmailLogDeleteButton
+                            logId={email.id}
+                            template={humaniseTemplate(email.template)}
+                            status={email.status}
+                            to={email.to}
+                          />
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            {/* Said once here rather than as a disabled button on every
+                accepted row. The reason is real and worth stating: the row
+                is the send path's idempotency guard. */}
+            <p className="border-t border-border px-5 py-3.5 text-xs leading-relaxed text-muted-foreground">
+              Failed and skipped records can be deleted from this history.
+              Accepted emails are kept — each one is what stops the same
+              message being sent to a customer a second time. Deleting a
+              record removes it from the admin history only; it never
+              resends or affects email delivery.
+            </p>
           </AdminTableCard>
 
           <PaginationNav
