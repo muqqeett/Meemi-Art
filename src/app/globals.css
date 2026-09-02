@@ -349,6 +349,42 @@
     /* Secondary text sits a touch lighter here than on the storefront: admin
        screens carry far more metadata, and it should recede. */
     --muted-foreground: #6b6478;
+
+    position: relative;
+  }
+
+  /* ---- Ambient ground -----------------------------------------------------
+     Two very wide, very faint radial washes over the canvas: brand violet
+     drifting in from the top left, a warm blush from the top right. At 4% and
+     3% they are below the threshold you would name — the canvas simply stops
+     reading as a flat grey and gains a slight direction of light, which is
+     what keeps a dense screen from feeling like a spreadsheet.
+
+     `fixed` so the light belongs to the viewport rather than the document:
+     it stays put while a long table scrolls under it, the way a room's
+     lighting does not move when you move the paper.
+
+     `z-index: -1` puts it above `.admin-root`'s own background but beneath
+     every in-flow child, so nothing needs a stacking context of its own and
+     no existing z-index (rail 40, header 30) is disturbed. `pointer-events`
+     off — it must never intercept a click. */
+  .admin-root::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        62rem 42rem at 8% -6%,
+        rgb(123 95 191 / 0.04),
+        transparent 62%
+      ),
+      radial-gradient(
+        48rem 34rem at 96% 2%,
+        rgb(214 158 168 / 0.03),
+        transparent 58%
+      );
   }
 
   /* ---- Three surface tiers ------------------------------------------------

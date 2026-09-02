@@ -138,8 +138,26 @@ function NavList({
                       )}
                       aria-hidden
                     />
-                    {!collapsed && <span className="truncate">{item.label}</span>}
-                    {collapsed && <span className="sr-only">{item.label}</span>}
+                    {/* Always mounted, so collapsing fades the label out
+                        instead of deleting it mid-transition. `max-width` is
+                        what actually animates — `truncate` brings
+                        `overflow: hidden`, so a width alone would clip the
+                        text to nothing instantly and there would be no fade
+                        to see. Narrowing and fading together over 200ms lands
+                        just inside the rail's own 260ms width ease.
+
+                        Clipped and transparent text stays in the
+                        accessibility tree, so this one element covers both
+                        states and replaces the separate `sr-only` copy that
+                        would otherwise double-announce. */}
+                    <span
+                      className={cn(
+                        "truncate transition-[max-width,opacity] duration-200 ease-out",
+                        collapsed ? "max-w-0 opacity-0" : "max-w-40 opacity-100",
+                      )}
+                    >
+                      {item.label}
+                    </span>
                   </Link>
                 </li>
               );
