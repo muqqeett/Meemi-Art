@@ -37,10 +37,10 @@ export function StatusBadge({
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border py-0.5 pr-2.5 pl-2 text-xs font-medium whitespace-nowrap capitalize",
-        tone === "positive" && "border-success/15 bg-success/8 text-success",
-        tone === "pending" && "border-warning/15 bg-warning/8 text-warning",
-        tone === "critical" && "border-destructive/15 bg-destructive/8 text-destructive",
-        tone === "neutral" && "border-border bg-[var(--admin-raised)] text-muted-foreground",
+        tone === "positive" && "border-success/35 bg-success/14 text-success",
+        tone === "pending" && "border-warning/35 bg-warning/14 text-warning",
+        tone === "critical" && "border-destructive/35 bg-destructive/14 text-destructive",
+        tone === "neutral" && "border-brand-200 bg-brand-50 text-brand-600",
         className,
       )}
     >

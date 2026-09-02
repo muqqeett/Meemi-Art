@@ -55,7 +55,7 @@ export default async function AdminAnalyticsPage() {
         description="Revenue, orders and customer trends. Comparisons are against the previous 30 days."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="admin-kpi-row grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Revenue (30 days)"
           value={formatMoney(stats.revenue30Cents)}

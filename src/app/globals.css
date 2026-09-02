@@ -340,11 +340,24 @@
     /* Grounds, in depth order. The rail is a shade warmer than the canvas so
        the white content column reads as the working surface and the rail as
        chrome around it. */
-    --admin-rail-bg: #fbfafd;
-    --admin-canvas: #f6f4f8;
+    --admin-rail-bg: #f9f5fd;
+    --admin-canvas: #f3eff8;
     --admin-surface: #ffffff;
-    --admin-raised: #fbfafc;
-    --admin-hover: #f6f4f9;
+    --admin-raised: #f7f2fc;
+    --admin-hover: #ede5f8;
+
+    /* ---- Accents, named once ----------------------------------------------
+       The four colours the admin is allowed to be, so a wash, a border and a
+       chart series can all reach for the same violet instead of three hand-
+       mixed approximations. Violet leads, blush is the counterweight,
+       lavender bridges them, plum anchors.
+
+       These are raw channels rather than hex, so a call site can set its own
+       opacity: `rgb(var(--admin-violet-rgb) / 0.08)`. */
+    --admin-violet-rgb: 123 95 191;
+    --admin-blush-rgb: 242 175 189;
+    --admin-lavender-rgb: 199 182 232;
+    --admin-plum-rgb: 59 42 115;
 
     /* Secondary text sits a touch lighter here than on the storefront: admin
        screens carry far more metadata, and it should recede. */
@@ -376,14 +389,19 @@
     pointer-events: none;
     background:
       radial-gradient(
-        62rem 42rem at 8% -6%,
-        rgb(123 95 191 / 0.04),
-        transparent 62%
+        62rem 42rem at 6% -8%,
+        rgb(var(--admin-violet-rgb) / 0.1),
+        transparent 60%
       ),
       radial-gradient(
-        48rem 34rem at 96% 2%,
-        rgb(242 175 189 / 0.035),
+        52rem 36rem at 98% 0%,
+        rgb(var(--admin-blush-rgb) / 0.09),
         transparent 58%
+      ),
+      radial-gradient(
+        70rem 50rem at 50% 108%,
+        rgb(var(--admin-lavender-rgb) / 0.07),
+        transparent 62%
       );
   }
 
@@ -397,11 +415,22 @@
      the first nav group, gone by the time it reaches the storefront link. */
   .admin-rail {
     background-color: var(--admin-rail-bg);
-    background-image: linear-gradient(
-      to bottom,
-      rgb(123 95 191 / 0.03),
-      transparent 66%
-    );
+    /* Violet down the top of the column and blush pooling at the foot, so the
+       rail reads as brand rather than as a neutral gutter — and the two
+       identity colours bracket the navigation between them. Stronger than the
+       page wash because the rail is chrome: it can hold colour that content
+       surfaces cannot. */
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgb(var(--admin-violet-rgb) / 0.13),
+        transparent 55%
+      ),
+      radial-gradient(
+        24rem 20rem at 50% 100%,
+        rgb(var(--admin-blush-rgb) / 0.16),
+        transparent 70%
+      );
   }
 
   /* ---- Three surface tiers ------------------------------------------------
@@ -444,12 +473,84 @@
   }
 
   .admin-card {
-    @apply rounded-lg border border-border bg-card;
-    box-shadow: 0 1px 2px rgb(23 19 28 / 0.03);
+    @apply relative rounded-lg border bg-card;
+    /* A violet hairline rather than the neutral rule. At 22% it reads as
+       colour on a white card without becoming a drawn box. */
+    border-color: rgb(var(--admin-violet-rgb) / 0.22);
+    /* The card is no longer flat white: a violet bloom sits in the top-left
+       corner and fades by two-thirds, so a grid of cards reads as lit from
+       one direction rather than as a sheet of identical boxes. */
+    background-image: radial-gradient(
+      30rem 20rem at 0% 0%,
+      rgb(var(--admin-violet-rgb) / 0.055),
+      transparent 66%
+    );
+    box-shadow: 0 1px 2px rgb(36 17 63 / 0.05);
     transition:
       border-color 180ms ease,
       box-shadow 180ms ease,
       transform 180ms ease;
+  }
+
+  /* ---- Card accent variants ------------------------------------------------
+     The same surface under different light, so neighbouring panels can be
+     told apart by colour as well as by heading. Blush carries the warm side
+     (customers, reviews), lavender the supporting detail. Deliberately only
+     two variants — a third would start the rainbow this is meant to avoid. */
+  .admin-card--blush {
+    border-color: rgb(var(--admin-blush-rgb) / 0.5);
+    background-image: radial-gradient(
+      30rem 20rem at 0% 0%,
+      rgb(var(--admin-blush-rgb) / 0.12),
+      transparent 66%
+    );
+  }
+  .admin-card--lavender {
+    border-color: rgb(var(--admin-lavender-rgb) / 0.65);
+    background-image: radial-gradient(
+      30rem 20rem at 0% 0%,
+      rgb(var(--admin-lavender-rgb) / 0.16),
+      transparent 66%
+    );
+  }
+
+  /* ---- KPI row -------------------------------------------------------------
+     Four headline figures, each given its own colour by position rather than
+     by prop — the cards are a fixed, ordered set, so `nth-child` does the job
+     without any component learning about colour.
+
+     Two tokens per position, and the split matters. `--kpi` is the display
+     tone: it paints the top rule and the corner wash, where blush and
+     lavender are exactly right. `--kpi-ink` is a deepened sibling of the same
+     hue used for anything that has to be *read* — blush at #f2afbd sits near
+     1.9:1 on white and would fail as an icon. Colour identity from the first
+     set, legibility from the second. */
+  .admin-kpi-row > * {
+    --kpi: var(--admin-violet-rgb);
+    --kpi-ink: 123 95 191;
+    border-top: 2.5px solid rgb(var(--kpi) / 0.95);
+    background-image: radial-gradient(
+      28rem 18rem at 0% 0%,
+      rgb(var(--kpi) / 0.13),
+      transparent 68%
+    );
+  }
+  .admin-kpi-row > *:nth-child(2) {
+    --kpi: var(--admin-blush-rgb);
+    --kpi-ink: 194 109 134;
+  }
+  .admin-kpi-row > *:nth-child(3) {
+    --kpi: var(--admin-lavender-rgb);
+    --kpi-ink: 154 127 208;
+  }
+  .admin-kpi-row > *:nth-child(4) {
+    --kpi: var(--admin-plum-rgb);
+    --kpi-ink: 59 42 115;
+  }
+  /* The icon carries the card's colour; the figure and label stay neutral so
+     the number is still the loudest thing on the card. */
+  .admin-kpi-row > * svg {
+    color: rgb(var(--kpi-ink) / 0.9);
   }
   /* Lift is opt-in: only surfaces that actually go somewhere get it. */
   .admin-card-interactive:hover {
@@ -500,6 +601,45 @@
     @apply text-[0.6875rem] font-semibold tracking-[0.08em] uppercase;
     color: var(--muted-foreground);
   }
+  /* The page-title eyebrow, which can afford to be brand-coloured because it
+     sits alone above the heading rather than repeated down a table. Violet at
+     full strength clears 4.5:1 on the canvas, so it stays readable type. */
+  .admin-eyebrow--accent {
+    color: var(--color-brand-500);
+  }
+
+  /* ---- Page header ---------------------------------------------------------
+     A wash bled out behind the title block rather than a boxed banner: violet
+     from the left, blush trailing off to the right, both fading to nothing
+     before the content below. It gives every admin screen the same coloured
+     opening note without enclosing it in another card.
+
+     Drawn on a `::before` sized beyond the header's own box so the colour
+     starts above and outside the text, the way a printed page's ink would,
+     and `z-index: -1` keeps it behind the heading. */
+  .admin-page-header {
+    position: relative;
+    isolation: isolate;
+  }
+  .admin-page-header::before {
+    content: "";
+    position: absolute;
+    inset: -1.75rem -1.5rem 0.5rem -1.5rem;
+    z-index: -1;
+    pointer-events: none;
+    border-radius: 1rem;
+    background:
+      radial-gradient(
+        26rem 12rem at 0% 0%,
+        rgb(var(--admin-violet-rgb) / 0.16),
+        transparent 68%
+      ),
+      radial-gradient(
+        22rem 11rem at 78% 10%,
+        rgb(var(--admin-blush-rgb) / 0.13),
+        transparent 66%
+      );
+  }
 
   /* Numbers that are the point of the card. Tight tracking, tabular figures,
      so a column of them aligns and a large one does not sprawl. */
@@ -526,9 +666,12 @@
     font-size: 0.6875rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--muted-foreground);
-    background: var(--admin-raised);
-    border-bottom: 1px solid var(--admin-rule);
+    /* The header band is where a table can carry colour without touching a
+       single row: violet ground, violet-tinted label text, and a violet rule
+       under it. Everything below stays neutral and readable. */
+    color: rgb(var(--admin-plum-rgb) / 0.95);
+    background: rgb(var(--admin-violet-rgb) / 0.14);
+    border-bottom: 1px solid rgb(var(--admin-violet-rgb) / 0.4);
   }
   .admin-table tbody td {
     @apply px-4 py-3.5 align-middle;
@@ -547,8 +690,8 @@
      inset shadow — no layout shift, and it reads as the row being picked up
      rather than merely tinted. */
   .admin-table tbody tr:hover {
-    background: var(--admin-hover);
-    box-shadow: inset 2px 0 0 var(--color-brand-400);
+    background: rgb(var(--admin-violet-rgb) / 0.07);
+    box-shadow: inset 3px 0 0 var(--color-brand-400);
   }
 
   /* ---- Tables on a phone --------------------------------------------------

@@ -21,14 +21,21 @@ import { formatMoneyCompact } from "@/lib/money";
  * literal values for its SVG fills rather than CSS custom properties, so these
  * are kept in one place and changed alongside the theme.
  *
- * Purple is reserved for revenue, the headline metric; sapphire carries the
- * supporting series. Axes and gridlines stay deliberately low-contrast so the
- * data is the only saturated thing on the canvas.
+ * Every series now sits on the MeemiArt violet–blush axis rather than mixing
+ * in the storefront's sapphire, which read as a fifth, unrelated brand colour
+ * whenever two charts appeared side by side. Each metric owns one hue:
+ *
+ *   revenue    deep brand purple
+ *   orders     royal purple
+ *   customers  blush
+ *   ranked bars  the violet-to-blush ramp below
+ *
+ * Axes and gridlines stay deliberately low-contrast so the data is the only
+ * saturated thing on the canvas.
  */
 const BRAND = "#24113f"; // brand purple
 const VIOLET = "#7b5fbf"; // the lit accent, for a series drawn on dark ground
 const LAVENDER = "#c7b6e8";
-const ROYAL = "#3157c8"; // sapphire
 const GRID = "#e3daf5";
 const MUTED = "#6f6a75";
 
@@ -42,6 +49,10 @@ const MUTED = "#6f6a75";
 const BLUSH = "#f2afbd";
 const BLUSH_DEEP = "#c26d86";
 
+/** Royal purple — the orders series, so it no longer borrows the revenue
+ *  violet or the sapphire that customers used to share. */
+const ROYAL_PURPLE = "#5b3fa0";
+
 /**
  * The category ramp: deep purple through violet and lavender into blush.
  *
@@ -52,7 +63,15 @@ const BLUSH_DEEP = "#c26d86";
  * wrap, so a long category list stays inside the palette rather than inventing
  * hues.
  */
-const CATEGORY_RAMP = [BRAND, "#3b2a73", VIOLET, "#9a7fd0", LAVENDER, BLUSH];
+const CATEGORY_RAMP = [
+  "#2f1a55", // deep violet
+  "#5b3fa0", // royal purple
+  VIOLET, //    violet
+  "#a88ad4", // light violet
+  LAVENDER, //  lavender
+  BLUSH_DEEP, // rose
+  BLUSH, //     blush
+];
 
 const axisProps = {
   stroke: MUTED,
@@ -233,7 +252,7 @@ export function OrdersChart({
           />
           <Bar
             dataKey="orders"
-            fill={ROYAL}
+            fill={ROYAL_PURPLE}
             radius={[4, 4, 0, 0]}
             maxBarSize={30}
             isAnimationActive={animate}

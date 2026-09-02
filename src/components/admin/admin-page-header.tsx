@@ -27,12 +27,12 @@ export function AdminPageHeader({
   return (
     <header
       className={cn(
-        "mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4",
+        "admin-page-header mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4",
         className,
       )}
     >
       <div className="min-w-0">
-        {eyebrow && <p className="admin-eyebrow mb-1.5">{eyebrow}</p>}
+        {eyebrow && <p className="admin-eyebrow admin-eyebrow--accent mb-1.5">{eyebrow}</p>}
         <h1 className="text-xl font-semibold tracking-[-0.015em] text-foreground sm:text-2xl">
           {title}
         </h1>

@@ -89,7 +89,7 @@ export default async function AdminCustomerPage({
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="admin-kpi-row grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Successful orders"
           value={String(commerce.successfulOrders)}
