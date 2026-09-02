@@ -245,7 +245,7 @@ export function AdminSidebar() {
     <aside
       data-collapsed={collapsed}
       className={cn(
-        "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-[var(--admin-rail-bg)] transition-[width] duration-260 ease-[cubic-bezier(0.16,1,0.3,1)] lg:flex",
+        "admin-rail fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border transition-[width] duration-260 ease-[cubic-bezier(0.16,1,0.3,1)] lg:flex",
         collapsed ? "w-[68px]" : "w-64",
       )}
     >

@@ -382,9 +382,26 @@
       ),
       radial-gradient(
         48rem 34rem at 96% 2%,
-        rgb(214 158 168 / 0.03),
+        rgb(242 175 189 / 0.035),
         transparent 58%
       );
+  }
+
+  /* ---- The rail's atmosphere ----------------------------------------------
+     `--admin-rail-bg` alone is a flat warm grey. This keeps that as the base
+     and lays a single violet wash down the top of the column, so the rail
+     reads as belonging to the brand rather than as a neutral gutter, and the
+     white content beside it stays the working surface.
+
+     3% at the top fading out by two-thirds — enough to tint the wordmark and
+     the first nav group, gone by the time it reaches the storefront link. */
+  .admin-rail {
+    background-color: var(--admin-rail-bg);
+    background-image: linear-gradient(
+      to bottom,
+      rgb(123 95 191 / 0.03),
+      transparent 66%
+    );
   }
 
   /* ---- Three surface tiers ------------------------------------------------

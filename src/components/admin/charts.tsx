@@ -7,6 +7,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -30,6 +31,28 @@ const LAVENDER = "#c7b6e8";
 const ROYAL = "#3157c8"; // sapphire
 const GRID = "#e3daf5";
 const MUTED = "#6f6a75";
+
+/**
+ * Blush — MeemiArt's second identity colour, and until now absent from every
+ * chart. `--color-blush` itself is a fill tone: at #f2afbd a one- or two-pixel
+ * line over white lands near 1.6:1 and effectively disappears, so strokes use
+ * the deepened tone, which measures ~3.9:1 against white and clears the 3:1
+ * that WCAG asks of non-text graphics. Same hue family, drawn to be read.
+ */
+const BLUSH = "#f2afbd";
+const BLUSH_DEEP = "#c26d86";
+
+/**
+ * The category ramp: deep purple through violet and lavender into blush.
+ *
+ * Bars were previously one flat purple, which said nothing — a bar's colour
+ * repeated the bar's length and no more. Ordered by rank, the ramp lets the
+ * shape of the distribution register before any single label is read, and it
+ * is the one place both identity colours appear together. Indexes past the end
+ * wrap, so a long category list stays inside the palette rather than inventing
+ * hues.
+ */
+const CATEGORY_RAMP = [BRAND, "#3b2a73", VIOLET, "#9a7fd0", LAVENDER, BLUSH];
 
 const axisProps = {
   stroke: MUTED,
@@ -269,13 +292,21 @@ export function SalesByCategoryChart({
           />
           <Bar
             dataKey="revenue"
-            fill={BRAND}
             radius={[0, 4, 4, 0]}
             maxBarSize={20}
             isAnimationActive={animate}
             animationDuration={700}
             animationEasing="ease-out"
-          />
+          >
+            {/* Colour per bar rather than per series. The data, its order and
+                its geometry are untouched — only the fill is chosen by rank. */}
+            {chartData.map((row, index) => (
+              <Cell
+                key={row.category}
+                fill={CATEGORY_RAMP[index % CATEGORY_RAMP.length]}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -295,8 +326,8 @@ export function CustomerGrowthChart({
         <AreaChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <defs>
             <linearGradient id="customerFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={ROYAL} stopOpacity={0.22} />
-              <stop offset="100%" stopColor={ROYAL} stopOpacity={0.01} />
+              <stop offset="0%" stopColor={BLUSH_DEEP} stopOpacity={0.22} />
+              <stop offset="100%" stopColor={BLUSH_DEEP} stopOpacity={0.01} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
@@ -313,14 +344,14 @@ export function CustomerGrowthChart({
           <Area
             type="monotone"
             dataKey="customers"
-            stroke={ROYAL}
+            stroke={BLUSH_DEEP}
             strokeWidth={2}
             fill="url(#customerFill)"
             isAnimationActive={animate}
             animationDuration={800}
             animationEasing="ease-out"
             dot={false}
-            activeDot={{ r: 4, fill: ROYAL, stroke: "#ffffff", strokeWidth: 2.5 }}
+            activeDot={{ r: 4, fill: BLUSH_DEEP, stroke: "#ffffff", strokeWidth: 2.5 }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -380,13 +411,21 @@ export function ProductRevenueChart({
           />
           <Bar
             dataKey="revenue"
-            fill={BRAND}
             radius={[0, 4, 4, 0]}
             maxBarSize={20}
             isAnimationActive={animate}
             animationDuration={700}
             animationEasing="ease-out"
-          />
+          >
+            {/* Same ramp as the category chart, so a product's rank and a
+                category's rank read the same way across the two screens. */}
+            {chartData.map((row, index) => (
+              <Cell
+                key={row.name}
+                fill={CATEGORY_RAMP[index % CATEGORY_RAMP.length]}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
