@@ -121,7 +121,7 @@ export function PdpReviews({
   if (reviews.length === 0) {
     return (
       <section id="reviews" className="w-full scroll-mt-24">
-        <h2 className="font-clash text-2xl leading-[1.2] font-semibold text-pdp-price sm:text-[1.75rem]">
+        <h2 className="font-display text-[1.5rem] leading-[1.1] font-semibold tracking-[-0.02em] text-pdp-price sm:text-[1.875rem]">
           Product Reviews
         </h2>
         <div className="mt-6 rounded-[8px] border-[0.8px] border-pdp-hairline bg-pdp-surface/60 px-6 py-14 text-center">
@@ -149,7 +149,7 @@ export function PdpReviews({
   return (
     <section id="reviews" className="w-full scroll-mt-24">
       <Reveal>
-        <h2 className="font-clash text-2xl leading-[1.2] font-semibold text-pdp-price sm:text-[1.75rem]">
+        <h2 className="font-display text-[1.5rem] leading-[1.1] font-semibold tracking-[-0.02em] text-pdp-price sm:text-[1.875rem]">
           Product Reviews
         </h2>
       </Reveal>
@@ -203,14 +203,14 @@ export function PdpReviews({
         </p>
       )}
 
-      <RevealGroup step={staggerStep.small} as="ul" className="mt-10 flex flex-col gap-8">
+      <RevealGroup step={staggerStep.small} as="ul" className="mt-12 flex flex-col gap-10">
         {reviews.map((review) => (
           <RevealItem as="li" key={review.id}>
-            <article className="flex flex-col gap-3 border-b border-pdp-hairline pb-8 last:border-0">
+            <article className="flex flex-col gap-3.5 border-b border-pdp-hairline pb-10 last:border-0">
               <Stars value={review.rating} size={18} />
               <span className="sr-only">{review.rating} out of 5</span>
 
-              <h3 className="font-clash text-lg leading-[1.4] font-semibold text-pdp-title">
+              <h3 className="font-display text-[1.125rem] leading-[1.35] font-semibold tracking-[-0.01em] text-pdp-title">
                 {review.title}
               </h3>
 

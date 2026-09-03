@@ -44,7 +44,11 @@ export function PdpTabs({ tabs }: { tabs: PdpTab[] }) {
         role="tablist"
         aria-label="Product information"
         onKeyDown={onKeyDown}
-        className="flex gap-1.5 rounded-full bg-pdp-surface p-1"
+        /* Was a grey pill track with a lifted white segment — the loudest
+           object in the column, and the most generic. An underlined rule is
+           how a magazine sets section navigation: the labels are the design,
+           and the line tells you where you are. */
+        className="flex gap-7 border-b border-pdp-hairline sm:gap-10"
       >
         {tabs.map((tab, index) => {
           const selected = index === active;
@@ -59,11 +63,15 @@ export function PdpTabs({ tabs }: { tabs: PdpTab[] }) {
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(index)}
               className={cn(
-                "flex-1 rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors",
+                "relative -mb-px pb-3.5 text-[0.6875rem] font-semibold tracking-[0.16em] whitespace-nowrap uppercase transition-colors duration-200",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700",
+                // The rule wipes in from the left rather than cutting: a
+                // transform, so it costs no layout and reads as the underline
+                // travelling to the label you chose.
+                "after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-brand-600 after:transition-transform after:duration-200 after:ease-out",
                 selected
-                  ? "bg-surface text-pdp-title shadow-[0_0_3px_rgba(16,24,40,0.10),0_2px_5px_rgba(16,24,40,0.06)]"
-                  : "text-pdp-body hover:text-pdp-title",
+                  ? "text-pdp-title after:scale-x-100"
+                  : "text-pdp-label hover:text-pdp-title after:scale-x-0",
               )}
             >
               {tab.label}

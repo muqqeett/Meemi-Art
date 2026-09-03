@@ -78,6 +78,22 @@
   --color-pdp-border: #b8b8b8;
   --color-pdp-track: #e4e9ee;
 
+  /* ---- Editorial grounds --------------------------------------------------
+     The page was one flat white sheet from breadcrumbs to footer, which is
+     why it read as a form: every section sat on the same surface, so nothing
+     had a place. These are the four grounds it is now composed on, in the
+     order a reader meets them.
+
+     Ivory rather than #ffffff — warm paper, so the white gallery card and the
+     product photography both lift off it. The lavender field is the gallery's
+     environment: the image hangs in it the way a print hangs on a tinted
+     wall. Blush marks the one transition. All four are close enough in value
+     that the type sits on any of them unchanged. */
+  --color-pdp-ivory: #faf7f3;
+  --color-pdp-field: #efe9f8;
+  --color-pdp-veil: #f9eef1;
+  --color-pdp-chalk: #f5f1ec;
+
   /* The one accent: rating stars. */
   --color-pdp-star: #ffa439;
 

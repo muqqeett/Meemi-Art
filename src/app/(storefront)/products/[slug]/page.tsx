@@ -166,7 +166,11 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         empty margin around a column that no longer has room for it — the
         homepage keeps its own ladder, so nothing there moves.
       */}
-      <div className="mx-auto w-full max-w-[1440px] bg-surface px-5 py-8 sm:max-lg:px-8 lg:max-wide:px-12 lg:py-10 wide:px-[135px]">
+      {/* Warm ivory rather than white. The whole page used to sit on one flat
+          sheet, so the gallery, the reading and the reviews all had the same
+          ground and none of them had a place. Paper first; the white gallery
+          card and the photography lift off it. */}
+      <div className="mx-auto w-full max-w-[1440px] bg-pdp-ivory px-5 py-8 sm:max-lg:px-8 lg:max-wide:px-12 lg:py-10 wide:px-[135px]">
         <Breadcrumbs
           items={[
             { label: "Shop", href: "/shop" },
@@ -203,7 +207,14 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           min-content width, and the gallery's fixed 76px thumbnails would
           otherwise hold the column open at 364px on a 375px screen.
         */}
-        <div className="mt-8 grid items-start gap-8 [&>*]:min-w-0 lg:max-wide:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:max-wide:gap-12 lg:gap-y-10 wide:grid-cols-[minmax(0,1fr)_537px] wide:gap-x-[63px]">
+        {/* The split is no longer even. The drawn 1fr/537 gave the gallery 570
+            of the 1170, and once the title grew to 3.25rem the type column
+            out-weighed the photograph — the image is meant to be the first
+            thing on this page, not the second. Widening the gallery to 700 and
+            narrowing the reading column to 468 restores that order, and 468 is
+            still a comfortable measure for the description. Below `wide` the
+            gallery takes the larger share of the two by ratio. */}
+        <div className="mt-8 grid items-start gap-8 [&>*]:min-w-0 lg:max-wide:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:max-wide:gap-12 lg:gap-y-10 wide:grid-cols-[minmax(0,1fr)_468px] wide:gap-x-[63px]">
           {/* Above the fold, so it animates on mount rather than paying for a
               viewport observer that would fire immediately. */}
           <Reveal variant="in" onMount className="lg:col-start-1 lg:row-start-1 lg:row-span-2">

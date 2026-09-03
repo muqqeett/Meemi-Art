@@ -55,13 +55,13 @@ export function PdpProductRail({
 
   return (
     <section className="w-full">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="font-clash text-2xl leading-[1.2] font-semibold text-pdp-price sm:text-[1.75rem]">
+      <div className="flex items-baseline justify-between gap-4 border-b border-pdp-hairline pb-5">
+        <h2 className="font-display text-[1.5rem] leading-[1.1] font-semibold tracking-[-0.02em] text-pdp-price sm:text-[1.875rem]">
           {title}
         </h2>
         <Link
           href={href}
-          className="font-clash text-base leading-[1.2] font-medium text-pdp-meta underline underline-offset-2 hover:text-pdp-price"
+          className="shrink-0 text-[0.6875rem] font-semibold tracking-[0.16em] text-pdp-meta uppercase underline-offset-4 transition-colors duration-200 hover:text-brand-600 hover:underline"
         >
           View All
         </Link>
@@ -70,7 +70,7 @@ export function PdpProductRail({
       <RevealGroup
         step={staggerStep.small}
         as="ul"
-        className={`mt-6 grid gap-x-[22px] gap-y-8 ${layout}`}
+        className={`mt-8 grid gap-x-[22px] gap-y-8 ${layout}`}
       >
         {products.map((product) => (
           <RevealItem as="li" key={product.id}>

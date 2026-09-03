@@ -31,7 +31,7 @@ export function PdpProductCard({
     <article className="group/card flex flex-col gap-4">
       <Link
         href={`/products/${product.slug}`}
-        className="relative block aspect-[212/284] w-full overflow-hidden rounded-[8px] bg-pdp-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pdp-price"
+        className="relative block aspect-[212/284] w-full overflow-hidden rounded-[3px] bg-pdp-field ring-1 ring-pdp-hairline transition-[box-shadow] duration-200 group-hover/card:ring-brand-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pdp-price"
         tabIndex={-1}
         aria-hidden={product.imageUrl ? undefined : true}
       >
@@ -43,7 +43,7 @@ export function PdpProductCard({
             sizes="(min-width: 1024px) 212px, 45vw"
             /* Contained, not cropped: the Figma frame is 212×284, which was
                cutting a quarter of the height off a square cover. */
-            className="object-contain transition-transform duration-500 ease-out group-hover/card:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100"
+            className="object-contain transition-transform duration-200 ease-out group-hover/card:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100"
           />
         )}
       </Link>

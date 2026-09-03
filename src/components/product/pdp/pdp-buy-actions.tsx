@@ -65,7 +65,7 @@ export function PdpBuyActions({
     return (
       <p
         role="status"
-        className="rounded-full border border-pdp-border px-6 py-4 text-center text-base text-pdp-body"
+        className="rounded-[3px] border border-pdp-border px-6 py-4 text-center text-base text-pdp-body"
       >
         This piece isn&apos;t available to buy at the moment.
       </p>
@@ -90,7 +90,7 @@ export function PdpBuyActions({
            column, so `flex: 1 1 0%` would set a zero basis on the *vertical*
            axis and collapse the button to 24px — measured, at 320. Full width
            in the column, remaining width in the row. */
-        className="inline-flex h-12 w-full items-center justify-center rounded-full bg-brand-700 px-6 text-base font-semibold text-white transition-colors duration-200 hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:bg-brand-800 disabled:pointer-events-none disabled:opacity-60 min-[380px]:w-auto min-[380px]:flex-1"
+        className="inline-flex h-14 w-full items-center justify-center rounded-[3px] bg-brand-700 px-6 text-[0.8125rem] font-semibold tracking-[0.14em] text-white uppercase transition-[background-color,transform] duration-200 hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:translate-y-px active:bg-brand-800 disabled:pointer-events-none disabled:opacity-60 min-[380px]:w-auto min-[380px]:flex-1"
       >
         {busy === "cart" ? (
           <Loader2 className="mr-2 size-5 animate-spin" aria-hidden />
@@ -108,7 +108,7 @@ export function PdpBuyActions({
         onClick={() => add("checkout")}
         disabled={pending}
         aria-busy={pending}
-        className="inline-flex h-12 w-full shrink-0 items-center justify-center rounded-full border border-pdp-border bg-transparent px-6 text-base font-medium text-pdp-title transition-colors hover:bg-pdp-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 disabled:pointer-events-none disabled:opacity-60 min-[380px]:w-[150px] sm:w-[170px]"
+        className="inline-flex h-14 w-full shrink-0 items-center justify-center rounded-[3px] border border-brand-700/35 bg-transparent px-6 text-[0.8125rem] font-semibold tracking-[0.14em] text-pdp-title uppercase transition-[background-color,border-color,transform] duration-200 hover:border-brand-700/60 hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:translate-y-px disabled:pointer-events-none disabled:opacity-60 min-[380px]:w-[150px] sm:w-[170px]"
       >
         {busy === "checkout" && <Loader2 className="mr-2 size-5 animate-spin" aria-hidden />}
         Buy now

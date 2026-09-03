@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star, Download, Check } from "lucide-react";
+import { Star, Download } from "lucide-react";
 
 import { PdpDescription } from "@/components/product/pdp/pdp-description";
 import { PdpTabs } from "@/components/product/pdp/pdp-tabs";
@@ -93,18 +93,24 @@ export function PdpInfo({
     <div className="flex flex-col gap-8 lg:gap-10">
       {/* ── Identity ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-5">
-        <span className="inline-flex w-fit items-center gap-2 rounded-full bg-pdp-surface px-3 py-1.5 text-xs leading-none font-semibold tracking-[0.08em] text-pdp-meta uppercase">
-          <Download className="size-3.5 shrink-0" aria-hidden />
+        {/* The badge was a grey pill — the loudest shape in the column and the
+            first thing read, for the least important fact. It is now a rule
+            with a line of micro-type on it: the same words, given the weight
+            they deserve. */}
+        <span className="inline-flex w-fit items-center gap-2 border-b border-brand-400/45 pb-2 text-[0.6875rem] leading-none font-semibold tracking-[0.16em] text-brand-600 uppercase">
+          <Download className="size-3 shrink-0" aria-hidden />
           Digital product
         </span>
 
         <div className="flex flex-col gap-3">
-          <p className="text-sm leading-none font-medium tracking-[0.08em] text-pdp-label uppercase">
+          <p className="text-[0.6875rem] leading-none font-semibold tracking-[0.22em] text-pdp-label uppercase">
             {brand}
           </p>
-          {/* The design's dominant element, at 40/48. Capped at 2.25rem so a
-              long pattern name cannot swallow the fold on a laptop. */}
-          <h1 className="font-display text-[1.75rem] leading-[1.15] font-semibold tracking-[-0.01em] text-balance text-pdp-title sm:text-[2rem] lg:text-[2.25rem]">
+          {/* The headline. It carried 2.25rem against a 2rem price, so the two
+              competed and neither led. At 3.5rem on a wide screen the title is
+              unambiguously first and the column finally has a top. Tighter
+              tracking and leading as it grows, the way display type wants. */}
+          <h1 className="font-display text-[2.125rem] leading-[1.05] font-semibold tracking-[-0.03em] text-balance text-pdp-title sm:text-[2.75rem] lg:text-[3.25rem] wide:text-[3.5rem]">
             {name}
           </h1>
         </div>
@@ -119,15 +125,15 @@ export function PdpInfo({
                     key={step}
                     className={
                       step <= Math.round(ratingAvg)
-                        ? "size-[18px] shrink-0 fill-pdp-star text-pdp-star"
-                        : "size-[18px] shrink-0 fill-pdp-track text-pdp-track"
+                        ? "size-[15px] shrink-0 fill-pdp-star text-pdp-star"
+                        : "size-[15px] shrink-0 fill-pdp-track text-pdp-track"
                     }
                   />
                 ))}
               </span>
               <a
                 href="#reviews"
-                className="text-base font-medium text-pdp-title underline-offset-4 hover:underline"
+                className="text-[0.6875rem] font-semibold tracking-[0.14em] text-pdp-title uppercase underline-offset-4 hover:underline"
               >
                 {reviewCount.toLocaleString("en-US")}{" "}
                 {reviewCount === 1 ? "review" : "reviews"}
@@ -135,20 +141,20 @@ export function PdpInfo({
               <span className="sr-only">Rated {ratingAvg.toFixed(1)} out of 5</span>
             </span>
           ) : (
-            <span className="text-base text-pdp-body">No reviews yet</span>
+            <span className="text-[0.6875rem] font-semibold tracking-[0.14em] text-pdp-meta uppercase">No reviews yet</span>
           )}
 
           {format && (
             <>
-              <span aria-hidden className="h-4 w-px bg-pdp-border" />
-              <span className="text-base font-medium text-pdp-body">{format}</span>
+              <span aria-hidden className="text-[0.6875rem] text-pdp-label">/</span>
+              <span className="text-[0.6875rem] font-semibold tracking-[0.14em] text-pdp-meta uppercase">{format}</span>
             </>
           )}
 
           {soldCount > 0 && (
             <>
-              <span aria-hidden className="h-4 w-px bg-pdp-border" />
-              <span className="text-base text-pdp-body">
+              <span aria-hidden className="text-[0.6875rem] text-pdp-label">/</span>
+              <span className="text-[0.6875rem] font-semibold tracking-[0.14em] text-pdp-meta uppercase">
                 {soldCount.toLocaleString("en-US")} sold
               </span>
             </>
@@ -157,7 +163,7 @@ export function PdpInfo({
 
         {/* Price. Sits on its own line under the meta row, as drawn. */}
         <p className="flex flex-wrap items-baseline gap-3">
-          <span className="font-display text-[2rem] leading-[1.2] font-semibold text-pdp-price">
+          <span className="font-display text-[2.5rem] leading-[1.1] font-semibold tracking-[-0.02em] text-pdp-price lg:text-[2.75rem]">
             {formatMoney(priceCents)}
           </span>
           {compareAtCents && off !== null && (
@@ -178,19 +184,31 @@ export function PdpInfo({
       </div>
 
       {/* ── What arrives ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 border-y border-pdp-hairline py-6">
-        <p className="text-xs leading-none font-semibold tracking-[0.1em] text-pdp-label uppercase">
+      <div className="-mx-5 flex flex-col gap-5 rounded-[3px] bg-pdp-field/55 px-5 py-7 sm:-mx-6 sm:px-6">
+        <p className="text-[0.6875rem] leading-none font-semibold tracking-[0.22em] text-pdp-label uppercase">
           What you get
         </p>
 
-        {/* Ticked rows rather than a paragraph — each line is a fact the
-            schema actually holds, so the list is short, scannable, and never
-            padded out with specifications this shop does not record. */}
-        <ul className="flex flex-col gap-2.5">
-          {facts.map((fact) => (
-            <li key={fact} className="flex items-start gap-2.5 text-[0.9375rem]">
-              <Check className="mt-0.5 size-4 shrink-0 text-brand-600" aria-hidden />
-              <span className="text-pdp-body">{fact}</span>
+        {/* Numbered rather than ticked. Each line is still exactly one fact the
+            schema holds — the list is unchanged — but a set of identical check
+            marks gave every row the same weight and read as a feature grid.
+            An index column makes it a contents page: the eye counts, and the
+            hairline between rows does the separating that the ticks were
+            standing in for. The numerals are decorative, so they are hidden
+            from assistive tech and the list stays a plain list. */}
+        <ul className="flex flex-col">
+          {facts.map((fact, index) => (
+            <li
+              key={fact}
+              className="flex items-baseline gap-5 border-b border-pdp-hairline/70 py-3 last:border-0 last:pb-0 first:pt-0"
+            >
+              <span
+                aria-hidden
+                className="w-6 shrink-0 font-display text-[0.8125rem] leading-none font-semibold text-brand-400 tabular-nums"
+              >
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span className="text-[0.9375rem] leading-[1.6] text-pdp-body">{fact}</span>
             </li>
           ))}
         </ul>

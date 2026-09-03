@@ -1,12 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { AnimatePresence, motion } from "framer-motion";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
-import { duration, ease } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type GalleryImage = { id: string; url: string; alt: string };
@@ -43,12 +41,9 @@ export function PdpLightbox({
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
-  /** Which way the last move went, so the image leaves the way it came. */
-  const [direction, setDirection] = useState(0);
 
   const step = useCallback(
     (by: number) => {
-      setDirection(by);
       onIndexChange((index + by + images.length) % images.length);
     },
     [index, images.length, onIndexChange],
@@ -104,13 +99,29 @@ export function PdpLightbox({
     "inline-flex size-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
 
   return createPortal(
-    <motion.div
+    /* The overlay is a plain `div` where it was once a `motion.div`, and it
+       carries no entrance animation at all.
+
+       It was changed after the viewer appeared to open without ever becoming
+       fully opaque, leaving the picture unpainted even though the image
+       element was present, loaded and correctly sized. A CSS fade was tried
+       as the replacement and looked no better.
+
+       Both observations came from an inspection pane with a frozen animation
+       timeline — see the note in `pdp-gallery.tsx` — which strands every
+       animation at its first frame and fully explains what was seen. Framer
+       was not shown to be at fault, and neither was the CSS.
+
+       Having no entrance here is still the right call, and for a reason that
+       survives the correction: `tw-animate-css` applies
+       `animation-fill-mode: both`, so an animation that does not run holds
+       its 0% frame — opacity 0 — indefinitely. For a viewer whose only job is
+       to show the picture, that is a failure mode worth designing out rather
+       than an animation worth keeping. */
+    <div
       role="dialog"
       aria-modal="true"
       aria-label={`${productName} — image ${index + 1} of ${images.length}`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: duration.fast, ease: ease.standard }}
       className="fixed inset-0 z-[70] flex flex-col bg-ink/92 backdrop-blur-sm"
       // A click that started and ended on the backdrop closes; one that began
       // on the image and drifted does not.
@@ -136,26 +147,23 @@ export function PdpLightbox({
         </header>
 
         <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 py-6 sm:px-16">
-          <AnimatePresence mode="wait" initial={false} custom={direction}>
-            <motion.div
-              key={active.id}
-              custom={direction}
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.99 }}
-              transition={{ duration: duration.normal, ease: ease.enter }}
-              className="relative size-full"
-            >
-              <Image
-                src={active.url}
-                alt={active.alt || productName}
-                fill
-                sizes="100vw"
-                className="object-contain"
-                priority
-              />
-            </motion.div>
-          </AnimatePresence>
+          {/* Plain React, matching the overlay above and for the same reason.
+
+              `key` remounts the frame whenever the selection changes, so the
+              new source is swapped in cleanly. There is deliberately no
+              entrance animation on it — same fill-mode argument as the
+              overlay: nothing should stand between opening the viewer and
+              seeing the picture. */}
+          <div key={active.id} className="relative size-full">
+            <Image
+              src={active.url}
+              alt={active.alt || productName}
+              fill
+              sizes="100vw"
+              className="object-contain"
+              priority
+            />
+          </div>
 
           {images.length > 1 && (
             <>
@@ -186,7 +194,6 @@ export function PdpLightbox({
                 key={image.id}
                 type="button"
                 onClick={() => {
-                  setDirection(i > index ? 1 : -1);
                   onIndexChange(i);
                 }}
                 aria-label={`View image ${i + 1}`}
@@ -204,7 +211,7 @@ export function PdpLightbox({
           </div>
         )}
       </div>
-    </motion.div>,
+    </div>,
     document.body,
   );
 }
