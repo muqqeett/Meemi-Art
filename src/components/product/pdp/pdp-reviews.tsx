@@ -124,7 +124,7 @@ export function PdpReviews({
         <h2 className="font-clash text-2xl leading-[1.2] font-semibold text-pdp-price sm:text-[1.75rem]">
           Product Reviews
         </h2>
-        <div className="mt-6 rounded-[8px] border-[0.8px] border-dashed border-pdp-border px-6 py-12 text-center">
+        <div className="mt-6 rounded-[8px] border-[0.8px] border-pdp-hairline bg-pdp-surface/60 px-6 py-14 text-center">
           <p className="font-clash text-base text-pdp-body">
             No reviews yet.
           </p>
@@ -155,7 +155,7 @@ export function PdpReviews({
       </Reveal>
 
       <Reveal>
-        <div className="mt-[52px] flex flex-col gap-8 rounded-[8px] border-[0.8px] border-dashed border-pdp-border p-[23px] lg:flex-row lg:gap-[100px]">
+        <div className="mt-[52px] flex flex-col gap-8 rounded-[8px] border-[0.8px] border-pdp-hairline bg-pdp-surface/60 p-6 sm:p-8 lg:flex-row lg:gap-[100px]">
           <div className="flex shrink-0 items-center gap-4">
             <RatingGauge average={average} />
             <div className="flex flex-col gap-2">
