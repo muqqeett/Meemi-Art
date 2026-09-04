@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { v2 as cloudinary } from "cloudinary";
 
 import { buildObjectName } from "@/lib/storage/types";
@@ -70,6 +71,17 @@ export const MAX_DIGITAL_BYTES = 200 * 1024 * 1024; // 200 MB
  * larger than anything this shop sells today.
  */
 export const MAX_PROXY_BYTES = 25 * 1024 * 1024; // 25 MB
+
+/**
+ * A short, one-way fingerprint of a storage key, for log lines.
+ *
+ * Twelve hex characters of SHA-256: enough that two log entries for the same
+ * file can be matched to one another, far too little to invert, and it carries
+ * none of the key's structure. Never used for anything but logging.
+ */
+function keyDigest(storageKey: string): string {
+  return `key:${createHash("sha256").update(storageKey).digest("hex").slice(0, 12)}`;
+}
 
 export type StoredDigitalFile = {
   storageKey: string;
@@ -197,7 +209,18 @@ export const digitalStorage = {
         type: "private",
       });
     } catch (error) {
-      console.warn("[storage/digital] delete failed", storageKey, error);
+      // The storage key is the one value that would let someone construct
+      // their own signed URL, so it must never reach a log line — the download
+      // route says so explicitly and this call site used to contradict it.
+      //
+      // A short digest keeps the line useful: two failures for the same file
+      // still correlate, and a support question can still be traced, but the
+      // digest cannot be turned back into a key.
+      //
+      // `remove` receives only the key, so there is no asset or access id in
+      // scope to log instead; changing the signature would mean touching every
+      // caller, which is beyond a logging fix.
+      console.warn("[storage/digital] delete failed", keyDigest(storageKey), error);
     }
   },
 };

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { siteConfig } from "@/lib/config";
 import { cn } from "@/lib/utils";
+import { safeJsonLd } from "@/lib/json-ld";
 
 export type Crumb = {
   label: string;
@@ -37,7 +38,7 @@ export function Breadcrumbs({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       <nav aria-label="Breadcrumb" className={cn("text-xs", className)}>

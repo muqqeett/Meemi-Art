@@ -1,4 +1,5 @@
 import { siteConfig } from "@/lib/config";
+import { safeJsonLd } from "@/lib/json-ld";
 
 /**
  * Organization and WebSite structured data, emitted once from the storefront
@@ -40,11 +41,11 @@ export function OrganizationSchema() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(organization) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(website) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(website) }}
       />
     </>
   );

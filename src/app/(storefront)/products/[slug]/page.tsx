@@ -22,6 +22,7 @@ import {
 } from "@/lib/queries/reviews";
 import { getCurrentUser } from "@/lib/auth-guards";
 import { siteConfig } from "@/lib/config";
+import { safeJsonLd } from "@/lib/json-ld";
 
 export async function generateStaticParams() {
   const products = await getAllProductSlugs();
@@ -150,7 +151,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       {/*

@@ -26,6 +26,7 @@ import {
   changePasswordSchema,
   profileSchema,
 } from "@/lib/validations/auth";
+import { allowLoginAttempt, clearLoginAttempts } from "@/lib/security/login-throttle";
 
 /**
  * React resets an uncontrolled form after a form action resolves, so a failed
@@ -83,6 +84,28 @@ export async function loginAction(
     };
   }
 
+  /**
+   * Throttle before the password is checked.
+   *
+   * bcrypt at cost 12 makes each guess cost about a quarter of a second, which
+   * slows an attacker without stopping one; nothing else limited this path.
+   * Counted by address and by source — see `lib/security/login-throttle.ts`,
+   * including an honest note on what an in-process counter cannot do.
+   *
+   * The refusal deliberately reads differently from a wrong password. It
+   * discloses nothing about whether the account exists — it is a statement
+   * about how many attempts arrived, which is true regardless — and a customer
+   * who has genuinely mistyped several times is owed an explanation rather
+   * than a fifth identical rejection.
+   */
+  if (!(await allowLoginAttempt(parsed.data.email))) {
+    return {
+      ok: false,
+      error: "Too many sign-in attempts. Please wait a few minutes and try again.",
+      values: { email: parsed.data.email },
+    };
+  }
+
   try {
     await signIn("credentials", {
       email: parsed.data.email,
@@ -100,6 +123,10 @@ export async function loginAction(
     }
     throw error;
   }
+
+  // Signed in: this address starts clean again, so a customer who fumbled a
+  // few times is not carrying a nearly-spent budget into their next session.
+  clearLoginAttempts(parsed.data.email);
 
   const user = await prisma.user.findUnique({
     where: { email: parsed.data.email },
