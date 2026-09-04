@@ -126,7 +126,11 @@ export async function loginAction(
 
   // Signed in: this address starts clean again, so a customer who fumbled a
   // few times is not carrying a nearly-spent budget into their next session.
-  clearLoginAttempts(parsed.data.email);
+  //
+  // Awaited because the clear now reaches a shared store: `redirect()` below
+  // unwinds this function by throwing, and an un-awaited delete could be
+  // abandoned before it lands.
+  await clearLoginAttempts(parsed.data.email);
 
   const user = await prisma.user.findUnique({
     where: { email: parsed.data.email },

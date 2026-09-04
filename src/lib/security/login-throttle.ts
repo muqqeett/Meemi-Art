@@ -1,6 +1,8 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { Redis } from "@upstash/redis";
 
 /**
  * Throttle for the credential sign-in path.
@@ -14,23 +16,23 @@ import { headers } from "next/headers";
  * admin Email Health screen that reads it — with records of messages nobody
  * ever sent.
  *
- * ── What this is, and its limit, stated plainly ────────────────────────────
+ * ── Two layers, and why both are kept ──────────────────────────────────────
  *
- * An in-process sliding window. It holds counters in module scope, which means
- * one set of counters per running instance. On a serverless platform several
- * instances may be live at once, so a determined attacker who spreads requests
- * across them gets a multiple of the limit rather than the limit.
+ * This began as counters in module scope. That works, but the counters belong
+ * to one instance, and a serverless deployment runs several: an attacker whose
+ * requests land on different instances gets a multiple of the limit rather
+ * than the limit.
  *
- * That is a real weakness and it is deliberate: closing it properly needs a
- * store shared between instances — Redis, Upstash, or a table — and this
- * codebase has neither a KV dependency nor permission to add a table. Between
- * "no limit" and "a limit that a distributed attacker can multiply", the second
- * is strictly better: it stops the ordinary case outright — a script hammering
- * one account, or one address working through a credential dump — because
- * those arrive on a warm instance and are counted.
+ * Upstash Redis now holds the authoritative counters, shared by every
+ * instance. The in-process counters are deliberately kept underneath rather
+ * than deleted:
  *
- * Recorded here so the next person does not mistake it for a complete defence:
- * **a shared store is the real fix, and this is the interim.**
+ *   · An attempt is refused if EITHER layer refuses it. Redis adds the
+ *     cross-instance dimension; it never relaxes the local one. There is no
+ *     arrangement of requests in which adding Redis lets through something the
+ *     old code would have blocked.
+ *   · If Redis is unreachable, the local counters are already warm and simply
+ *     carry on. Availability of a cache is not a precondition for signing in.
  *
  * ── Two independent windows ────────────────────────────────────────────────
  *
@@ -53,6 +55,8 @@ const EMAIL_LIMIT = 8;
 const IP_LIMIT = 30;
 /** How long a window lasts. */
 const WINDOW_MS = 15 * 60 * 1000;
+/** The same window, in the unit Redis expiry wants. */
+const WINDOW_SECONDS = WINDOW_MS / 1000;
 
 /**
  * Module scope, so the map survives between requests on the same instance and
@@ -89,6 +93,76 @@ function hit(key: string, limit: number, now: number): boolean {
   return existing.count <= limit;
 }
 
+// ---------------------------------------------------------------- shared store
+
+/**
+ * The Redis client, or null when the deployment has no Upstash configured.
+ *
+ * Built once and reused. Absent credentials are not an error: local
+ * development and preview deployments run perfectly well on the in-process
+ * counters alone, and requiring Upstash to sign in locally would be a poor
+ * trade. `Redis.fromEnv()` reads `UPSTASH_REDIS_REST_URL` and
+ * `UPSTASH_REDIS_REST_TOKEN`; neither value is read, logged or handled here.
+ */
+const redis: Redis | null = (() => {
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return null;
+  }
+  try {
+    return Redis.fromEnv();
+  } catch {
+    // A malformed URL should degrade to local counting, not break sign-in.
+    return null;
+  }
+})();
+
+/**
+ * Keys are hashes, never the value itself.
+ *
+ * An email address in a Redis key is a customer list to anyone who can run
+ * `SCAN`, and an IP is personal data. A SHA-256 prefix is deterministic — the
+ * same address always lands on the same key — while carrying nothing back.
+ * Thirty-two hex characters is 128 bits: collisions are not a practical
+ * concern, and a collision would only mean two addresses sharing a budget.
+ */
+function keyFor(kind: "email" | "ip", value: string): string {
+  const digest = createHash("sha256").update(value).digest("hex").slice(0, 32);
+  return `meemiart:login:${kind}:${digest}`;
+}
+
+/**
+ * Count one attempt in the shared store and report whether it is within limit.
+ *
+ * `INCR` is atomic, which is the whole reason it is used here: two requests
+ * arriving at the same instant are counted twice and receive different values,
+ * so concurrency cannot be used to slip past the limit. A read-then-write pair
+ * would have exactly that race.
+ *
+ * ── One deliberate difference from the in-process window ───────────────────
+ *
+ * The expiry is refreshed on every attempt rather than only on the first. The
+ * local map holds a fixed window that ends 15 minutes after the first attempt;
+ * this one ends 15 minutes after the *last*. The difference only ever shows up
+ * for a key that is being hit continuously — that is, an attack — and there it
+ * extends the block rather than shortening it.
+ *
+ * It is written this way because the alternative sets the expiry only when the
+ * counter reads 1, and if that second call fails the key is left with no
+ * expiry at all, forever. Guaranteeing that every key dies matters more than
+ * matching the local window to the second.
+ */
+async function hitShared(key: string, limit: number): Promise<boolean> {
+  if (!redis) return true;
+
+  const [count] = await redis
+    .pipeline()
+    .incr(key)
+    .expire(key, WINDOW_SECONDS)
+    .exec<[number, number]>();
+
+  return count <= limit;
+}
+
 /**
  * The client's address, as far as the platform will say.
  *
@@ -117,20 +191,47 @@ function normalise(email: string): string {
  * whether or not the address exists. That is deliberate: counting only real
  * accounts would turn the throttle into an oracle for which addresses are
  * registered.
+ *
+ * ── What happens when Redis is down ────────────────────────────────────────
+ *
+ * The local verdict has already been computed by the time Redis is consulted,
+ * so an outage costs nothing: the attempt is judged on the in-process counters
+ * exactly as it was before Upstash existed. The failure is swallowed rather
+ * than surfaced — the caller returns the same generic message it always has,
+ * and no infrastructure state reaches the user.
+ *
+ * Nothing about the error is logged either. A connection failure carries the
+ * endpoint, and the endpoint is half of the credential pair.
  */
 export async function allowLoginAttempt(email: string): Promise<boolean> {
   const now = Date.now();
   sweep(now);
 
+  const address = normalise(email);
   const ip = await clientAddress();
 
   // Both are evaluated, never short-circuited: an attempt must count against
   // the source even when the address window is what refuses it, or an attacker
   // could keep their IP counter cold by reusing one blocked address.
-  const emailOk = hit(`e:${normalise(email)}`, EMAIL_LIMIT, now);
-  const ipOk = hit(`i:${ip}`, IP_LIMIT, now);
+  const localEmailOk = hit(`e:${address}`, EMAIL_LIMIT, now);
+  const localIpOk = hit(`i:${ip}`, IP_LIMIT, now);
+  const localOk = localEmailOk && localIpOk;
 
-  return emailOk && ipOk;
+  if (!redis) return localOk;
+
+  try {
+    // Counted in parallel for one round trip's latency rather than two, and
+    // both are always counted, for the same reason the local pair is.
+    const [sharedEmailOk, sharedIpOk] = await Promise.all([
+      hitShared(keyFor("email", address), EMAIL_LIMIT),
+      hitShared(keyFor("ip", ip), IP_LIMIT),
+    ]);
+
+    // Either layer may refuse. Redis only ever adds refusals.
+    return localOk && sharedEmailOk && sharedIpOk;
+  } catch {
+    return localOk;
+  }
 }
 
 /**
@@ -138,8 +239,21 @@ export async function allowLoginAttempt(email: string): Promise<boolean> {
  *
  * The source window is deliberately left alone: a shared office address should
  * not have its budget reset by one person signing in successfully, which is
- * exactly the cover an attacker on the same network would want.
+ * exactly the cover an attacker on the same network would want. That property
+ * is why this deletes one key and not two.
+ *
+ * A failure here is harmless and is ignored: the worst case is that a customer
+ * who had already failed a few times keeps those attempts against them until
+ * the window lapses on its own.
  */
-export function clearLoginAttempts(email: string): void {
-  windows.delete(`e:${normalise(email)}`);
+export async function clearLoginAttempts(email: string): Promise<void> {
+  const address = normalise(email);
+  windows.delete(`e:${address}`);
+
+  if (!redis) return;
+  try {
+    await redis.del(keyFor("email", address));
+  } catch {
+    // Deliberately silent — see above.
+  }
 }
