@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+/**
+ * Read once, here, so the security policy below cannot drift between what the
+ * dev server needs and what production ships.
+ */
+const isDev = process.env.NODE_ENV === "development";
+
 const nextConfig: NextConfig = {
   images: {
     // Catalog photography is served from Unsplash's CDN in development.
@@ -96,7 +102,19 @@ const nextConfig: NextConfig = {
                  `adtrafficquality.google` and frames `googleads.g.doubleclick.net`.
                  A policy written without them would have blanked the ads the
                  moment it was enforced. */
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.paddle.com https://sandbox-cdn.paddle.com https://pagead2.googlesyndication.com https://*.adtrafficquality.google",
+              /* `'unsafe-eval'` in development only.
+
+                 Next's dev server compiles and evaluates modules in the
+                 browser, so the dev build genuinely needs it. A production
+                 build does not, and leaving it in the shipped policy would
+                 hand an injected script the one primitive — `eval`, `new
+                 Function` — that turns a string into running code. Scoping it
+                 to development removes it from production at no cost.
+
+                 Safe to trial precisely because the policy is Report-Only: if
+                 some production path does need eval, it reports rather than
+                 breaks, and this line can come back. */
+              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://cdn.paddle.com https://sandbox-cdn.paddle.com https://pagead2.googlesyndication.com https://*.adtrafficquality.google`,
               /* Tailwind and Next emit inline style attributes. Fontshare
                  serves the Clash Grotesk stylesheet the product page is set
                  in — also found by the report-only run, and the reason
