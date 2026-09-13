@@ -21,7 +21,7 @@ import {
   type OwnReview,
 } from "@/lib/queries/reviews";
 import { getCurrentUser } from "@/lib/auth-guards";
-import { siteConfig } from "@/lib/config";
+import { entityIds, siteConfig } from "@/lib/config";
 import { safeJsonLd } from "@/lib/json-ld";
 
 export async function generateStaticParams() {
@@ -56,6 +56,8 @@ export async function generateMetadata({
     alternates: { canonical: `/products/${product.slug}` },
     openGraph: {
       type: "website",
+      // Restated because a page-level `openGraph` replaces the root one whole.
+      siteName: siteConfig.name,
       title: custom || `${baseTitle} | ${siteConfig.name}`,
       description,
       url: `${siteConfig.url}/products/${product.slug}`,
@@ -115,9 +117,12 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
    * Product structured data. Rating and review fields are only emitted when
    * real reviews exist — never fabricated to win a rich result.
    */
+  const productUrl = `${siteConfig.url}/products/${product.slug}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": `${productUrl}#product`,
+    url: productUrl,
     name: product.name,
     description: product.shortDescription ?? product.description.slice(0, 300),
     sku: product.sku,
@@ -133,8 +138,10 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
       availability: product.isAvailable
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
-      url: `${siteConfig.url}/products/${product.slug}`,
-      seller: { "@type": "Organization", name: siteConfig.name },
+      url: productUrl,
+      // The sitewide Organization by reference, not a second anonymous copy
+      // of it — see `components/brand/organization-schema.tsx`.
+      seller: { "@id": entityIds.organization },
     },
     ...(product.reviewCount > 0
       ? {

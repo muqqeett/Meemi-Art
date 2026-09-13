@@ -8,11 +8,28 @@
  */
 
 export const siteConfig = {
+  /**
+   * The brand as it appears on the page — wordmark, footer, Terms — and
+   * therefore the name every metadata and structured-data signal uses too.
+   * Google picks a site name from signals that agree; a title saying one thing
+   * while the page says another is how it ends up guessing.
+   */
   name: "Meemi Art",
-  tagline: "Handmade Crochet. Beautifully Crafted.",
-  shortDescription: "Premium handmade crochet.",
+  /**
+   * The same brand run together, as in the domain. Declared as an
+   * `alternateName` on the WebSite and Organization entities so a search for
+   * either spelling resolves to one entity, not two.
+   */
+  alternateName: "MeemiArt",
+  /**
+   * Metadata only — the homepage title and share cards. Describes what the
+   * store actually sells: the Terms page is explicit that every product is a
+   * digital file, so nothing here may suggest physical goods are shipped.
+   */
+  tagline: "Crochet Patterns & Digital Downloads",
+  shortDescription: "Crochet patterns and digital downloads.",
   description:
-    "Meemi Art makes handmade crochet pieces — bags, flowers, plushies and gifts — worked stitch by stitch in small batches, designed to bring texture and warmth to everyday life.",
+    "Meemi Art publishes crochet patterns and digital downloads. Every product is a digital file, ready to download the moment your payment clears.",
   /**
    * Absolute site origin. SERVER-ONLY.
    *
@@ -50,6 +67,22 @@ export const siteConfig = {
     pinterest: "",
     facebook: "",
   },
+} as const;
+
+/**
+ * Stable identifiers for the site's structured-data entities.
+ *
+ * Every block that refers to the business or the site points at these `@id`s
+ * instead of restating a name, so Google reads one Organization and one
+ * WebSite no matter how many pages or blocks mention them.
+ *
+ * The homepage URL keeps its trailing slash: it is the form the root is served
+ * and linked at, and the fragment ids hang off it.
+ */
+export const entityIds = {
+  home: `${siteConfig.url}/`,
+  organization: `${siteConfig.url}/#organization`,
+  website: `${siteConfig.url}/#website`,
 } as const;
 
 /**

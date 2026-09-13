@@ -26,6 +26,8 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: `${siteConfig.url}/sitemap.xml`,
-    host: siteConfig.url,
+    // No `host`. `Host:` was a Yandex-only directive that Google ignores; the
+    // canonical host is established by the apex -> www redirect and by every
+    // canonical, sitemap and structured-data URL using the www origin.
   };
 }

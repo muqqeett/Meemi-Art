@@ -23,6 +23,7 @@ export async function generateMetadata({
     // them are still followed.
     robots: faceted ? { index: false, follow: true } : { index: true, follow: true },
     openGraph: {
+      siteName: siteConfig.name,
       title: `Shop All Handmade Crochet | ${siteConfig.name}`,
       description: `Every handmade piece from ${siteConfig.name}.`,
       url: `${siteConfig.url}/shop`,

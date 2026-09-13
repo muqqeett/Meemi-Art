@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   description: `Answers about ordering, downloads, payment and refunds at ${siteConfig.name}.`,
   alternates: { canonical: "/faq" },
   openGraph: {
+    siteName: siteConfig.name,
     title: `FAQ | ${siteConfig.name}`,
     description: `Common questions about buying digital products from ${siteConfig.name}.`,
     url: `${siteConfig.url}/faq`,

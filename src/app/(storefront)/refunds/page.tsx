@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   description: `How refunds and cancellations work for digital products bought from ${siteConfig.name}.`,
   alternates: { canonical: "/refunds" },
   openGraph: {
+    siteName: siteConfig.name,
     title: `Refund & Cancellation Policy | ${siteConfig.name}`,
     description: `How refunds and cancellations work for digital products bought from ${siteConfig.name}.`,
     url: `${siteConfig.url}/refunds`,

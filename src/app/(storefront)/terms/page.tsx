@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   description: `The terms that apply when you buy a digital product from ${siteConfig.name}.`,
   alternates: { canonical: "/terms" },
   openGraph: {
+    siteName: siteConfig.name,
     title: `Terms & Conditions | ${siteConfig.name}`,
     description: `The terms that apply when you buy a digital product from ${siteConfig.name}.`,
     url: `${siteConfig.url}/terms`,

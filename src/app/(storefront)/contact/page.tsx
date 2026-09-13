@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   description: `Get in touch with ${siteConfig.name} about an order, a download or anything else.`,
   alternates: { canonical: "/contact" },
   openGraph: {
+    siteName: siteConfig.name,
     title: `Contact | ${siteConfig.name}`,
     description: `Get in touch with ${siteConfig.name}.`,
     url: `${siteConfig.url}/contact`,

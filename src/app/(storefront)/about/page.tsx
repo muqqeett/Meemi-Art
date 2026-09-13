@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   description: `How ${siteConfig.name} makes handmade crochet — the yarn we choose, how long a piece takes, and what we stand behind.`,
   alternates: { canonical: "/about" },
   openGraph: {
+    siteName: siteConfig.name,
     title: `Our Story | ${siteConfig.name}`,
     description: `How ${siteConfig.name} makes handmade crochet.`,
     url: `${siteConfig.url}/about`,

@@ -44,6 +44,7 @@ export async function generateMetadata({
     robots: faceted ? { index: false, follow: true } : { index: true, follow: true },
     openGraph: {
       type: "website",
+      siteName: siteConfig.name,
       title: `${title} | ${siteConfig.name}`,
       description,
       url: `${siteConfig.url}/shop/${category.slug}`,

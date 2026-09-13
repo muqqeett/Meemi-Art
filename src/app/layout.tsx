@@ -33,13 +33,12 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   applicationName: siteConfig.name,
   keywords: [
-    "handmade crochet",
-    "crochet bags",
-    "crochet flowers",
-    "crochet bouquets",
-    "crochet plushies",
-    "handmade gifts",
+    "crochet patterns",
+    "digital crochet patterns",
+    "crochet pattern PDF",
+    "amigurumi patterns",
     siteConfig.name,
+    siteConfig.alternateName,
   ],
   alternates: { canonical: "/" },
   openGraph: {
