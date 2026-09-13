@@ -66,6 +66,9 @@ export default async function EditProductPage({
           seoDescription: product.seoDescription ?? "",
           featured: product.featured,
           isActive: product.isActive,
+          videoUrl: product.videoUrl,
+          // Carried for the same reason as each image's key below.
+          videoKey: product.videoStorageKey,
           images: product.images.map((image) => ({
             url: image.url,
             alt: image.alt,

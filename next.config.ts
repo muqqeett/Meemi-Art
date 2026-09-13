@@ -110,8 +110,17 @@ const nextConfig: NextConfig = {
               // blank those images the day it is enforced.
               "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://i.pravatar.cc https://*.adtrafficquality.google https://pagead2.googlesyndication.com",
               "font-src 'self' data: https://cdn.fontshare.com",
-              // Paddle's API, and its event/telemetry endpoints.
-              "connect-src 'self' https://*.paddle.com https://*.adtrafficquality.google https://pagead2.googlesyndication.com",
+              /* The optional product video. (Its poster frame is an image, and
+                 is already covered by `img-src` above.) Without this, `<video>` falls back to `default-src 'self'`
+                 and every Cloudinary video is a violation — reported today,
+                 blocked the day this policy is enforced. */
+              "media-src 'self' https://res.cloudinary.com",
+              /* Paddle's API, and its event/telemetry endpoints.
+                 `api.cloudinary.com` is where the admin product editor sends a
+                 product video: a 50 MB file cannot pass through a serverless
+                 function, so the browser uploads it directly, with parameters
+                 this server has signed. */
+              "connect-src 'self' https://*.paddle.com https://*.adtrafficquality.google https://pagead2.googlesyndication.com https://api.cloudinary.com",
               // The checkout overlay is an iframe from Paddle.
               "frame-src https://*.paddle.com https://googleads.g.doubleclick.net https://*.adtrafficquality.google https://www.google.com",
               "object-src 'none'",

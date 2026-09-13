@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
-import { getStorageProvider } from "@/lib/storage";
+import { getStorageProvider, productVideoStorage } from "@/lib/storage";
 import { recordActivity } from "@/lib/admin/activity";
 import { adminOrDenied, type AdminResult } from "@/lib/actions/admin/guard";
 import { productSchema, type ProductInput } from "@/lib/validations/admin";
@@ -25,6 +25,54 @@ export type { AdminResult };
  * Only keys we actually own are passed here — seed rows pointing at external
  * URLs have a null `storageKey` and are skipped.
  */
+/**
+ * Refuse a product video this product may not claim.
+ *
+ * The URL and key arrive from the form, and a key is what a later replace or
+ * delete destroys — so both are checked here rather than trusted:
+ *
+ *   - a key must be a product-video id whose delivery URL is the one submitted,
+ *     so it cannot name some other object;
+ *   - no other product may own that key, or already own the submitted URL, so
+ *     one product can neither destroy another's video nor show a video another
+ *     product can destroy out from under it.
+ *
+ * `productId` is null on create. Returns null when the claim is acceptable.
+ */
+async function checkVideoClaim(
+  productId: string | null,
+  url: string | null,
+  key: string | null,
+): Promise<AdminResult<never> | null> {
+  if (!url) return null;
+
+  const refuse = (message: string) => ({
+    ok: false as const,
+    error: "The product video couldn't be saved.",
+    fieldErrors: { videoUrl: message },
+  });
+
+  if (key && !productVideoStorage.isOwnableKey(url, key)) {
+    return refuse("That video upload isn't valid. Upload the video again.");
+  }
+
+  const owner = await prisma.product.findFirst({
+    where: {
+      ...(productId ? { id: { not: productId } } : {}),
+      OR: [
+        ...(key ? [{ videoStorageKey: key }] : []),
+        { videoUrl: url, videoStorageKey: { not: null } },
+      ],
+    },
+    select: { id: true },
+  });
+  if (owner) {
+    return refuse("That video belongs to another product. Upload a separate copy for this one.");
+  }
+
+  return null;
+}
+
 async function removeStoredObjects(keys: string[]): Promise<void> {
   if (keys.length === 0) return;
 
@@ -64,6 +112,9 @@ export async function createProduct(input: ProductInput): Promise<AdminResult<{ 
 
   const data = parsed.data;
 
+  const videoProblem = await checkVideoClaim(null, data.videoUrl || null, data.videoKey ?? null);
+  if (videoProblem) return videoProblem;
+
   const clash = await prisma.product.findFirst({
     where: { OR: [{ slug: data.slug }, { sku: data.sku }] },
     select: { slug: true, sku: true },
@@ -96,6 +147,10 @@ export async function createProduct(input: ProductInput): Promise<AdminResult<{ 
         compareAtCents: data.compareAtCents || null,
         featured: data.featured,
         isActive: data.isActive,
+        // The optional video. Its key is kept only alongside a URL, so a
+        // product can never own a stored object it does not display.
+        videoUrl: data.videoUrl || null,
+        videoStorageKey: data.videoUrl ? (data.videoKey ?? null) : null,
         images: {
           create: data.images.map((image, index) => ({
             url: image.url,
@@ -181,9 +236,26 @@ export async function updateProduct(
   // Collected inside the transaction, acted on only after it commits — a
   // storage failure must never roll back a successful database write.
   let orphanedKeys: string[] = [];
+  // The video is a different resource type in storage, so its orphan is
+  // tracked apart from the image keys and removed by its own driver.
+  let orphanedVideoKey: string | null = null;
+
+  const nextVideoUrl = data.videoUrl || null;
+  const nextVideoKey = nextVideoUrl ? (data.videoKey ?? null) : null;
+
+  const videoProblem = await checkVideoClaim(id, nextVideoUrl, nextVideoKey);
+  if (videoProblem) return videoProblem;
 
   try {
     await prisma.$transaction(async (tx) => {
+      const before = await tx.product.findUnique({
+        where: { id },
+        select: { videoStorageKey: true },
+      });
+      if (before?.videoStorageKey && before.videoStorageKey !== nextVideoKey) {
+        orphanedVideoKey = before.videoStorageKey;
+      }
+
       await tx.product.update({
         where: { id },
         data: {
@@ -200,6 +272,8 @@ export async function updateProduct(
           compareAtCents: data.compareAtCents || null,
           featured: data.featured,
           isActive: data.isActive,
+          videoUrl: nextVideoUrl,
+          videoStorageKey: nextVideoKey,
         },
       });
 
@@ -241,6 +315,7 @@ export async function updateProduct(
 
     // The database is already consistent; storage cleanup is best-effort.
     await removeStoredObjects(orphanedKeys);
+    if (orphanedVideoKey) await productVideoStorage.remove(orphanedVideoKey);
 
     await recordActivity({
       actorId: admin.id,
@@ -277,6 +352,7 @@ export async function deleteProduct(id: string): Promise<AdminResult> {
       name: true,
       sku: true,
       images: { select: { storageKey: true } },
+      videoStorageKey: true,
       _count: { select: { orderItems: true } },
     },
   });
@@ -327,6 +403,7 @@ export async function deleteProduct(id: string): Promise<AdminResult> {
         .map((image) => image.storageKey)
         .filter((key): key is string => Boolean(key)),
     );
+    if (product.videoStorageKey) await productVideoStorage.remove(product.videoStorageKey);
 
     revalidatePath("/admin/products");
     revalidatePath("/shop");
@@ -385,6 +462,12 @@ export async function duplicateProduct(
         // A copy is a draft: never featured, never live until reviewed.
         featured: false,
         isActive: false,
+        // Not copied. The source owns its video and destroys it when it is
+        // deleted or the video is replaced; a copy pointing at the same URL
+        // would be left showing a broken player. Add a video to the copy with
+        // its own upload.
+        videoUrl: null,
+        videoStorageKey: null,
         images: {
           create: source.images.map((image, index) => ({
             url: image.url,

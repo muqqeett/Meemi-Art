@@ -12,6 +12,14 @@ export {
 } from "@/lib/storage/types";
 
 /**
+ * Product video has one driver only. The local-disk fallback exists so photos
+ * can be managed before Cloudinary is configured; a 50 MB file written into
+ * `public/` is not something to encourage, so video simply reports that it
+ * needs Cloudinary.
+ */
+export { productVideoStorage } from "@/lib/storage/cloudinary";
+
+/**
  * Resolve the active storage driver.
  *
  * Cloudinary wins whenever its credentials are present; otherwise uploads fall

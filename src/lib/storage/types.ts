@@ -98,6 +98,88 @@ export function sniffImageType(bytes: Buffer): string | null {
   return null;
 }
 
+// ---------------------------------------------------------------- video
+
+/** Containers accepted for the optional product video. */
+export const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm"] as const;
+
+/** The same two, as Cloudinary names them in `format` and `allowed_formats`. */
+export const ALLOWED_VIDEO_FORMATS = ["mp4", "webm"] as const;
+
+/**
+ * 50 MB, for product video only.
+ *
+ * `MAX_UPLOAD_BYTES` above stays exactly where it is: images and video have
+ * separate constants so that raising one can never quietly raise the other.
+ */
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+
+/**
+ * Container signatures for MP4 and WebM.
+ *
+ * Takes a plain `Uint8Array` rather than a `Buffer`, so the same check runs in
+ * the admin browser — before a single byte is uploaded — as well as on a
+ * server. It is the first gate, not the last: a browser check can be bypassed,
+ * so Cloudinary is also told to accept only these formats in the signed upload,
+ * and the stored result is verified again server-side before any product is
+ * allowed to point at it.
+ *
+ * Two families share these signatures and are excluded here:
+ *
+ *   ftyp  also carries AVIF/HEIC stills and QuickTime `.mov`. Their brands are
+ *         refused, so an image renamed `.mp4` fails at the first gate.
+ *   EBML  also opens Matroska `.mkv`. That cannot be told apart from WebM in
+ *         the first bytes, which is exactly why the server re-check on
+ *         Cloudinary's detected `format` exists.
+ */
+export function sniffVideoType(bytes: Uint8Array): string | null {
+  if (bytes.length < 12) return null;
+
+  // WebM (Matroska EBML header): 1A 45 DF A3
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) {
+    return "video/webm";
+  }
+
+  // MP4 (ISO base media file format): "ftyp" box at offset 4.
+  const box = String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7]);
+  if (box === "ftyp") {
+    const brand = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]);
+    const notVideo = ["avif", "avis", "heic", "heix", "mif1", "msf1", "qt  "];
+    return notVideo.includes(brand) ? null : "video/mp4";
+  }
+
+  return null;
+}
+
+/**
+ * A still frame of a Cloudinary video, served as a JPEG.
+ *
+ * Cloudinary renders any frame of a stored video on request, so the gallery
+ * poster and thumbnail come from the video itself — no second upload, and no
+ * way for the poster to drift out of step with the file it represents.
+ *
+ *   so_0         the first frame
+ *   w_1200       wide enough for the largest gallery stage, and no wider, so
+ *   c_limit      the poster costs a fraction of the video it stands in for
+ *   q_auto
+ *
+ * Returns null for anything that is not a Cloudinary video delivery URL,
+ * rather than guessing at a URL that would 404.
+ */
+export function videoPosterUrl(videoUrl: string): string | null {
+  const marker = "/video/upload/";
+  const at = videoUrl.indexOf(marker);
+  if (at === -1) return null;
+
+  const head = videoUrl.slice(0, at + marker.length);
+  const tail = videoUrl
+    .slice(at + marker.length)
+    .replace(/\.(mp4|webm)(\?.*)?$/i, ".jpg");
+  if (!tail.endsWith(".jpg")) return null;
+
+  return `${head}so_0,w_1200,c_limit,q_auto/${tail}`;
+}
+
 /** Readable, collision-free object name derived from the original filename. */
 export function buildObjectName(filename: string): string {
   const base = filename

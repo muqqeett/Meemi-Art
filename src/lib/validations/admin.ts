@@ -42,6 +42,28 @@ export const productSchema = z
       )
       .min(1, "Add at least one preview image")
       .max(8, "Up to 8 images"),
+
+    /**
+     * The optional product video — one per product, held beside `images`
+     * rather than inside it, so nothing that reads a product image can ever be
+     * handed a video.
+     *
+     * Constrained to Cloudinary delivery URLs. This value ends up as a
+     * `<video src>`, and anything else — another host, or a `javascript:`
+     * string — has no business there.
+     */
+    videoUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .regex(
+        /^https:\/\/res\.cloudinary\.com\/[^/\s]+\/video\/upload\/\S+$/,
+        "The product video must be a Cloudinary video upload",
+      )
+      .nullable()
+      .optional(),
+    /** Storage handle for the video, retained so the object can be purged later. */
+    videoKey: z.string().trim().max(300).nullable().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.compareAtCents && data.compareAtCents > 0 && data.compareAtCents <= data.priceCents) {

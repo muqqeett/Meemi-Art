@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
   ChevronUp,
@@ -10,13 +10,35 @@ import {
   Share2,
   Check,
   Maximize2,
+  Play,
+  Pause,
 } from "lucide-react";
 
 import { WishlistButton } from "@/components/product/wishlist-button";
 import { PdpLightbox } from "@/components/product/pdp/pdp-lightbox";
+import { videoPosterUrl } from "@/lib/storage/types";
 import { cn } from "@/lib/utils";
 
 type GalleryImage = { id: string; url: string; alt: string };
+
+/**
+ * One item in the gallery: a product image, or the product's single video.
+ *
+ * The video is not a `ProductImage` and never becomes one — it is stored on the
+ * product and only joins this list here, for display. Everything else that
+ * reads a product image keeps reading `images`, so a video can never reach a
+ * card, the cart, checkout, an email or a link preview.
+ */
+export type GalleryMedia =
+  | { kind: "image"; id: string; url: string; alt: string }
+  | { kind: "video"; id: string; url: string; poster: string | null };
+
+/**
+ * Second. The first image stays the first thing on screen — the page's LCP
+ * element, and the same picture the cards and share previews use — so the
+ * video never costs the initial load anything.
+ */
+const VIDEO_POSITION = 1;
 
 /**
  * Product gallery — Figma 79:665.
@@ -36,11 +58,14 @@ type GalleryImage = { id: string; url: string; alt: string };
  */
 export function PdpGallery({
   images,
+  videoUrl = null,
   productId,
   productName,
   isWishlisted,
 }: {
   images: GalleryImage[];
+  /** The product's optional video. Shown second; never treated as an image. */
+  videoUrl?: string | null;
   productId: string;
   productName: string;
   isWishlisted: boolean;
@@ -49,8 +74,52 @@ export function PdpGallery({
   const [copied, setCopied] = useState(false);
   const [zoomed, setZoomed] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  if (images.length === 0) {
+  const media: GalleryMedia[] = images.map(
+    (image): GalleryMedia => ({ kind: "image", id: image.id, url: image.url, alt: image.alt }),
+  );
+  if (videoUrl) {
+    media.splice(Math.min(VIDEO_POSITION, media.length), 0, {
+      kind: "video",
+      id: "product-video",
+      url: videoUrl,
+      poster: videoPosterUrl(videoUrl),
+    });
+  }
+
+  const active = media.length > 0 ? media[Math.min(index, media.length - 1)] : null;
+  const activeKind = active?.kind;
+  const activeId = active?.id;
+
+  /**
+   * Play the video while its slot is showing, and only then.
+   *
+   * The `<video>` element exists only while the video is the active item, so
+   * leaving the slot unmounts it and stops it outright. Opening the full-screen
+   * viewer pauses it, so two copies never play at once. Muted autoplay is the
+   * one kind every browser allows — and it is skipped entirely for visitors
+   * who ask for reduced motion, who get the poster and a play button instead.
+   */
+  useEffect(() => {
+    const video = videoRef.current;
+    if (activeKind !== "video" || !video) return;
+
+    if (zoomed) {
+      video.pause();
+      return;
+    }
+
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      void video.play().catch(() => {
+        // A refused autoplay is not an error: the play button remains.
+      });
+    }
+    return () => video.pause();
+  }, [activeKind, activeId, zoomed]);
+
+  if (!active) {
     return (
       <div className="flex aspect-square w-full items-center justify-center rounded-[3px] bg-pdp-field ring-1 ring-pdp-hairline text-sm text-pdp-body">
         No image available
@@ -58,11 +127,20 @@ export function PdpGallery({
     );
   }
 
-  const active = images[Math.min(index, images.length - 1)];
   const step = (by: number) => {
     setLoaded(false);
-    setIndex((i) => (i + by + images.length) % images.length);
+    setIndex((i) => (i + by + media.length) % media.length);
   };
+
+  function togglePlayback() {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      void video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }
 
   /**
    * Copies the page URL. `navigator.share` is offered first because on a phone
@@ -86,6 +164,9 @@ export function PdpGallery({
 
   const railButton =
     "flex size-[52px] items-center justify-center rounded-[8px] bg-pdp-surface text-pdp-price transition-colors hover:bg-pdp-hairline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pdp-price";
+
+  const stageControl =
+    "inline-flex size-11 items-center justify-center rounded-full border border-pdp-hairline bg-surface/70 text-pdp-price backdrop-blur transition-all duration-200 hover:bg-surface focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pdp-price";
 
   return (
     /* Capped at the design's 458px while stacked and centred: the 458×610
@@ -121,79 +202,123 @@ export function PdpGallery({
             <div className="absolute -bottom-1/4 left-1/2 size-[70%] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,var(--color-brand-200)_0%,transparent_70%)] opacity-35 blur-[64px]" />
           </div>
 
-          <button
-            type="button"
-            onClick={() => setZoomed(true)}
-            aria-label={`Open ${productName} image ${index + 1} full screen`}
-            className="absolute inset-0 cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-pdp-price"
-          >
-            {/* Plain React and a CSS fade, where this used to be an
-                `AnimatePresence` wrapping a keyed `motion.span`.
+          {active.kind === "image" ? (
+            <button
+              type="button"
+              onClick={() => setZoomed(true)}
+              aria-label={`Open ${productName} image ${index + 1} full screen`}
+              className="absolute inset-0 cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-pdp-price"
+            >
+              {/* Plain React and a CSS fade, where this used to be an
+                  `AnimatePresence` wrapping a keyed `motion.span`.
 
-                Read the history here carefully before changing it back.
+                  Read the history here carefully before changing it back.
 
-                The change was made after the stage appeared stuck on image
-                one while `index`, the counter and the full-screen label all
-                tracked the selection correctly — the symptom of an exit
-                animation that never reports completion, which under
-                `mode="wait"` means the incoming child is never mounted.
+                  The change was made after the stage appeared stuck on image
+                  one while `index`, the counter and the full-screen label all
+                  tracked the selection correctly — the symptom of an exit
+                  animation that never reports completion, which under
+                  `mode="wait"` means the incoming child is never mounted.
 
-                That diagnosis was NOT confirmed. Those observations came from
-                an inspection pane that was later found to have a frozen
-                animation timeline: `document.timeline.currentTime` stuck at 0
-                and `requestAnimationFrame` never firing. With no timeline, no
-                animation of any kind can progress — Framer's and plain CSS
-                alike — so every element sits at its start state forever. That
-                alone explains everything that was seen, and it means Framer
-                was never shown to be at fault.
+                  That diagnosis was NOT confirmed. Those observations came from
+                  an inspection pane that was later found to have a frozen
+                  animation timeline: `document.timeline.currentTime` stuck at 0
+                  and `requestAnimationFrame` never firing. With no timeline, no
+                  animation of any kind can progress — Framer's and plain CSS
+                  alike — so every element sits at its start state forever. That
+                  alone explains everything that was seen, and it means Framer
+                  was never shown to be at fault.
 
-                What is kept is the implementation, not the theory. This has
-                one moving part instead of a presence boundary: `key` remounts
-                the frame, and opacity is driven by `loaded`, which this
-                component already maintains for exactly this moment. It is
-                simpler and has no completion callback to depend on, which is
-                reason enough to leave it. Anyone reinstating `AnimatePresence`
-                should verify in a real, focused browser window first. */}
+                  What is kept is the implementation, not the theory. This has
+                  one moving part instead of a presence boundary: `key` remounts
+                  the frame, and opacity is driven by `loaded`, which this
+                  component already maintains for exactly this moment. It is
+                  simpler and has no completion callback to depend on, which is
+                  reason enough to leave it. Anyone reinstating `AnimatePresence`
+                  should verify in a real, focused browser window first. */}
+              <span key={active.id} className="absolute inset-0 block">
+                <Image
+                  src={active.url}
+                  alt={active.alt || productName}
+                  fill
+                  priority
+                  // Widened with the stage. The hint said 458 while the frame
+                  // now measures 537 at 1440, which would have the browser
+                  // fetch a source narrower than the space it is painted into
+                  // and soften the picture on the one page it matters most.
+                  sizes="(min-width: 1440px) 537px, (min-width: 1024px) 45vw, (min-width: 640px) 458px, 92vw"
+                  onLoad={() => setLoaded(true)}
+                  ref={(node) => {
+                    // A cached image is already decoded before React attaches
+                    // `onLoad`, so that handler never fires and the placeholder
+                    // would sit on top of a picture that is already there.
+                    if (node?.complete) setLoaded(true);
+                  }}
+                  /* Two transitions on one element, and they must not fight:
+                     `opacity` carries the change of picture, `transform` carries
+                     the hover zoom. Both are listed explicitly so neither resets
+                     the other.
+
+                     `loaded` is already set false the moment the selection
+                     changes and true when the new file decodes, so it is exactly
+                     the signal a fade needs — the incoming frame rises from
+                     transparent as it becomes ready, over the placeholder
+                     beneath. Contained, so the artwork is never cropped; the
+                     hover zoom is 2% and lives inside `overflow-hidden`, so it
+                     cannot escape the stage. Both are dropped under reduced
+                     motion, where the image simply appears. */
+                  className={cn(
+                    "object-contain transition-[opacity,transform] duration-300 ease-out",
+                    "group-hover/stage:scale-[1.02]",
+                    "motion-reduce:transition-none motion-reduce:group-hover/stage:scale-100 motion-reduce:opacity-100",
+                    loaded ? "opacity-100" : "opacity-0",
+                  )}
+                />
+              </span>
+            </button>
+          ) : (
+            /* The video, in the same frame as the images and sized by it.
+
+               `absolute inset-0 size-full object-contain` is exactly what
+               `next/image` with `fill` + `object-contain` produces, so the clip
+               takes the square stage and letterboxes inside it — its own
+               dimensions never decide the layout. Same fade, same hover zoom,
+               same reduced-motion handling as the picture above.
+
+               Not wrapped in the zoom button: a player inside a button is a
+               nested interactive element. Full screen is still one press away
+               on the expand control, and playback has its own button.
+
+               `preload="metadata"` fetches only the header — duration and
+               dimensions — so nothing close to 50 MB moves until it plays. The
+               element is mounted only while this slot is active. */
             <span key={active.id} className="absolute inset-0 block">
-              <Image
-                src={active.url}
-                alt={active.alt || productName}
-                fill
-                priority
-                // Widened with the stage. The hint said 458 while the frame
-                // now measures 537 at 1440, which would have the browser
-                // fetch a source narrower than the space it is painted into
-                // and soften the picture on the one page it matters most.
-                sizes="(min-width: 1440px) 537px, (min-width: 1024px) 45vw, (min-width: 640px) 458px, 92vw"
-                onLoad={() => setLoaded(true)}
+              <video
                 ref={(node) => {
-                  // A cached image is already decoded before React attaches
-                  // `onLoad`, so that handler never fires and the placeholder
-                  // would sit on top of a picture that is already there.
-                  if (node?.complete) setLoaded(true);
+                  videoRef.current = node;
+                  // As with a cached image: metadata that is already in hand
+                  // has fired its event before React could listen for it.
+                  if (node && node.readyState >= 1) setLoaded(true);
                 }}
-                /* Two transitions on one element, and they must not fight:
-                   `opacity` carries the change of picture, `transform` carries
-                   the hover zoom. Both are listed explicitly so neither resets
-                   the other.
-
-                   `loaded` is already set false the moment the selection
-                   changes and true when the new file decodes, so it is exactly
-                   the signal a fade needs — the incoming frame rises from
-                   transparent as it becomes ready, over the placeholder
-                   beneath. Contained, so the artwork is never cropped; the
-                   hover zoom is 2% and lives inside `overflow-hidden`, so it
-                   cannot escape the stage. Both are dropped under reduced
-                   motion, where the image simply appears. */
+                src={active.url}
+                poster={active.poster ?? undefined}
+                muted
+                playsInline
+                loop
+                preload="metadata"
+                aria-label={`${productName} video`}
+                onLoadedMetadata={() => setLoaded(true)}
+                onPlay={() => setPlaying(true)}
+                onPause={() => setPlaying(false)}
                 className={cn(
-                  "object-contain transition-[opacity,transform] duration-300 ease-out",
+                  "absolute inset-0 size-full object-contain transition-[opacity,transform] duration-300 ease-out",
                   "group-hover/stage:scale-[1.02]",
                   "motion-reduce:transition-none motion-reduce:group-hover/stage:scale-100 motion-reduce:opacity-100",
                   loaded ? "opacity-100" : "opacity-0",
                 )}
               />
             </span>
-          </button>
+          )}
 
           {/* Soft placeholder until the first image decodes. No spinner — a
               tinted panel the same size as the image cannot shift layout. */}
@@ -203,11 +328,34 @@ export function PdpGallery({
 
           {/* Counter, top-right. Small, translucent, tabular so it cannot
               jitter as the index changes. */}
-          {images.length > 1 && (
+          {media.length > 1 && (
             <p className="pointer-events-none absolute top-3 right-3 rounded-full border border-pdp-hairline bg-surface/70 px-2.5 py-1 text-xs text-pdp-meta backdrop-blur tabular-nums">
               {String(index + 1).padStart(2, "0")}
-              <span className="text-pdp-subtle"> / {String(images.length).padStart(2, "0")}</span>
+              <span className="text-pdp-subtle"> / {String(media.length).padStart(2, "0")}</span>
             </p>
+          )}
+
+          {/* Play / pause, bottom-left — the same quiet round control as the
+              expand button beside it, not a centred billboard. Always visible
+              while paused, so a reduced-motion visitor can find it; revealed on
+              hover while playing, like the other stage controls. */}
+          {active.kind === "video" && (
+            <button
+              type="button"
+              onClick={togglePlayback}
+              aria-label={playing ? "Pause video" : "Play video"}
+              className={cn(
+                "absolute bottom-3 left-3",
+                stageControl,
+                playing && "lg:opacity-0 lg:group-hover/stage:opacity-100",
+              )}
+            >
+              {playing ? (
+                <Pause className="size-4" aria-hidden />
+              ) : (
+                <Play className="size-4 translate-x-px" aria-hidden />
+              )}
+            </button>
           )}
 
           {/* Expand, bottom-right. Quiet until the stage is hovered or a
@@ -224,7 +372,7 @@ export function PdpGallery({
 
           {/* Step arrows on the stage itself, so the image can be browsed
               without reaching the rail. */}
-          {images.length > 1 && (
+          {media.length > 1 && (
             <>
               <button
                 type="button"
@@ -246,7 +394,7 @@ export function PdpGallery({
           )}
         </div>
 
-        {images.length > 1 && (
+        {media.length > 1 && (
           <div
             role="tablist"
             aria-label={`${productName} images`}
@@ -255,13 +403,17 @@ export function PdpGallery({
                scroll origin and make it unreachable. */
             className="no-scrollbar flex gap-3 overflow-x-auto py-1 sm:gap-4 lg:justify-end"
           >
-            {images.map((image, i) => (
+            {media.map((item, i) => (
               <button
-                key={image.id}
+                key={item.id}
                 role="tab"
                 type="button"
                 aria-selected={i === index}
-                aria-label={`View image ${i + 1} of ${images.length}`}
+                aria-label={
+                  item.kind === "video"
+                    ? `View video, ${i + 1} of ${media.length}`
+                    : `View image ${i + 1} of ${media.length}`
+                }
                 onClick={() => {
                   setLoaded(false);
                   setIndex(i);
@@ -277,7 +429,23 @@ export function PdpGallery({
               >
                 {/* Contained too, so a thumbnail is a true index of the frame
                     it selects rather than a differently-cropped picture. */}
-                <Image src={image.url} alt="" fill sizes="76px" className="object-contain" />
+                {item.kind === "image" ? (
+                  <Image src={item.url} alt="" fill sizes="76px" className="object-contain" />
+                ) : (
+                  <>
+                    {/* A frame Cloudinary renders from the video itself, in the
+                        identical 64/76px square — then a small play mark so the
+                        tile reads as motion without growing past its siblings. */}
+                    {item.poster && (
+                      <Image src={item.poster} alt="" fill sizes="76px" className="object-contain" />
+                    )}
+                    <span aria-hidden className="absolute inset-0 flex items-center justify-center">
+                      <span className="flex size-7 items-center justify-center rounded-full bg-ink/50 backdrop-blur-sm">
+                        <Play className="size-3.5 translate-x-px fill-white text-white" />
+                      </span>
+                    </span>
+                  </>
+                )}
 
                   {/* The plate number. It gives the strip a reading order,
                       which is what makes it a catalogue index rather than a
@@ -324,7 +492,7 @@ export function PdpGallery({
           </button>
         </div>
 
-        {images.length > 1 && (
+        {media.length > 1 && (
           <div className="flex flex-row gap-5 lg:flex-col">
             <button
               type="button"
@@ -358,7 +526,7 @@ export function PdpGallery({
           close. */}
       {zoomed && (
         <PdpLightbox
-          images={images}
+          images={media}
           index={index}
           productName={productName}
           onIndexChange={setIndex}

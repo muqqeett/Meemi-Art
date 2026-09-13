@@ -221,6 +221,10 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           <Reveal variant="in" onMount className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
             <PdpGallery
               images={product.images}
+              // Gallery-only. The video never feeds the JSON-LD `image`, the
+              // Open Graph or Twitter image, cards or checkout — all of those
+              // keep reading `product.images` above.
+              videoUrl={product.videoUrl}
               productId={product.id}
               productName={product.name}
               isWishlisted={product.isWishlisted}

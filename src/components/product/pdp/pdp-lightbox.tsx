@@ -6,8 +6,10 @@ import Image from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import type { GalleryMedia } from "@/components/product/pdp/pdp-gallery";
 
-type GalleryImage = { id: string; url: string; alt: string };
+/** The gallery's own list — its images and, when the product has one, its video. */
+type GalleryImage = GalleryMedia;
 
 /**
  * Fullscreen product viewer.
@@ -41,6 +43,20 @@ export function PdpLightbox({
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const activeItem = images[Math.min(index, images.length - 1)];
+  const activeVideoId = activeItem?.kind === "video" ? activeItem.id : null;
+
+  // Starts the video once, when its slot arrives — not on every render, so a
+  // visitor who pauses it is not overruled. Skipped under reduced motion.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!activeVideoId || !video) return;
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      void video.play().catch(() => {});
+    }
+  }, [activeVideoId]);
 
   const step = useCallback(
     (by: number) => {
@@ -154,16 +170,38 @@ export function PdpLightbox({
               entrance animation on it — same fill-mode argument as the
               overlay: nothing should stand between opening the viewer and
               seeing the picture. */}
-          <div key={active.id} className="relative size-full">
-            <Image
-              src={active.url}
-              alt={active.alt || productName}
-              fill
-              sizes="100vw"
-              className="object-contain"
-              priority
-            />
-          </div>
+          {active.kind === "image" ? (
+            <div key={active.id} className="relative size-full">
+              <Image
+                src={active.url}
+                alt={active.alt || productName}
+                fill
+                sizes="100vw"
+                className="object-contain"
+                priority
+              />
+            </div>
+          ) : (
+            /* The video, full size. Here the viewer asked to look closely, so it
+               gets native controls — scrubbing, sound, the browser's own full
+               screen. Muted to start, like the stage; it plays on arrival
+               unless the visitor prefers reduced motion. Leaving this slot
+               unmounts the element, which stops it. */
+            <div key={active.id} className="relative size-full">
+              <video
+                ref={videoRef}
+                src={active.url}
+                poster={active.poster ?? undefined}
+                controls
+                muted
+                playsInline
+                loop
+                preload="metadata"
+                aria-label={`${productName} video`}
+                className="absolute inset-0 size-full object-contain"
+              />
+            </div>
+          )}
 
           {images.length > 1 && (
             <>

@@ -12,6 +12,7 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductImageManager } from "@/components/admin/product-image-manager";
+import { ProductVideoField } from "@/components/admin/product-video-field";
 import {
   Field,
   FormActions,
@@ -66,6 +67,8 @@ const EMPTY: ProductFormValues = {
   seoDescription: "",
   featured: false,
   isActive: true,
+  videoUrl: null,
+  videoKey: null,
   images: [],
 };
 
@@ -130,6 +133,8 @@ export function ProductForm({
   const nameField = register("name");
 
   const watchedImages = watch("images");
+  const watchedVideoUrl = watch("videoUrl");
+  const watchedVideoKey = watch("videoKey");
 
   function onSubmit(values: ProductInput) {
     setFormError(null);
@@ -374,6 +379,24 @@ export function ProductForm({
             }
             error={errors.images?.message ?? errors.images?.root?.message}
           />
+        </FormSection>
+
+        <FormSection
+          title="Product video"
+          description="Optional. One short clip, shown second in the product gallery. Photos above are unaffected."
+        >
+          <ProductVideoField
+            value={watchedVideoUrl ? { url: watchedVideoUrl, key: watchedVideoKey ?? null } : null}
+            onChange={(next) => {
+              setValue("videoUrl", next?.url ?? null, { shouldValidate: true, shouldDirty: true });
+              setValue("videoKey", next?.key ?? null, { shouldValidate: true, shouldDirty: true });
+            }}
+          />
+          {errors.videoUrl?.message && (
+            <p role="alert" className="mt-2 text-xs text-destructive">
+              {errors.videoUrl.message}
+            </p>
+          )}
         </FormSection>
 
         <FormSection
