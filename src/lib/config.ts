@@ -56,6 +56,18 @@ export const siteConfig = {
    * platforms trim top and bottom of the 1200x630 they crop to.
    */
   ogImage: "/home/hero-collage.png",
+  /**
+   * The Meemi Art "MA" monogram — the official brand mark, for machine-readable
+   * identity (the Organization `logo` in structured data). Square, 1024x1024,
+   * served as a static file from `public/` so its URL never changes with a
+   * build.
+   *
+   * Not rendered on the page: the header and footer keep the typographic
+   * wordmark. The browser favicon and Apple touch icon are separate, tighter
+   * crops of the same mark in `src/app/`, because this full composition — the
+   * mark centred on a wide paper field — would be a speck at 16px.
+   */
+  logo: { src: "/brand/meemi-art-logo.jpg", width: 1024, height: 1024 },
   /** The single mailbox for the whole business — see lib/email/config.ts. */
   email: "hello@meemiart.com",
   /**

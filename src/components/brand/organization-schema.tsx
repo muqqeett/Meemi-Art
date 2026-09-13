@@ -16,12 +16,13 @@ import { safeJsonLd } from "@/lib/json-ld";
  * offers refer to the same id as their seller. Google therefore reads a single
  * business and a single site, not a fresh copy per page.
  *
- * ── Deliberately absent ────────────────────────────────────────────────────
+ * ── Logo ───────────────────────────────────────────────────────────────────
  *
- * `logo` — the brand mark is typographic (see `components/brand/logo.tsx`) and
- * there is no logo image file. Pointing `logo` at a photograph, or at the
- * framework's default favicon, would tell Google the wrong thing about what the
- * brand looks like. Add it once a real logo image exists.
+ * `logo` is the official "MA" monogram (`siteConfig.logo`), a static square
+ * file on the canonical origin. It is identity data only — the visible header
+ * keeps its typographic wordmark.
+ *
+ * ── Deliberately absent ────────────────────────────────────────────────────
  *
  * `potentialAction` / SearchAction — Google retired the sitelinks search box it
  * powered, and the `/search` URL it pointed at is disallowed in robots.txt and
@@ -38,6 +39,17 @@ export function OrganizationSchema() {
     alternateName: siteConfig.alternateName,
     description: siteConfig.description,
     url: entityIds.home,
+    // The official monogram, as an absolute URL on the canonical origin.
+    logo: {
+      "@type": "ImageObject",
+      "@id": `${siteConfig.url}/#logo`,
+      url: `${siteConfig.url}${siteConfig.logo.src}`,
+      contentUrl: `${siteConfig.url}${siteConfig.logo.src}`,
+      width: siteConfig.logo.width,
+      height: siteConfig.logo.height,
+      caption: siteConfig.name,
+    },
+    image: { "@id": `${siteConfig.url}/#logo` },
     email: siteConfig.email,
     ...(sameAs.length > 0 ? { sameAs } : {}),
   };
