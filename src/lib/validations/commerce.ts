@@ -13,6 +13,17 @@ export const addToCartSchema = z.object({
     .max(commerceConfig.maxQuantityPerItem, `Limit ${commerceConfig.maxQuantityPerItem} per item`),
 });
 
+// -------------------------------------------------------------- wishlist
+
+/**
+ * A wishlist mutation. `saved` is the state the shopper asked for; when it is
+ * omitted the mutation toggles, which is the original contract.
+ */
+export const wishlistMutationSchema = z.object({
+  productId: z.string().trim().min(1, "Choose a product").max(64, "Choose a product"),
+  saved: z.boolean().optional(),
+});
+
 export const updateCartItemSchema = z.object({
   itemId: z.string().min(1),
   quantity: z.number().int().min(0).max(commerceConfig.maxQuantityPerItem),

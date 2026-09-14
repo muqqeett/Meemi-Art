@@ -2,67 +2,45 @@
 
 import { revalidatePath } from "next/cache";
 
-import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-guards";
-import type { ActionResult } from "@/lib/actions/cart";
+import {
+  removeWishlistItemForUser,
+  toggleWishlistForUser,
+  type WishlistFailure,
+  type WishlistResult,
+} from "@/lib/wishlist/mutations";
 
 /**
  * The wishlist is account-bound by design — it should survive a device change,
  * which a cookie-based guest list would not. Signed-out shoppers are told to
  * sign in rather than silently losing the item.
+ *
+ * These are the only wishlist endpoints. Each takes the user from the session
+ * and passes it to `lib/wishlist/mutations.ts`; no argument a request supplies
+ * can name a different user.
+ */
+
+/**
+ * Toggle a product, or — when `saved` is given — set it to that state.
+ *
+ * `saved` is optional, so existing callers that pass only the product id keep
+ * the original toggle. Passing the intended state makes repeated or concurrent
+ * requests converge on it.
  */
 export async function toggleWishlist(
   productId: string,
-): Promise<ActionResult<{ added: boolean }>> {
-  const user = await getCurrentUser();
-  if (!user) {
-    return { ok: false, error: "Sign in to save items to your wishlist." };
-  }
-
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    select: { id: true },
-  });
-  if (!product) return { ok: false, error: "That product no longer exists." };
-
-  const wishlist = await prisma.wishlist.upsert({
-    where: { userId: user.id },
-    create: { userId: user.id },
-    update: {},
-    select: { id: true },
-  });
-
-  const existing = await prisma.wishlistItem.findUnique({
-    where: { wishlistId_productId: { wishlistId: wishlist.id, productId } },
-    select: { id: true },
-  });
-
-  if (existing) {
-    await prisma.wishlistItem.delete({ where: { id: existing.id } });
-    revalidatePath("/account/wishlist");
-    return { ok: true, data: { added: false } };
-  }
-
-  await prisma.wishlistItem.create({
-    data: { wishlistId: wishlist.id, productId },
-  });
-  revalidatePath("/account/wishlist");
-  return { ok: true, data: { added: true } };
+  saved?: boolean,
+): Promise<WishlistResult> {
+  const result = await toggleWishlistForUser(await getCurrentUser(), productId, saved);
+  if (result.ok) revalidatePath("/account/wishlist");
+  return result;
 }
 
-export async function removeFromWishlist(productId: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
-  if (!user) return { ok: false, error: "Sign in to manage your wishlist." };
-
-  const wishlist = await prisma.wishlist.findUnique({
-    where: { userId: user.id },
-    select: { id: true },
-  });
-  if (!wishlist) return { ok: true };
-
-  await prisma.wishlistItem.deleteMany({
-    where: { wishlistId: wishlist.id, productId },
-  });
+export async function removeFromWishlist(
+  productId: string,
+): Promise<{ ok: true } | WishlistFailure> {
+  const result = await removeWishlistItemForUser(await getCurrentUser(), productId);
+  if (!result.ok) return result;
 
   revalidatePath("/account/wishlist");
   return { ok: true };

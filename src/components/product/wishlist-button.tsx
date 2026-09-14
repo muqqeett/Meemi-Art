@@ -35,14 +35,42 @@ export function WishlistButton({
     event.preventDefault();
     event.stopPropagation();
 
+    const next = !saved;
+
     startTransition(async () => {
-      setSaved(!saved);
-      const result = await toggleWishlist(productId);
+      setSaved(next);
+
+      let result: Awaited<ReturnType<typeof toggleWishlist>>;
+      try {
+        // The intended state is sent rather than "flip it", so a second tab or
+        // the product page's other heart cannot turn a save into a removal.
+        result = await toggleWishlist(productId, next);
+      } catch {
+        // The request never produced an answer. The heart reverts on its own
+        // when the transition ends, because the saved state never changed.
+        toast.error("We couldn't update your wishlist. Please try again.");
+        return;
+      }
 
       if (!result.ok) {
-        toast.error(result.error, {
-          action: { label: "Sign in", onClick: () => router.push("/login") },
-        });
+        toast.error(
+          result.error,
+          result.requiresSignIn
+            ? {
+                action: {
+                  label: "Sign in",
+                  // Back to this page after signing in, via the login form's
+                  // existing `callbackUrl` handling.
+                  onClick: () =>
+                    router.push(
+                      `/login?callbackUrl=${encodeURIComponent(
+                        `${window.location.pathname}${window.location.search}`,
+                      )}`,
+                    ),
+                },
+              }
+            : undefined,
+        );
         return;
       }
 

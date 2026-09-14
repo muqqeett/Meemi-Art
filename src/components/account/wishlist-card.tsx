@@ -24,7 +24,14 @@ export function WishlistCard({ product }: { product: ProductCardData }) {
 
   function remove() {
     startTransition(async () => {
-      const result = await removeFromWishlist(product.id);
+      let result: Awaited<ReturnType<typeof removeFromWishlist>>;
+      try {
+        result = await removeFromWishlist(product.id);
+      } catch {
+        // No answer from the server: say so rather than reach the error page.
+        toast.error("We couldn't update your wishlist. Please try again.");
+        return;
+      }
       if (!result.ok) {
         toast.error(result.error);
         return;
