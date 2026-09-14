@@ -257,17 +257,64 @@ async function main() {
   const malformed = await runAssistantSafely({ history, productSlug: null }, fakeLlm(intent(), () => "not json at all"));
   check("malformed model reply becomes the safe generic message", !malformed.ok);
 
+  // Shaped like the SDK's own error: class name, HTTP status, typed body and a
+  // request id — plus a message carrying text that must never be logged.
+  class BadRequestError extends Error {
+    status = 400;
+    requestID = "req_011TestRequestId";
+    error = {
+      type: "error",
+      error: {
+        type: "invalid_request_error",
+        message: "Your credit balance is too low. sk-ant-secret-looking-detail",
+      },
+    };
+  }
   const failing: AssistantLlm = {
     async extractIntent() {
-      return intent();
+      throw new BadRequestError("intent: Your credit balance is too low. sk-ant-secret-looking-detail");
     },
     async composeReply() {
-      throw new Error("provider 500: sk-ant-secret-looking-detail at api.anthropic.com");
+      throw new BadRequestError("reply: Your credit balance is too low. sk-ant-secret-looking-detail");
     },
   };
-  const failure = await runAssistantSafely({ history, productSlug: null }, failing);
+
+  const logged: string[] = [];
+  const originalError = console.error;
+  console.error = (...args: unknown[]) => {
+    logged.push(args.map(String).join(" "));
+  };
+  let failure: Awaited<ReturnType<typeof runAssistantSafely>>;
+  try {
+    failure = await runAssistantSafely({ history, productSlug: null }, failing);
+  } finally {
+    console.error = originalError;
+  }
+
   check("provider failure is handled safely", !failure.ok);
-  check("provider error details never reach the reply", !JSON.stringify(failure).includes("sk-ant") && !JSON.stringify(failure).includes("500"));
+  check(
+    "provider error details never reach the reply",
+    !/sk-ant|credit balance|invalid_request_error|400|req_/.test(JSON.stringify(failure)),
+  );
+  const logText = logged.join("\n");
+  check(
+    "both the intent and the reply failure are logged",
+    logged.some((l) => l.includes("intent step failed")) && logged.some((l) => l.includes("turn failed")),
+    logText,
+  );
+  check(
+    "log names the class, status, API error type and request id",
+    /class=BadRequestError/.test(logText) &&
+      /status=400/.test(logText) &&
+      /type=invalid_request_error/.test(logText) &&
+      /request_id=req_011TestRequestId/.test(logText),
+    logText,
+  );
+  check(
+    "log never contains the provider message or anything key-shaped",
+    !/credit balance|sk-ant|secret/i.test(logText),
+    logText,
+  );
 
   const brokenIntent: AssistantLlm = {
     async extractIntent() {

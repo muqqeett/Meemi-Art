@@ -87,7 +87,11 @@ export async function runAssistant(
   try {
     const raw = await llm.extractIntent({ history: request.history, categories, viewing });
     intent = sanitizeIntent(raw, new Set(categories.map((c) => c.slug)));
-  } catch {
+  } catch (error) {
+    // Logged, not surfaced: the turn carries on unfiltered, but an operator
+    // needs to see that the intent step is failing — an exhausted credit
+    // balance first shows up here.
+    console.error("[assistant] intent step failed:", describeError(error));
     intent = EMPTY_INTENT;
   }
 
@@ -121,11 +125,45 @@ export async function runAssistant(
 }
 
 /**
+ * A log-safe description of a failure.
+ *
+ * Enough to diagnose without a debugger — the error class, the HTTP status,
+ * the API's error type (`invalid_request_error`, `rate_limit_error`,
+ * `authentication_error`, …) and the provider's request id, which Anthropic
+ * support can look up — and deliberately nothing else. The message itself is
+ * never logged: provider and database messages can echo request content, and
+ * this runs on text a customer typed.
+ *
+ * Duck-typed rather than importing the SDK's error classes, so this module
+ * stays independent of which provider sits behind `AssistantLlm`.
+ */
+export function describeError(error: unknown): string {
+  if (!(error instanceof Error)) return "non-Error thrown";
+
+  const e = error as Error & {
+    status?: unknown;
+    requestID?: unknown;
+    error?: { type?: unknown; error?: { type?: unknown } };
+  };
+
+  const parts = [`class=${e.constructor?.name || e.name}`];
+  if (typeof e.status === "number") parts.push(`status=${e.status}`);
+
+  const type = e.error?.error?.type ?? e.error?.type;
+  if (typeof type === "string" && /^[a-z_]{1,64}$/.test(type)) parts.push(`type=${type}`);
+
+  if (typeof e.requestID === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(e.requestID)) {
+    parts.push(`request_id=${e.requestID}`);
+  }
+
+  return parts.join(" ");
+}
+
+/**
  * `runAssistant`, with every failure turned into the customer-safe message.
  *
- * The log line carries the error's class name only. Provider messages can
- * include request details, and nothing about the failure is returned to the
- * browser.
+ * The log line carries `describeError` only; nothing about the failure is
+ * returned to the browser.
  */
 export async function runAssistantSafely(
   request: AssistantRequest,
@@ -134,7 +172,7 @@ export async function runAssistantSafely(
   try {
     return await runAssistant(request, llm);
   } catch (error) {
-    console.error("[assistant] turn failed:", error instanceof Error ? error.name : "unknown");
+    console.error("[assistant] turn failed:", describeError(error));
     return TROUBLE;
   }
 }
