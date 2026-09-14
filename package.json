@@ -26,9 +26,11 @@
     "paddle:sync": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/paddle-sync.ts",
     "check": "npm run typecheck && npm run lint && npm run build",
     "test:reviews": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-reviews.ts",
-    "test:analytics": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-analytics.ts"
+    "test:analytics": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-analytics.ts",
+    "test:assistant": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-assistant.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.125.0",
     "@auth/prisma-adapter": "^2.11.3",
     "@base-ui/react": "^1.7.0",
     "@hookform/resolvers": "^5.8.0",
