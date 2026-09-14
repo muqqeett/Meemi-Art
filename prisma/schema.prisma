@@ -26,8 +26,10 @@ model User {
   accounts                Account[]
   adminActivity           AdminActivity[]
   cart                    Cart?
+  customerProjects        CustomerProject[]        @relation("CustomerProjectOwner")
   downloads               DigitalAccess[]
   emailVerificationTokens EmailVerificationToken[]
+  moderatedProjects       CustomerProject[]        @relation("CustomerProjectModerator")
   orders                  Order[]
   passwordResetTokens     PasswordResetToken[]
   reviews                 Review[]
@@ -197,6 +199,7 @@ model Product {
   videoUrl         String?
   videoStorageKey  String?
   cartItems        CartItem[]
+  customerProjects CustomerProject[]
   access           DigitalAccess[]
   asset            DigitalAsset?
   orderItems       OrderItem[]
@@ -522,10 +525,74 @@ model AdminActivity {
   @@index([actorId, createdAt])
 }
 
+/// *
+/// * A customer's photo of something they made from a pattern they bought.
+/// *
+/// * Deliberately not a `ProductImage`: some twenty places read a product's
+/// * first image as *the* product picture, and none of them may ever be handed
+/// * a customer's photo. Deliberately not a `Review` either — there is no
+/// * rating here, and reviews stay the only rating system.
+/// *
+/// * Every row starts PENDING and only an admin moves it. The image is uploaded
+/// * as a Cloudinary `authenticated` asset, so until approval it cannot be
+/// * fetched by a plain URL. `imageKey` is the only handle; `imageUrl` stays
+/// * null until a later phase publishes an approved image.
+/// *
+/// * Several rows per customer and product are allowed (at most three, enforced
+/// * in lib/projects/mutations.ts), so there is no unique on (userId, productId).
+/// * `imageKey` is unique: one row per stored asset, so an upload cannot be
+/// * claimed twice.
+/// *
+/// * Product is `Restrict`, not `Cascade`. A project can only exist for a
+/// * purchased product, and a purchased product is archived rather than deleted
+/// * (see deleteProduct), so this never blocks the normal path — it only stops a
+/// * mistaken hard delete from silently destroying customers' content.
+model CustomerProject {
+  id              String        @id @default(cuid())
+  userId          String
+  productId       String
+  /// * Cloudinary public_id, inside the customer-projects folder and the
+  /// * owner's prefix. Checked server-side; never taken on trust.
+  imageKey        String        @unique
+  /// * Public delivery URL. Null until an approved image is published.
+  imageUrl        String?
+  /// * Width, height, bytes and format as Cloudinary reported them — never as
+  /// * the browser claimed.
+  width           Int
+  height          Int
+  bytes           Int
+  format          String
+  /// * Plain text, at most 500 characters.
+  caption         String?
+  /// * Customer-chosen, at most 40 characters. Never derived from the email.
+  displayName     String?
+  status          ProjectStatus @default(PENDING)
+  rejectionReason String?
+  moderatedAt     DateTime?
+  moderatedById   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  user            User          @relation("CustomerProjectOwner", fields: [userId], references: [id], onDelete: Cascade)
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  moderatedBy     User?         @relation("CustomerProjectModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
+
+  @@index([productId, status, createdAt])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
 enum ReviewStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+/// * Moderation state of a customer project. Always PENDING on creation.
+enum ProjectStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  HIDDEN
 }
 
 enum Role {

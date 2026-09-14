@@ -31,7 +31,8 @@ export type ActivityEntity =
   | "review"
   | "coupon"
   | "payment"
-  | "email";
+  | "email"
+  | "project";
 
 export async function recordActivity(input: {
   actorId: string;

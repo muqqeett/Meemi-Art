@@ -28,7 +28,9 @@
     "test:reviews": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-reviews.ts",
     "test:analytics": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-analytics.ts",
     "test:assistant": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-assistant.ts",
-    "test:wishlist": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-wishlist.ts"
+    "test:wishlist": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-wishlist.ts",
+    "test:projects": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-projects.ts",
+    "cloudinary:project-orphans": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/cloudinary-project-orphans.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
