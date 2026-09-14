@@ -928,6 +928,46 @@ async function main() {
     check("hiding removes the public reference and the project from public reads", hiddenV1?.imageUrl === null && (await getPublicProjectsForProduct(second.id)).length === 0);
     check("pending, rejected and hidden projects are never public", (await getPublicProjectsForProduct(published.id)).length === 0);
 
+    // ------------------------------------------------------ UI read models
+    console.log("\nUI read models");
+    const { getProjectsForUser, getShareableProducts } = await import("../src/lib/queries/customer-projects");
+    const { listAdminProjects } = await import("../src/lib/queries/admin-projects");
+
+    const ivanProjects = await getProjectsForUser(ivan.id);
+    const ivanIds = (await prisma.customerProject.findMany({ where: { userId: ivan.id }, select: { id: true } })).map((r) => r.id).sort();
+    check("a customer's project list holds exactly their own projects", ivanIds.length > 0 && JSON.stringify(ivanProjects.map((p) => p.id).sort()) === JSON.stringify(ivanIds));
+    check(
+      "the customer list carries no storage key, user id or email",
+      ivanProjects.every((p) => JSON.stringify(Object.keys(p).sort()) === JSON.stringify(["caption", "createdAt", "displayName", "id", "imageUrl", "product", "rejectionReason", "status"])) &&
+        !JSON.stringify(ivanProjects).includes(CUSTOMER_PROJECT_FOLDER),
+    );
+    check("no customer project carries a public image reference", ivanProjects.every((p) => p.imageUrl === null));
+
+    const aliceShareable = await getShareableProducts(alice.id);
+    const shareableById = new Map(aliceShareable.map((p) => [p.id, p]));
+    check("shareable products are the published products the customer bought", shareableById.has(published.id) && shareableById.has(second.id) && !shareableById.has(unpublished.id));
+    const aliceActive = await prisma.customerProject.count({ where: { userId: alice.id, productId: published.id, status: { in: ["PENDING", "APPROVED", "HIDDEN"] } } });
+    check("remaining slots follow the cap statuses", shareableById.get(published.id)?.remaining === Math.max(0, MAX_PROJECTS_PER_PRODUCT - aliceActive));
+    const noneToShare = await Promise.all([bob, carol, gina, dave].map((u) => getShareableProducts(u.id)));
+    check("unpaid, refunded, never-completed and unpurchased customers have nothing to share", noneToShare.every((list) => list.length === 0));
+
+    const queue = await listAdminProjects({ status: "PENDING", q: RUN });
+    check(
+      "the default admin queue holds only pending projects, oldest first",
+      queue.projects.length > 0 && queue.projects.every((p, i, all) => p.status === "PENDING" && (i === 0 || all[i - 1].createdAt <= p.createdAt)),
+    );
+    check(
+      "admin rows carry no image key, user id or email",
+      queue.projects.every((p) => !("imageKey" in p) && !("userId" in p) && !("email" in p)) && !JSON.stringify(queue.projects).includes("@example.invalid"),
+    );
+    check("admin previews are absent when storage is not configured", queue.projects.every((p) => p.previewUrl === null));
+    check("pending rows offer approve, reject and hide", queue.projects.every((p) => p.canApprove && p.canReject && p.canHide));
+    const statusOrder = ["PENDING", "APPROVED", "REJECTED", "HIDDEN"];
+    const everyStatus = await listAdminProjects({ status: "ALL", q: RUN });
+    check("the all-status view puts the pending queue first", everyStatus.projects.every((p, i, all) => i === 0 || statusOrder.indexOf(all[i - 1].status) <= statusOrder.indexOf(p.status)));
+    const hiddenRows = await listAdminProjects({ status: "HIDDEN", q: RUN });
+    check("hidden rows offer no moderation actions", hiddenRows.projects.length > 0 && hiddenRows.projects.every((p) => !p.canApprove && !p.canReject && !p.canHide));
+
     // ------------------------------------------------------------ rate limits
     console.log("\nRate limiting");
     const signaturesBefore = cloud.signatures;

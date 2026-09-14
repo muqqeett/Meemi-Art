@@ -8,6 +8,7 @@ import {
   RotateCcw,
   RefreshCw,
   MessageSquare,
+  Images,
   FileDown,
   PackageCheck,
   Ticket,
@@ -69,6 +70,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     label: "Content",
     items: [
       { href: "/admin/reviews", label: "Reviews", Icon: MessageSquare },
+      { href: "/admin/projects", label: "Projects", Icon: Images },
       { href: "/admin/files", label: "Digital Files", Icon: FileDown },
       { href: "/admin/delivery", label: "Delivery Health", Icon: PackageCheck },
     ],

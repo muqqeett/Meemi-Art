@@ -8,6 +8,7 @@ import {
   Ticket,
   CreditCard,
   Mail,
+  Images,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -27,6 +28,7 @@ const ENTITY_ICONS: Record<string, LucideIcon> = {
   coupon: Ticket,
   payment: CreditCard,
   email: Mail,
+  project: Images,
 };
 
 /**

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Download, Ban, FileDown, PencilLine } from "lucide-react";
+import { Download, Ban, Camera, FileDown, PencilLine } from "lucide-react";
 
 import { requireUser } from "@/lib/auth-guards";
 import { getDownloadsForUser } from "@/lib/queries/downloads";
@@ -117,6 +117,18 @@ export default async function DownloadsPage() {
                       {reviewable.get(entry.productId)
                         ? "Edit Review"
                         : "Write a Review"}
+                    </Link>
+                  )}
+
+                  {/* Same purchase rule as the review link. A shortcut only:
+                      the project form and the upload route check again. */}
+                  {reviewable.has(entry.productId) && (
+                    <Link
+                      href={`/account/projects?product=${encodeURIComponent(entry.productId)}#share`}
+                      className="mt-2 ml-4 inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 underline-offset-4 hover:underline"
+                    >
+                      <Camera className="size-3.5" aria-hidden />
+                      Share your finished project
                     </Link>
                   )}
                 </div>

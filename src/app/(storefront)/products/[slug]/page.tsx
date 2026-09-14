@@ -6,6 +6,7 @@ import { PdpInfo } from "@/components/product/pdp/pdp-info";
 import { PdpBuyBlock } from "@/components/product/pdp/pdp-buy-block";
 import { PdpProductRail } from "@/components/product/pdp/pdp-product-rail";
 import { PdpReviews } from "@/components/product/pdp/pdp-reviews";
+import { PdpProjects } from "@/components/product/pdp/pdp-projects";
 import { RecentlyViewed } from "@/components/product/recently-viewed";
 import { Reveal } from "@/components/motion/reveal";
 import {
@@ -283,6 +284,9 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             canReview={canReview}
             ownReview={ownReview}
           />
+
+          {/* Renders nothing until an approved project has a public photo. */}
+          <PdpProjects productId={product.id} productName={product.name} />
 
           <PdpProductRail
             title="Popular this week"
