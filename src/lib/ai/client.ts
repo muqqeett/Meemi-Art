@@ -1,20 +1,25 @@
 import "server-only";
 
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 
 /**
- * The Anthropic client, and the one switch that says whether AI is available.
+ * The Gemini client, and the one switch that says whether AI is available.
  *
- * Server-only: the key is read from `ANTHROPIC_API_KEY` by the SDK itself and
- * never passes through application code, never reaches a Client Component, and
- * is never logged. Nothing else in the codebase constructs a client — every
- * model call goes through `lib/ai/assistant-llm.ts`.
+ * Server-only: `GEMINI_API_KEY` is read here and handed to the SDK, and never
+ * passes to a Client Component, a response or a log. Nothing else in the
+ * codebase constructs a client — every model call goes through
+ * `lib/ai/assistant-llm.ts`.
  */
 
-/** Models, in one place. Intent extraction is the cheap, fast step. */
+/**
+ * Models, in one place. Intent extraction is the lighter step.
+ *
+ * Gemini 3.5 generation: the 2.5 models are still listed for this key but
+ * return 404 on generation, so they are not used.
+ */
 export const AI_MODELS = {
-  intent: "claude-haiku-4-5",
-  reply: "claude-opus-5",
+  intent: "gemini-3.5-flash-lite",
+  reply: "gemini-3.5-flash-lite",
 } as const;
 
 /**
@@ -24,22 +29,25 @@ export const AI_MODELS = {
  * a deployment without a key shows no launcher and the route refuses cleanly.
  */
 export function isAssistantConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return Boolean(process.env.GEMINI_API_KEY);
 }
 
-let client: Anthropic | null = null;
+let client: GoogleGenAI | null = null;
 
 /**
  * Lazily constructed so importing this module never throws on a deployment
  * without a key.
  *
- * The timeout and retry budget are sized for a customer waiting in a chat
- * panel: one retry on transient failures, and a bounded wait rather than the
- * SDK's ten-minute default.
+ * One attempt per call, no automatic retries: on a free tier a retry spends
+ * quota twice, and a failed turn already degrades to the friendly message. The
+ * timeout bounds how long a customer waits in the chat panel.
  */
-export function getAnthropicClient(): Anthropic {
+export function getGeminiClient(): GoogleGenAI {
   if (!client) {
-    client = new Anthropic({ timeout: 30_000, maxRetries: 1 });
+    client = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: { timeout: 30_000, retryOptions: { attempts: 1 } },
+    });
   }
   return client;
 }

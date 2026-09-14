@@ -127,10 +127,10 @@ export async function runAssistant(
 /**
  * A log-safe description of a failure.
  *
- * Enough to diagnose without a debugger — the error class, the HTTP status,
- * the API's error type (`invalid_request_error`, `rate_limit_error`,
- * `authentication_error`, …) and the provider's request id, which Anthropic
- * support can look up — and deliberately nothing else. The message itself is
+ * Enough to diagnose without a debugger — the error class, the HTTP status
+ * (429 for exhausted quota, 400/403 for a bad key), and the API's error type
+ * and request id when the provider supplies them — and deliberately nothing
+ * else. The message itself is
  * never logged: provider and database messages can echo request content, and
  * this runs on text a customer typed.
  *

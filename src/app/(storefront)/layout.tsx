@@ -33,7 +33,7 @@ export default function StorefrontLayout({ children }: LayoutProps<"/">) {
       <SiteFooter />
       <CartDrawer />
       {/* The pattern guide is offered only where it can actually answer: a
-          deployment without an Anthropic key shows no launcher at all. Local
+          deployment without a Gemini API key shows no launcher at all. Local
           development always shows it, so the panel can be worked on — its
           requests then return the "not available" state. */}
       {(isAssistantConfigured() || process.env.NODE_ENV === "development") && (

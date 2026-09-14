@@ -17,6 +17,7 @@
  * this script performs no writes.
  */
 import "dotenv/config";
+import { randomUUID } from "node:crypto";
 
 import { prisma } from "../src/lib/prisma";
 import { getAssistantCategories, retrieveCandidates, toPublicProduct } from "../src/lib/assistant/catalog";
@@ -257,25 +258,18 @@ async function main() {
   const malformed = await runAssistantSafely({ history, productSlug: null }, fakeLlm(intent(), () => "not json at all"));
   check("malformed model reply becomes the safe generic message", !malformed.ok);
 
-  // Shaped like the SDK's own error: class name, HTTP status, typed body and a
-  // request id — plus a message carrying text that must never be logged.
-  class BadRequestError extends Error {
-    status = 400;
-    requestID = "req_011TestRequestId";
-    error = {
-      type: "error",
-      error: {
-        type: "invalid_request_error",
-        message: "Your credit balance is too low. sk-ant-secret-looking-detail",
-      },
-    };
+  // Shaped like the Gemini SDK's `ApiError`: a class name and an HTTP status,
+  // with a message carrying text that must never be logged or returned.
+  class ApiError extends Error {
+    status = 429;
   }
+  const PROVIDER_DETAIL = "RESOURCE_EXHAUSTED quota exceeded for project secret-looking-detail";
   const failing: AssistantLlm = {
     async extractIntent() {
-      throw new BadRequestError("intent: Your credit balance is too low. sk-ant-secret-looking-detail");
+      throw new ApiError(`intent: ${PROVIDER_DETAIL}`);
     },
     async composeReply() {
-      throw new BadRequestError("reply: Your credit balance is too low. sk-ant-secret-looking-detail");
+      throw new ApiError(`reply: ${PROVIDER_DETAIL}`);
     },
   };
 
@@ -294,7 +288,7 @@ async function main() {
   check("provider failure is handled safely", !failure.ok);
   check(
     "provider error details never reach the reply",
-    !/sk-ant|credit balance|invalid_request_error|400|req_/.test(JSON.stringify(failure)),
+    !/RESOURCE_EXHAUSTED|quota|secret|429/i.test(JSON.stringify(failure)),
   );
   const logText = logged.join("\n");
   check(
@@ -303,16 +297,13 @@ async function main() {
     logText,
   );
   check(
-    "log names the class, status, API error type and request id",
-    /class=BadRequestError/.test(logText) &&
-      /status=400/.test(logText) &&
-      /type=invalid_request_error/.test(logText) &&
-      /request_id=req_011TestRequestId/.test(logText),
+    "log names the error class and HTTP status",
+    /class=ApiError/.test(logText) && /status=429/.test(logText),
     logText,
   );
   check(
-    "log never contains the provider message or anything key-shaped",
-    !/credit balance|sk-ant|secret/i.test(logText),
+    "log never contains the provider message",
+    !/RESOURCE_EXHAUSTED|quota|secret/i.test(logText),
     logText,
   );
 
@@ -343,16 +334,24 @@ async function main() {
   check("history is trimmed to the short context window", !!long && long.history.length <= ASSISTANT_LIMITS.maxTurns && long.history[0].role === "user");
 
   console.log("\nRate limiting");
+  // Throwaway visitor ids, unique to this run. When Upstash is configured the
+  // limiter's shared counters persist for the whole window, so fixed ids would
+  // start a rerun already partly — or fully — spent. A fresh id per run keeps
+  // the real limiter, Redis included, while starting every run from zero.
+  const runNonce = randomUUID();
+  const limitedClient = `assistant-test-client-${runNonce}`;
+  const otherClient = `assistant-test-other-${runNonce}`;
+
   resetAssistantThrottleForTests();
   let allowed = 0;
   let lastVerdict: Awaited<ReturnType<typeof allowAssistantRequest>> = { allowed: true };
   for (let i = 0; i < 21; i++) {
-    lastVerdict = await allowAssistantRequest("203.0.113.7");
+    lastVerdict = await allowAssistantRequest(limitedClient);
     if (lastVerdict.allowed) allowed++;
   }
   check("20 requests allowed per client window, the 21st refused", allowed === 20 && !lastVerdict.allowed);
   check("refusal carries a retry-after", !lastVerdict.allowed && lastVerdict.retryAfterSeconds > 0);
-  check("another client is unaffected", (await allowAssistantRequest("198.51.100.4")).allowed);
+  check("another client is unaffected", (await allowAssistantRequest(otherClient)).allowed);
   resetAssistantThrottleForTests();
 }
 

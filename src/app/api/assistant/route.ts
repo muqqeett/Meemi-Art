@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isAssistantConfigured } from "@/lib/ai/client";
-import { createAnthropicLlm } from "@/lib/ai/assistant-llm";
+import { createAssistantLlm } from "@/lib/ai/assistant-llm";
 import { parseAssistantRequest } from "@/lib/assistant/request";
 import { FALLBACK_HREF, runAssistantSafely } from "@/lib/assistant/run";
 import { allowAssistantRequest } from "@/lib/assistant/throttle";
@@ -101,6 +101,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await runAssistantSafely(parsed, createAnthropicLlm());
+  const result = await runAssistantSafely(parsed, createAssistantLlm());
   return reply(result, result.ok ? 200 : 502);
 }
