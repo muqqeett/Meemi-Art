@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth-guards";
 import { commerceConfig } from "@/lib/config";
 import type { Prisma } from "@/generated/prisma/client";
 import type { ProductFilters } from "@/lib/validations/commerce";
+import { productDifficultySelect } from "@/lib/difficulty/records";
 
 export type ProductCardData = {
   id: string;
@@ -396,6 +397,9 @@ export const getProductBySlug = cache(async (slug: string) => {
       // object is serialised into a page, and the key is what would let
       // someone sign their own download URL.
       asset: { select: { filename: true, contentType: true, bytes: true, version: true } },
+      // Difficulty inputs, loaded with the product in this same query. The
+      // score is derived from them on the page, never read from the database.
+      difficulty: { select: productDifficultySelect },
       reviews: {
         // Rejected and pending reviews are not public — see PUBLIC_REVIEW.
         where: PUBLIC_REVIEW,

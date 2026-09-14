@@ -200,6 +200,7 @@ model Product {
   videoStorageKey  String?
   cartItems        CartItem[]
   customerProjects CustomerProject[]
+  difficulty       ProductDifficulty?
   access           DigitalAccess[]
   asset            DigitalAsset?
   orderItems       OrderItem[]
@@ -252,6 +253,41 @@ model DigitalAsset {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+/// *
+/// * How demanding a pattern is to make — the inputs only.
+/// *
+/// * Six ratings from 1 to 10, a time estimate in whole minutes and a set of
+/// * techniques from the fixed vocabulary in lib/difficulty/techniques.ts. The
+/// * overall score, the level and the "what makes it challenging" lines are
+/// * never stored: lib/difficulty/engine.ts derives them, so there is one
+/// * formula and no stored number that can drift away from it.
+/// *
+/// * One row per product. A product without a row has never been rated and
+/// * shows nothing. `enabled` hides a rating without deleting it, so switching
+/// * it back on restores exactly what an admin entered.
+/// *
+/// * The database also enforces the ranges with CHECK constraints (see the
+/// * migration), which Prisma does not model — Zod is the first line, these
+/// * are the backstop.
+model ProductDifficulty {
+  id             String   @id @default(cuid())
+  productId      String   @unique
+  enabled        Boolean  @default(true)
+  stitches       Int
+  construction   Int
+  shaping        Int
+  colorwork      Int
+  assembly       Int
+  patternReading Int
+  minutesMin     Int
+  minutesMax     Int
+  /// * Technique slugs, stored in vocabulary order.
+  techniques     String[] @default([])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Review {

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductImageManager } from "@/components/admin/product-image-manager";
 import { ProductVideoField } from "@/components/admin/product-video-field";
+import { ProductDifficultyField } from "@/components/admin/product-difficulty-field";
 import {
   Field,
   FormActions,
@@ -70,6 +71,7 @@ const EMPTY: ProductFormValues = {
   videoUrl: null,
   videoKey: null,
   images: [],
+  difficulty: null,
 };
 
 /**
@@ -135,6 +137,7 @@ export function ProductForm({
   const watchedImages = watch("images");
   const watchedVideoUrl = watch("videoUrl");
   const watchedVideoKey = watch("videoKey");
+  const watchedDifficulty = watch("difficulty");
 
   function onSubmit(values: ProductInput) {
     setFormError(null);
@@ -432,6 +435,18 @@ export function ProductForm({
               className={controlInput}
             />
           </Field>
+        </FormSection>
+
+        <FormSection
+          title="Project difficulty"
+          description="Optional. Six ratings, a time estimate and techniques. The score and level are calculated from the ratings — never typed."
+        >
+          <ProductDifficultyField
+            value={watchedDifficulty ?? null}
+            saved={Boolean(defaultValues?.difficulty)}
+            onChange={(next) => setValue("difficulty", next, { shouldValidate: true, shouldDirty: true })}
+            errors={errors.difficulty as ({ message?: string } & Partial<Record<string, unknown>>) | undefined}
+          />
         </FormSection>
 
         <FormSection

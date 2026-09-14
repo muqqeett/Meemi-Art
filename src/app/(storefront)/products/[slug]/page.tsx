@@ -261,6 +261,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
               productName={product.name}
               soldCount={soldCount}
               asset={product.asset}
+              difficulty={product.difficulty}
             />
           </Reveal>
         </div>

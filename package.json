@@ -30,6 +30,7 @@
     "test:assistant": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-assistant.ts",
     "test:wishlist": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-wishlist.ts",
     "test:projects": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-projects.ts",
+    "test:difficulty": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-difficulty.ts",
     "cloudinary:project-orphans": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/cloudinary-project-orphans.ts"
   },
   "dependencies": {

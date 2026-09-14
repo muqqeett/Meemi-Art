@@ -7,6 +7,12 @@ import { getStorageProvider, productVideoStorage } from "@/lib/storage";
 import { recordActivity } from "@/lib/admin/activity";
 import { adminOrDenied, type AdminResult } from "@/lib/actions/admin/guard";
 import { productSchema, type ProductInput } from "@/lib/validations/admin";
+import {
+  difficultyRecordData,
+  duplicateDifficultyCreate,
+  productDifficultySelect,
+  saveProductDifficulty,
+} from "@/lib/difficulty/records";
 
 /**
  * Re-exported so the many existing `import type { AdminResult } from
@@ -151,6 +157,8 @@ export async function createProduct(input: ProductInput): Promise<AdminResult<{ 
         // product can never own a stored object it does not display.
         videoUrl: data.videoUrl || null,
         videoStorageKey: data.videoUrl ? (data.videoKey ?? null) : null,
+        // Inputs only; the score is derived on read and never stored.
+        difficulty: data.difficulty ? { create: difficultyRecordData(data.difficulty) } : undefined,
         images: {
           create: data.images.map((image, index) => ({
             url: image.url,
@@ -276,6 +284,13 @@ export async function updateProduct(
           videoStorageKey: nextVideoKey,
         },
       });
+
+      // Upserted when the form sent a rating. Nothing sent leaves a saved one
+      // untouched, and switching it off is `enabled: false` — never a delete,
+      // so the admin's ratings survive being hidden.
+      if (data.difficulty) {
+        await saveProductDifficulty(tx, id, data.difficulty);
+      }
 
       // Images are fully replaced — they have no independent identity beyond
       // their order. Any stored object no longer referenced after the swap is
@@ -432,6 +447,7 @@ export async function duplicateProduct(
     where: { id },
     include: {
       images: { orderBy: { sortOrder: "asc" } },
+      difficulty: { select: productDifficultySelect },
     },
   });
   if (!source) return { ok: false, error: "That product no longer exists." };
@@ -468,6 +484,8 @@ export async function duplicateProduct(
         // its own upload.
         videoUrl: null,
         videoStorageKey: null,
+        // Copied as a new row of the copy's own — same inputs, its own id.
+        difficulty: duplicateDifficultyCreate(source.difficulty),
         images: {
           create: source.images.map((image, index) => ({
             url: image.url,

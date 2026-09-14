@@ -6,6 +6,8 @@ import { PdpTabs } from "@/components/product/pdp/pdp-tabs";
 import { formatMoney, discountPercent } from "@/lib/money";
 import { formatBytes } from "@/lib/format-bytes";
 import { formatLabel } from "@/lib/file-format";
+import { PdpDifficulty } from "@/components/product/pdp/pdp-difficulty";
+import { evaluatePublicDifficulty, type StoredDifficulty } from "@/lib/difficulty/engine";
 
 type PdpInfoProps = {
   productName: string;
@@ -23,6 +25,8 @@ type PdpInfoProps = {
     version: string;
     filename: string;
   } | null;
+  /** The stored difficulty inputs, when the product has them. */
+  difficulty?: StoredDifficulty | null;
 };
 
 /**
@@ -67,16 +71,20 @@ export function PdpInfo({
   reviewCount,
   soldCount,
   asset,
+  difficulty = null,
 }: PdpInfoProps) {
   const off = discountPercent(priceCents, compareAtCents);
+  // Null unless the product has an enabled, valid rating — in which case the
+  // column renders exactly as it did before difficulty existed.
+  const difficultyResult = evaluatePublicDifficulty(difficulty);
 
   /**
    * Only what the database actually holds.
    *
    * `DigitalAsset` records a filename, a MIME type, a byte count and a version
-   * string — so those are the four facts that can be stated. There is no skill
-   * level, no materials list and no tools list anywhere in the schema, so none
-   * is shown.
+   * string — so those are the four facts that can be stated. Skill level has
+   * its own block (`PdpDifficulty`); there is no materials list and no tools
+   * list anywhere in the schema, so none is shown.
    */
   const facts = [
     asset && `${formatLabel(asset.contentType, asset.filename)} file${
@@ -182,6 +190,9 @@ export function PdpInfo({
 
         <PdpDescription text={description} />
       </div>
+
+      {/* ── Project difficulty ───────────────────────────────────────────── */}
+      {difficultyResult && <PdpDifficulty result={difficultyResult} />}
 
       {/* ── What arrives ─────────────────────────────────────────────────── */}
       <div className="-mx-5 flex flex-col gap-5 rounded-[3px] bg-pdp-field/55 px-5 py-7 sm:-mx-6 sm:px-6">

@@ -7,6 +7,7 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { ProductForm } from "@/components/admin/product-form";
 import { getAdminProduct } from "@/lib/queries/admin";
 import { getAllCategories } from "@/lib/queries/categories";
+import { isTechniqueSlug } from "@/lib/difficulty/techniques";
 
 export const metadata: Metadata = { title: "Edit product" };
 
@@ -69,6 +70,21 @@ export default async function EditProductPage({
           videoUrl: product.videoUrl,
           // Carried for the same reason as each image's key below.
           videoKey: product.videoStorageKey,
+          // The saved inputs, if any. Null leaves the section at "not rated".
+          difficulty: product.difficulty
+            ? {
+                enabled: product.difficulty.enabled,
+                stitches: product.difficulty.stitches,
+                construction: product.difficulty.construction,
+                shaping: product.difficulty.shaping,
+                colorwork: product.difficulty.colorwork,
+                assembly: product.difficulty.assembly,
+                patternReading: product.difficulty.patternReading,
+                minutesMin: product.difficulty.minutesMin,
+                minutesMax: product.difficulty.minutesMax,
+                techniques: product.difficulty.techniques.filter(isTechniqueSlug),
+              }
+            : null,
           images: product.images.map((image) => ({
             url: image.url,
             alt: image.alt,

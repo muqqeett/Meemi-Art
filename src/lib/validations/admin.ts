@@ -1,11 +1,65 @@
 import { z } from "zod";
 
+import {
+  ESTIMATE_MINUTES_MAX,
+  ESTIMATE_MINUTES_MIN,
+  MAX_TECHNIQUES,
+  RATING_MAX,
+  RATING_MIN,
+} from "@/lib/difficulty/engine";
+import { TECHNIQUE_SLUGS } from "@/lib/difficulty/techniques";
+
 const slugSchema = z
   .string()
   .trim()
   .min(2, "Enter a slug")
   .max(80)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers and hyphens");
+
+// ------------------------------------------------------- project difficulty
+
+const difficultyRating = z
+  .number({ error: "Choose a rating" })
+  .int("Choose a whole number")
+  .min(RATING_MIN, `Choose a rating from ${RATING_MIN} to ${RATING_MAX}`)
+  .max(RATING_MAX, `Choose a rating from ${RATING_MIN} to ${RATING_MAX}`);
+
+const estimateMinutes = z
+  .number({ error: "Enter a time" })
+  .int("Use half-hour steps")
+  .min(ESTIMATE_MINUTES_MIN, "At least 15 minutes")
+  .max(ESTIMATE_MINUTES_MAX, "At most 200 hours");
+
+/**
+ * A product's difficulty inputs. Strict: a payload carrying anything else —
+ * a score, a level — is refused rather than stripped. The score is always
+ * derived by lib/difficulty/engine.ts and never accepted from a browser.
+ */
+export const productDifficultySchema = z
+  .strictObject({
+    enabled: z.boolean(),
+    stitches: difficultyRating,
+    construction: difficultyRating,
+    shaping: difficultyRating,
+    colorwork: difficultyRating,
+    assembly: difficultyRating,
+    patternReading: difficultyRating,
+    minutesMin: estimateMinutes,
+    minutesMax: estimateMinutes,
+    techniques: z
+      .array(z.enum(TECHNIQUE_SLUGS, { error: "Choose techniques from the list" }))
+      .max(MAX_TECHNIQUES, `Up to ${MAX_TECHNIQUES} techniques`)
+      .refine((list) => new Set(list).size === list.length, "Choose each technique once"),
+  })
+  .superRefine((data, ctx) => {
+    if (data.minutesMin > data.minutesMax) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["minutesMax"],
+        message: "The maximum can't be less than the minimum",
+      });
+    }
+  });
 
 // ------------------------------------------------------------------ product
 
@@ -64,6 +118,12 @@ export const productSchema = z
       .optional(),
     /** Storage handle for the video, retained so the object can be purged later. */
     videoKey: z.string().trim().max(300).nullable().optional(),
+
+    /**
+     * Optional difficulty inputs. Null or absent leaves any saved rating as it
+     * is — hiding one is `enabled: false`, never a delete.
+     */
+    difficulty: productDifficultySchema.nullable().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.compareAtCents && data.compareAtCents > 0 && data.compareAtCents <= data.priceCents) {
@@ -132,5 +192,7 @@ export const couponSchema = z
  */
 export type ProductInput = z.output<typeof productSchema>;
 export type ProductFormValues = z.input<typeof productSchema>;
+export type ProductDifficultyInput = z.output<typeof productDifficultySchema>;
+export type ProductDifficultyFormValues = z.input<typeof productDifficultySchema>;
 export type CategoryInput = z.infer<typeof categorySchema>;
 export type CouponInput = z.infer<typeof couponSchema>;

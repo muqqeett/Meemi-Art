@@ -89,6 +89,8 @@ export async function getAdminProduct(id: string) {
       asset: {
         select: { filename: true, contentType: true, bytes: true, version: true, updatedAt: true },
       },
+      // Difficulty inputs, so the form can edit them in place.
+      difficulty: true,
     },
   });
 }
