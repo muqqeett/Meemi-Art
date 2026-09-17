@@ -3,7 +3,6 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { v2 as cloudinary } from "cloudinary";
 
-import { buildObjectName } from "@/lib/storage/types";
 import { formatExtension } from "@/lib/file-format";
 
 /**
@@ -27,7 +26,6 @@ import { formatExtension } from "@/lib/file-format";
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
 const API_KEY = process.env.CLOUDINARY_API_KEY;
 const API_SECRET = process.env.CLOUDINARY_API_SECRET;
-const FOLDER = process.env.CLOUDINARY_DIGITAL_FOLDER ?? "meemiart/digital-files";
 
 const configured = Boolean(CLOUD_NAME && API_KEY && API_SECRET);
 
@@ -43,20 +41,11 @@ if (configured) {
 /** How long a download link stays valid. Long enough to click, short enough not to share. */
 const SIGNED_URL_TTL_SECONDS = 5 * 60;
 
-/** Formats a shop can reasonably sell. Executables are deliberately absent. */
-export const ALLOWED_DIGITAL_TYPES = [
-  "application/pdf",
-  "application/zip",
-  "application/x-zip-compressed",
-  "image/png",
-  "image/jpeg",
-  "image/svg+xml",
-  "video/mp4",
-  "audio/mpeg",
-  "text/plain",
-] as const;
-
-export const MAX_DIGITAL_BYTES = 200 * 1024 * 1024; // 200 MB
+/**
+ * The accepted types and size cap live in `types.ts`, which the admin browser
+ * can import too, so both sides of a direct upload check the same rules.
+ */
+export { ALLOWED_DIGITAL_TYPES, MAX_DIGITAL_BYTES } from "@/lib/storage/types";
 
 /**
  * Above this, the route hands the buyer a signed Cloudinary URL instead of
@@ -83,58 +72,20 @@ function keyDigest(storageKey: string): string {
   return `key:${createHash("sha256").update(storageKey).digest("hex").slice(0, 12)}`;
 }
 
-export type StoredDigitalFile = {
-  storageKey: string;
-  bytes: number;
-  format: string | null;
-};
+/*
+ * Uploads no longer pass through this server.
+ *
+ * A serverless function refuses request bodies above 4.5 MB, so relaying a
+ * pattern PDF through it failed in production for any realistic file. The admin
+ * browser now uploads straight to Cloudinary with parameters this server signs
+ * — still `resource_type: "raw"` and `type: "private"`, in the same folder
+ * (`CLOUDINARY_DIGITAL_FOLDER`, default `meemiart/digital-files`) — and the
+ * stored file is verified before any product points at it. See
+ * `lib/storage/admin-uploads.ts`.
+ */
 
 export const digitalStorage = {
   isConfigured: configured,
-
-  /**
-   * Upload a purchasable file.
-   *
-   * `type: "private"` is what makes the object unreachable by its plain URL:
-   * Cloudinary will only serve it to a request carrying a valid signature.
-   * `resource_type: "raw"` keeps PDFs and archives byte-identical rather than
-   * being treated as images.
-   */
-  async upload(input: {
-    bytes: Buffer;
-    filename: string;
-  }): Promise<StoredDigitalFile> {
-    if (!configured) {
-      throw new Error(
-        "Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET.",
-      );
-    }
-
-    const result = await new Promise<Record<string, unknown>>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: FOLDER,
-          public_id: buildObjectName(input.filename),
-          resource_type: "raw",
-          type: "private",
-          overwrite: false,
-        },
-        (error, uploaded) => {
-          if (error) reject(new Error(error.message));
-          else if (!uploaded) reject(new Error("Cloudinary returned no result."));
-          else resolve(uploaded as unknown as Record<string, unknown>);
-        },
-      );
-
-      stream.end(input.bytes);
-    });
-
-    return {
-      storageKey: String(result.public_id),
-      bytes: typeof result.bytes === "number" ? result.bytes : input.bytes.length,
-      format: typeof result.format === "string" ? result.format : null,
-    };
-  },
 
   /**
    * A short-lived, signed URL for one download.

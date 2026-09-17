@@ -19,6 +19,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { UploadError, postUploadStep, sendToCloudinary } from "@/components/admin/direct-upload";
+import { ALLOWED_IMAGE_TYPES, MAX_UPLOAD_BYTES } from "@/lib/storage/types";
 import { duration, ease } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -44,8 +46,14 @@ type UploadSlot = {
 const MAX_IMAGES = 8;
 /** How long the confirmed tick stays before the row clears itself. */
 const SUCCESS_HOLD_MS = 900;
-const MAX_MB = 8;
-const ACCEPT = "image/jpeg,image/png,image/webp,image/avif";
+const MAX_MB = MAX_UPLOAD_BYTES / (1024 * 1024);
+const ACCEPT = ALLOWED_IMAGE_TYPES.join(",");
+
+const IMAGE_MESSAGES = {
+  failed: "Image upload failed. Please try again.",
+  tooLarge: `Image upload failed because the file is too large. Images must be ${MAX_MB} MB or smaller.`,
+  wrongType: "Only JPEG, PNG, WebP and AVIF images are supported.",
+};
 
 /**
  * Product image manager.
@@ -54,9 +62,13 @@ const ACCEPT = "image/jpeg,image/png,image/webp,image/avif";
  * and in Open Graph metadata — so ordering is meaningful rather than cosmetic.
  * "Set primary" moves an image to position one; the arrows nudge it either way.
  *
- * Uploads run one file at a time through `/api/admin/upload` with real progress
- * from XMLHttpRequest (fetch cannot report upload progress), and each file
- * reports its own failure without taking down the rest of the batch.
+ * Uploads run one file at a time, each reporting its own failure without
+ * taking down the rest of the batch. A photo goes straight to Cloudinary with
+ * parameters `/api/admin/upload` signs, and is then verified there before it is
+ * added — a serverless function refuses bodies above 4.5 MB, so relaying photos
+ * through it failed in production. Without Cloudinary (local development) the
+ * route answers "relay" and the file is posted to it as before. Progress comes
+ * from XMLHttpRequest, since fetch cannot report upload progress.
  */
 export function ProductImageManager({
   images,
@@ -75,7 +87,11 @@ export function ProductImageManager({
   const inputRef = useRef<HTMLInputElement>(null);
   const replaceIndexRef = useRef<number | null>(null);
 
-  const uploadOne = useCallback((file: File, slotId: string): Promise<ManagedImage | null> => {
+  const setSlotError = useCallback((slotId: string, message: string) => {
+    setSlots((current) => current.map((slot) => (slot.id === slotId ? { ...slot, error: message } : slot)));
+  }, []);
+
+  const relayOne = useCallback((file: File, slotId: string): Promise<ManagedImage | null> => {
     return new Promise((resolve) => {
       const body = new FormData();
       body.append("file", file);
@@ -104,28 +120,48 @@ export function ProductImageManager({
           return;
         }
 
-        setSlots((current) =>
-          current.map((slot) =>
-            slot.id === slotId
-              ? { ...slot, error: payload.error ?? `Upload failed (${xhr.status}).` }
-              : slot,
-          ),
+        setSlotError(
+          slotId,
+          payload.error ?? (xhr.status === 413 ? IMAGE_MESSAGES.tooLarge : IMAGE_MESSAGES.failed),
         );
         resolve(null);
       });
 
       xhr.addEventListener("error", () => {
-        setSlots((current) =>
-          current.map((slot) =>
-            slot.id === slotId ? { ...slot, error: "Network error during upload." } : slot,
-          ),
-        );
+        setSlotError(slotId, "Network error during upload. Check your connection and try again.");
         resolve(null);
       });
 
       xhr.send(body);
     });
-  }, []);
+  }, [setSlotError]);
+
+  const uploadOne = useCallback(
+    async (file: File, slotId: string): Promise<ManagedImage | null> => {
+      const setProgress = (progress: number) =>
+        setSlots((current) => current.map((slot) => (slot.id === slotId ? { ...slot, progress } : slot)));
+
+      try {
+        const signed = await postUploadStep<
+          { mode: "relay" } | { mode: "direct"; uploadUrl: string; fields: Record<string, string> }
+        >("/api/admin/upload", { step: "sign", filename: file.name, type: file.type, size: file.size }, IMAGE_MESSAGES);
+
+        if (signed.mode === "relay") return relayOne(file, slotId);
+
+        const key = await sendToCloudinary(signed.uploadUrl, signed.fields, file, IMAGE_MESSAGES, setProgress);
+        const stored = await postUploadStep<{ url: string; key: string }>(
+          "/api/admin/upload",
+          { step: "finalize", key },
+          IMAGE_MESSAGES,
+        );
+        return { url: stored.url, key: stored.key, alt: "" };
+      } catch (caught) {
+        setSlotError(slotId, caught instanceof UploadError ? caught.message : IMAGE_MESSAGES.failed);
+        return null;
+      }
+    },
+    [relayOne, setSlotError],
+  );
 
   const handleFiles = useCallback(
     async (fileList: FileList | null) => {
@@ -155,15 +191,14 @@ export function ProductImageManager({
 
       const uploaded: ManagedImage[] = [];
       for (const [index, file] of accepted.entries()) {
-        // Reject oversized files before spending bandwidth on them.
-        if (file.size > MAX_MB * 1024 * 1024) {
-          setSlots((current) =>
-            current.map((slot) =>
-              slot.id === active[index].id
-                ? { ...slot, error: `Larger than ${MAX_MB}MB.` }
-                : slot,
-            ),
-          );
+        // Reject unsupported or oversized files before spending bandwidth on
+        // them. The server and Cloudinary check both again.
+        if (!(ALLOWED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
+          setSlotError(active[index].id, IMAGE_MESSAGES.wrongType);
+          continue;
+        }
+        if (file.size > MAX_UPLOAD_BYTES) {
+          setSlotError(active[index].id, IMAGE_MESSAGES.tooLarge);
           continue;
         }
 
@@ -197,7 +232,7 @@ export function ProductImageManager({
         onChange([...images, ...uploaded]);
       }
     },
-    [images, onChange, uploadOne],
+    [images, onChange, uploadOne, setSlotError],
   );
 
   function move(from: number, to: number) {
@@ -221,6 +256,8 @@ export function ProductImageManager({
   }
 
   const atCapacity = images.length >= MAX_IMAGES;
+  /** A batch is still running: starting another would race it for the same slots. */
+  const uploading = slots.some((slot) => !slot.error && !slot.done);
 
   return (
     <div className="space-y-4">
@@ -245,7 +282,7 @@ export function ProductImageManager({
         onDrop={(event) => {
           event.preventDefault();
           setDragging(false);
-          void handleFiles(event.dataTransfer.files);
+          if (!uploading) void handleFiles(event.dataTransfer.files);
         }}
         className={cn(
           "flex flex-col items-center justify-center gap-3 border border-dashed px-6 py-10 text-center transition-colors",
@@ -268,7 +305,7 @@ export function ProductImageManager({
           type="button"
           variant="brandOutline"
           size="pillSm"
-          disabled={atCapacity}
+          disabled={atCapacity || uploading}
           onClick={() => inputRef.current?.click()}
         >
           <Upload aria-hidden />
@@ -456,6 +493,7 @@ export function ProductImageManager({
                     type="button"
                     variant="ghost"
                     size="icon-lg"
+                    disabled={uploading}
                     onClick={() => {
                       replaceIndexRef.current = index;
                       inputRef.current?.click();

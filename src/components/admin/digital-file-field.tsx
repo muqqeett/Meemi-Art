@@ -6,8 +6,33 @@ import { UploadCloud, FileCheck2, Loader2, AlertCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
+import { UploadError, postUploadStep, sendToCloudinary } from "@/components/admin/direct-upload";
 import { formatBytes } from "@/lib/format-bytes";
 import { duration, ease } from "@/lib/motion";
+import {
+  ALLOWED_DIGITAL_TYPES,
+  CONTENT_SNIFF_BYTES,
+  MAX_DIGITAL_BYTES,
+  digitalContentMatches,
+} from "@/lib/storage/types";
+
+const MAX_MB = MAX_DIGITAL_BYTES / (1024 * 1024);
+
+const DIGITAL_MESSAGES = {
+  failed: "PDF upload failed. Please try again.",
+  tooLarge: `PDF upload failed because the file is too large. Files must be ${MAX_MB} MB or smaller.`,
+  wrongType: "Only PDF, ZIP, PNG, JPEG, SVG, MP4, MP3 and TXT files are supported for digital products.",
+};
+
+/**
+ * The type to declare for a file. Some systems give a PDF no MIME type at all;
+ * the extension then stands in as the claim, and the content check that
+ * follows — here and on the server — decides whether it is true.
+ */
+function declaredTypeOf(file: File): string {
+  if (file.type) return file.type;
+  return /\.pdf$/i.test(file.name) ? "application/pdf" : "";
+}
 
 export type DigitalAssetSummary = {
   filename: string;
@@ -28,6 +53,12 @@ export type DigitalAssetSummary = {
  * id to attach a file to before then, and offering the control anyway would
  * only produce a confusing failure.
  *
+ * The file goes straight to Cloudinary, privately, with parameters
+ * `/api/admin/digital-upload` signs; the route then verifies the stored file —
+ * including that its content really is the declared type — before attaching it
+ * to the product. It used to be posted through the route itself, which Vercel
+ * refuses above 4.5 MB.
+ *
  * The response carries a filename and a size and nothing else. The storage
  * handle stays server-side, where it cannot end up in a browser's network log.
  */
@@ -42,37 +73,57 @@ export function DigitalFileField({
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<"idle" | "uploading" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
   const [current, setCurrent] = useState(asset);
 
   async function upload(file: File) {
-    if (!productId) return;
+    if (!productId || state === "uploading") return;
+
+    setError(null);
+    const reject = (message: string) => {
+      setError(message);
+      setState("error");
+    };
+
+    // First gate, before any bandwidth is spent. The server checks all of it
+    // again against what storage actually holds.
+    const type = declaredTypeOf(file);
+    if (!(ALLOWED_DIGITAL_TYPES as readonly string[]).includes(type)) return reject(DIGITAL_MESSAGES.wrongType);
+    if (file.size === 0) return reject("That file is empty.");
+    if (file.size > MAX_DIGITAL_BYTES) return reject(DIGITAL_MESSAGES.tooLarge);
+
+    const head = new Uint8Array(await file.slice(0, CONTENT_SNIFF_BYTES).arrayBuffer());
+    if (!digitalContentMatches(head, type)) {
+      return reject(
+        type === "application/pdf"
+          ? "That file isn't a valid PDF. Only real PDF files can be uploaded as PDFs."
+          : "That file's contents don't match its file type.",
+      );
+    }
 
     setState("uploading");
-    setError(null);
-
-    const body = new FormData();
-    body.set("productId", productId);
-    body.set("file", file);
+    setProgress(0);
 
     try {
-      const response = await fetch("/api/admin/digital-upload", { method: "POST", body });
-      const payload = (await response.json()) as {
-        filename?: string;
-        contentType?: string;
-        bytes?: number;
-        error?: string;
-      };
-
-      if (!response.ok) {
-        setError(payload.error ?? "The upload failed.");
-        setState("error");
-        return;
-      }
+      const endpoint = "/api/admin/digital-upload";
+      const signed = await postUploadStep<{ uploadUrl: string; fields: Record<string, string> }>(
+        endpoint,
+        { step: "sign", productId, filename: file.name, type, size: file.size },
+        DIGITAL_MESSAGES,
+      );
+      // Sent as "upload" (no extension) so the stored id matches existing files;
+      // the real filename is recorded by finalize below.
+      const key = await sendToCloudinary(signed.uploadUrl, signed.fields, file, DIGITAL_MESSAGES, setProgress, "upload");
+      const payload = await postUploadStep<{ filename: string; contentType: string; bytes: number }>(
+        endpoint,
+        { step: "finalize", productId, key, filename: file.name, type },
+        DIGITAL_MESSAGES,
+      );
 
       setCurrent({
-        filename: payload.filename ?? file.name,
-        contentType: payload.contentType ?? file.type,
-        bytes: payload.bytes ?? file.size,
+        filename: payload.filename,
+        contentType: payload.contentType,
+        bytes: payload.bytes,
         version: current?.version ?? "1",
         updatedAt: new Date(),
       });
@@ -80,9 +131,8 @@ export function DigitalFileField({
       // The publish guard reads the asset server-side, so the form needs the
       // fresh server state before "Published" can be ticked.
       router.refresh();
-    } catch {
-      setError("The upload failed. Check your connection and try again.");
-      setState("error");
+    } catch (caught) {
+      reject(caught instanceof UploadError ? caught.message : DIGITAL_MESSAGES.failed);
     }
   }
 
@@ -124,6 +174,7 @@ export function DigitalFileField({
       <input
         ref={inputRef}
         type="file"
+        accept={`${ALLOWED_DIGITAL_TYPES.join(",")},.pdf`}
         className="sr-only"
         onChange={(event) => {
           const file = event.target.files?.[0];
@@ -145,7 +196,7 @@ export function DigitalFileField({
           <UploadCloud aria-hidden />
         )}
         {state === "uploading"
-          ? "Uploading…"
+          ? `Uploading… ${progress}%`
           : current
             ? "Replace file"
             : "Upload file"}
@@ -159,7 +210,7 @@ export function DigitalFileField({
       )}
 
       <p className="text-body text-xs">
-        PDF, ZIP, PNG, JPEG, SVG, MP4, MP3 or TXT, up to 200MB. Stored privately —
+        PDF, ZIP, PNG, JPEG, SVG, MP4, MP3 or TXT, up to {MAX_MB}MB. Stored privately —
         customers reach it through a signed link that expires, never a public URL.
       </p>
     </div>

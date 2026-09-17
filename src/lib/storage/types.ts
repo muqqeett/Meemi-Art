@@ -180,6 +180,93 @@ export function videoPosterUrl(videoUrl: string): string | null {
   return `${head}so_0,w_1200,c_limit,q_auto/${tail}`;
 }
 
+// ---------------------------------------------------------------- direct uploads
+
+/** `ALLOWED_IMAGE_TYPES`, as Cloudinary names them in `format` and `allowed_formats`. */
+export const ALLOWED_IMAGE_FORMATS = ["jpg", "png", "webp", "avif"] as const;
+
+/** Formats a shop can reasonably sell. Executables are deliberately absent. */
+export const ALLOWED_DIGITAL_TYPES = [
+  "application/pdf",
+  "application/zip",
+  "application/x-zip-compressed",
+  "image/png",
+  "image/jpeg",
+  "image/svg+xml",
+  "video/mp4",
+  "audio/mpeg",
+  "text/plain",
+] as const;
+
+/**
+ * 10 MB — the largest raw file the store's Cloudinary plan accepts.
+ *
+ * This used to say 200 MB, which Cloudinary would never have stored: its Free
+ * plan refuses raw uploads above 10 MB (`media_limits.raw_max_size_bytes`).
+ * Raise it only together with the plan.
+ */
+export const MAX_DIGITAL_BYTES = 10 * 1024 * 1024;
+
+/** How many leading bytes the content checks below need. */
+export const CONTENT_SNIFF_BYTES = 1024;
+
+const startsWith = (bytes: Uint8Array, signature: number[], offset = 0) =>
+  bytes.length >= offset + signature.length && signature.every((value, index) => bytes[offset + index] === value);
+
+const ascii = (bytes: Uint8Array, from: number, to: number) =>
+  String.fromCharCode(...bytes.subarray(from, Math.min(to, bytes.length)));
+
+/**
+ * Does a digital file's content agree with the type it claims to be?
+ *
+ * The declared type — a browser's `File.type`, or a request field — is only a
+ * claim; the first bytes are evidence. An executable renamed `pattern.pdf`
+ * declares `application/pdf` and fails here, because it does not begin with a
+ * PDF header. Takes a plain `Uint8Array`, so the same check runs in the admin
+ * browser before upload and on the server against what storage actually holds.
+ */
+export function digitalContentMatches(head: Uint8Array, declaredType: string): boolean {
+  if (head.length === 0) return false;
+  const hasNul = head.includes(0);
+
+  switch (declaredType) {
+    case "application/pdf":
+      // PDF readers accept the header anywhere in the first 1024 bytes.
+      return ascii(head, 0, CONTENT_SNIFF_BYTES).includes("%PDF-");
+    case "application/zip":
+    case "application/x-zip-compressed":
+      return startsWith(head, [0x50, 0x4b, 0x03, 0x04]) || startsWith(head, [0x50, 0x4b, 0x05, 0x06]);
+    case "image/png":
+      return startsWith(head, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    case "image/jpeg":
+      return startsWith(head, [0xff, 0xd8, 0xff]);
+    case "video/mp4":
+      return ascii(head, 4, 8) === "ftyp";
+    case "audio/mpeg":
+      return ascii(head, 0, 3) === "ID3" || (head.length > 1 && head[0] === 0xff && (head[1] & 0xe0) === 0xe0);
+    case "image/svg+xml":
+      return !hasNul && /<svg[\s>]/i.test(ascii(head, 0, CONTENT_SNIFF_BYTES));
+    case "text/plain":
+      return !hasNul;
+    default:
+      return false;
+  }
+}
+
+/**
+ * The name shown to the admin and used for the buyer's download: the last path
+ * segment only, without control characters, at most 200 characters. It is
+ * display text — storage ids never derive from it except through
+ * `buildObjectName`, which reduces it to `[a-z0-9-]`.
+ */
+export function cleanDisplayFilename(value: string, fallback = "download"): string {
+  const name = (value.split(/[\\/]/).pop() ?? "")
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .trim()
+    .slice(0, 200);
+  return name && name !== "." && name !== ".." ? name : fallback;
+}
+
 /** Readable, collision-free object name derived from the original filename. */
 export function buildObjectName(filename: string): string {
   const base = filename
