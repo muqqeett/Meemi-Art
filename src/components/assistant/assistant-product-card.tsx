@@ -5,6 +5,8 @@ import { ArrowRight } from "lucide-react";
 import { discountPercent, formatMoney } from "@/lib/money";
 import type { AssistantRecommendation } from "@/lib/assistant/types";
 
+const RANK_LABELS = { best: "Best match", also: "Also worth considering" } as const;
+
 /**
  * A recommendation inside the assistant panel.
  *
@@ -15,7 +17,8 @@ import type { AssistantRecommendation } from "@/lib/assistant/types";
  * the same money formatting and discount rule — and links to the existing
  * product page.
  *
- * Everything shown is server data. The model contributes only `reason`.
+ * Everything shown is server data — including the rank label, the difficulty
+ * line and the reason chips. The model contributes only `reason`.
  */
 export function AssistantProductCard({
   recommendation,
@@ -24,7 +27,7 @@ export function AssistantProductCard({
   recommendation: AssistantRecommendation;
   onNavigate?: () => void;
 }) {
-  const { product, reason } = recommendation;
+  const { product, reason, reasons, rank } = recommendation;
   const off = discountPercent(product.priceCents, product.compareAtCents);
   const href = `/products/${product.slug}`;
 
@@ -47,6 +50,11 @@ export function AssistantProductCard({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {rank && (
+          <p className={rank === "best" ? "label-caps text-brand-700" : "label-caps text-muted-foreground"}>
+            {RANK_LABELS[rank]}
+          </p>
+        )}
         <p className="text-[0.6875rem] tracking-[0.08em] text-muted-foreground uppercase">
           {product.categoryName}
         </p>
@@ -72,6 +80,25 @@ export function AssistantProductCard({
           )}
           <span className="text-[0.6875rem] text-muted-foreground">Digital pattern</span>
         </p>
+
+        {product.difficulty && (
+          <p className="mt-1 text-[0.6875rem] text-muted-foreground">
+            {product.difficulty.levelLabel} · {product.difficulty.estimatedTime}
+          </p>
+        )}
+
+        {reasons.length > 0 && (
+          <ul className="mt-1.5 flex flex-wrap gap-1" aria-label="Why it matches">
+            {reasons.map((item) => (
+              <li
+                key={item}
+                className="rounded-full bg-brand-50 px-2 py-0.5 text-[0.6875rem] font-medium text-brand-700"
+              >
+                {item}
+              </li>
+            ))}
+          </ul>
+        )}
 
         {reason && <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{reason}</p>}
 

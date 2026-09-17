@@ -5,9 +5,11 @@ import Link from "next/link";
 import { ArrowUp, Loader2, Sparkles } from "lucide-react";
 
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { AssistantComparison } from "@/components/assistant/assistant-comparison";
 import { AssistantProductCard } from "@/components/assistant/assistant-product-card";
 import {
   ASSISTANT_LIMITS,
+  type AssistantComparison as Comparison,
   type AssistantRecommendation,
   type AssistantReply,
   type ChatTurn,
@@ -19,6 +21,7 @@ type Item = {
   role: "user" | "assistant";
   text: string;
   recommendations?: AssistantRecommendation[];
+  comparison?: Comparison | null;
   followUpQuestion?: string | null;
   quickReplies?: string[];
   error?: { href: string };
@@ -122,6 +125,7 @@ export function AssistantPanel({
           role: "assistant",
           text: data.message,
           recommendations: data.recommendations,
+          comparison: data.comparison,
           followUpQuestion: data.followUpQuestion,
           quickReplies: data.quickReplies,
         });
@@ -250,10 +254,12 @@ export function AssistantPanel({
                   </Link>
                 )}
 
+                {item.comparison && <AssistantComparison comparison={item.comparison} />}
+
                 {item.recommendations && item.recommendations.length > 0 && (
                   <ul className="space-y-2" aria-label="Recommended patterns">
                     {item.recommendations.map((recommendation) => (
-                      <li key={recommendation.product.id}>
+                      <li key={recommendation.product.slug}>
                         <AssistantProductCard
                           recommendation={recommendation}
                           onNavigate={() => onOpenChange(false)}
