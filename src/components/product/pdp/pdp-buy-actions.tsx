@@ -6,6 +6,7 @@ import { Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 
 import { addToCart } from "@/lib/actions/cart";
+import { emitProductEvent } from "@/lib/product-events";
 import { useCartUI } from "@/lib/stores/cart-ui";
 
 /**
@@ -46,6 +47,8 @@ export function PdpBuyActions({
       }
 
       setCount(result.data.itemCount);
+      // Announced only after the add succeeded; nothing depends on a listener.
+      emitProductEvent({ type: "cart-added", productId });
 
       if (then === "checkout") {
         // Deliberately not clearing `busy` — the button stays disabled through

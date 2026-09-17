@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 import { toggleWishlist } from "@/lib/actions/wishlist";
+import { emitProductEvent } from "@/lib/product-events";
 import { duration, ease } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -79,6 +80,8 @@ export function WishlistButton({
           ? `${productName} saved to your wishlist`
           : `${productName} removed from your wishlist`,
       );
+      // Announced only after the save succeeded; nothing depends on a listener.
+      if (result.data.added) emitProductEvent({ type: "wishlist-added", productId });
       router.refresh();
     });
   }

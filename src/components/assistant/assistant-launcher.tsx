@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Sparkles } from "lucide-react";
 
 import { AssistantPanel } from "@/components/assistant/assistant-panel";
+import { onAssistantOpenRequest } from "@/lib/product-events";
 import { cn } from "@/lib/utils";
 
 /**
@@ -26,8 +27,16 @@ const HIDDEN_PREFIXES = ["/cart", "/checkout", "/account", "/orders"];
 export function AssistantLauncher() {
   const pathname = usePathname() ?? "/";
   const [open, setOpen] = useState(false);
+  const hidden = HIDDEN_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
-  if (HIDDEN_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+  // "Ask Meemi" on a product page opens this same panel. No markup changes and
+  // nothing else listens: pages that never ask are unaffected.
+  useEffect(() => {
+    if (hidden) return;
+    return onAssistantOpenRequest(() => setOpen(true));
+  }, [hidden]);
+
+  if (hidden) {
     return null;
   }
 

@@ -8,6 +8,9 @@ import { PdpProductRail } from "@/components/product/pdp/pdp-product-rail";
 import { PdpReviews } from "@/components/product/pdp/pdp-reviews";
 import { PdpProjects } from "@/components/product/pdp/pdp-projects";
 import { RecentlyViewed } from "@/components/product/recently-viewed";
+import { MeemiGuideLoader } from "@/components/product/meemi/meemi-guide-loader";
+import { isAssistantConfigured } from "@/lib/ai/client";
+import { meemiFactsFor } from "@/lib/meemi/facts";
 import { Reveal } from "@/components/motion/reveal";
 import {
   getProductBySlug,
@@ -239,8 +242,9 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             />
           </Reveal>
 
-          {/* Second on mobile, last in the detail column on desktop. */}
-          <div className="lg:col-start-2 lg:row-start-2">
+          {/* Second on mobile, last in the detail column on desktop.
+              `data-meemi-avoid`: the Meemi guide hides rather than cover it. */}
+          <div className="lg:col-start-2 lg:row-start-2" data-meemi-avoid>
             <PdpBuyBlock
               productId={product.id}
               productName={product.name}
@@ -299,6 +303,16 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
       </div>
 
       <RecentlyViewed currentSlug={product.slug} />
+
+      {/* Meemi, the product page's crochet guide. Client-only and lazy: nothing
+          in the server HTML. Its facts are derived here, from the product and
+          its enabled difficulty assessment, never in the browser. "Ask Meemi"
+          is offered only where the Pattern guide itself is mounted — the same
+          condition the storefront layout uses. */}
+      <MeemiGuideLoader
+        facts={meemiFactsFor(product)}
+        assistantAvailable={isAssistantConfigured() || process.env.NODE_ENV === "development"}
+      />
     </>
   );
 }

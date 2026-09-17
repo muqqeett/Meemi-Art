@@ -21,7 +21,8 @@ export function PdpDifficulty({ result }: { result: DifficultyResult }) {
   const valueText = `${result.score} out of 10 — ${result.levelLabel}`;
 
   return (
-    <section aria-labelledby="pdp-difficulty-heading" className="flex flex-col gap-5">
+    // `data-meemi-anchor`: where the product page's Meemi guide may offer to explain.
+    <section aria-labelledby="pdp-difficulty-heading" data-meemi-anchor="difficulty" className="flex flex-col gap-5">
       <h2
         id="pdp-difficulty-heading"
         className="text-[0.6875rem] leading-none font-semibold tracking-[0.22em] text-pdp-label uppercase"
@@ -90,7 +91,7 @@ export function PdpDifficulty({ result }: { result: DifficultyResult }) {
         </div>
 
         {result.techniques.length > 0 && (
-          <div className="flex flex-col gap-2 border-b border-pdp-hairline/70 py-3 last:border-0">
+          <div data-meemi-anchor="techniques" className="flex flex-col gap-2 border-b border-pdp-hairline/70 py-3 last:border-0">
             <dt className="text-sm text-pdp-meta">Techniques</dt>
             <dd>
               <ul className="flex flex-wrap gap-x-2 gap-y-1 text-[0.9375rem] leading-[1.6] text-pdp-body">
