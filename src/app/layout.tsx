@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
 import { siteConfig } from "@/lib/config";
+import { GoogleAnalytics } from "@/components/layout/google-analytics";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MotionProvider } from "@/components/motion/motion-provider";
@@ -138,6 +139,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <TooltipProvider>{children}</TooltipProvider>
         </MotionProvider>
         <Toaster position="bottom-right" closeButton />
+        {/* Google Analytics 4 — customer-facing pages only; see the component. */}
+        <GoogleAnalytics />
       </body>
     </html>
   );

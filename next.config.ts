@@ -114,7 +114,13 @@ const nextConfig: NextConfig = {
                  Safe to trial precisely because the policy is Report-Only: if
                  some production path does need eval, it reports rather than
                  breaks, and this line can come back. */
-              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://cdn.paddle.com https://sandbox-cdn.paddle.com https://pagead2.googlesyndication.com https://*.adtrafficquality.google`,
+              /* Google Analytics 4: the gtag loader comes from
+                 googletagmanager.com, and measurement hits go to the
+                 google-analytics.com / analytics.google.com collectors (with a
+                 pixel fallback, hence img-src). These are the hosts Google
+                 documents for GA4 under a CSP; the inline config snippet is
+                 already covered by 'unsafe-inline'. */
+              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://cdn.paddle.com https://sandbox-cdn.paddle.com https://pagead2.googlesyndication.com https://*.adtrafficquality.google https://*.googletagmanager.com`,
               /* Tailwind and Next emit inline style attributes. Fontshare
                  serves the Clash Grotesk stylesheet the product page is set
                  in — also found by the report-only run, and the reason
@@ -126,7 +132,7 @@ const nextConfig: NextConfig = {
               // permits them — a policy that contradicts the image config
               // would report violations that are not violations, and would
               // blank those images the day it is enforced.
-              "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://i.pravatar.cc https://*.adtrafficquality.google https://pagead2.googlesyndication.com",
+              "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://i.pravatar.cc https://*.adtrafficquality.google https://pagead2.googlesyndication.com https://*.google-analytics.com https://*.googletagmanager.com",
               "font-src 'self' data: https://cdn.fontshare.com",
               /* The optional product video. (Its poster frame is an image, and
                  is already covered by `img-src` above.) Without this, `<video>` falls back to `default-src 'self'`
@@ -138,7 +144,7 @@ const nextConfig: NextConfig = {
                  product video: a 50 MB file cannot pass through a serverless
                  function, so the browser uploads it directly, with parameters
                  this server has signed. */
-              "connect-src 'self' https://*.paddle.com https://*.adtrafficquality.google https://pagead2.googlesyndication.com https://api.cloudinary.com",
+              "connect-src 'self' https://*.paddle.com https://*.adtrafficquality.google https://pagead2.googlesyndication.com https://api.cloudinary.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
               // The checkout overlay is an iframe from Paddle.
               "frame-src https://*.paddle.com https://googleads.g.doubleclick.net https://*.adtrafficquality.google https://www.google.com",
               "object-src 'none'",

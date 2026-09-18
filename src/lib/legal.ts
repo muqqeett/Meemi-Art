@@ -27,3 +27,10 @@
 
 /** Shown on each policy page. Bump when the policy text itself changes. */
 export const LAST_UPDATED = "28 August 2026";
+
+/**
+ * The privacy policy's own date. It changed on its own when Google Analytics
+ * and Google AdSense were disclosed; the terms and refund policy did not, so
+ * they keep `LAST_UPDATED`.
+ */
+export const PRIVACY_LAST_UPDATED = "18 September 2026";

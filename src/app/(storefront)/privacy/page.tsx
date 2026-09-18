@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/brand/breadcrumbs";
 import { ContentPage, ContentSection } from "@/components/layout/content-page";
-import { LAST_UPDATED } from "@/lib/legal";
+import { PRIVACY_LAST_UPDATED } from "@/lib/legal";
 import { siteConfig } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -27,11 +27,11 @@ export const metadata: Metadata = {
  * addresses, carriers, delivery updates, marketing email — and opened by
  * calling itself a template for a demonstration store. None of that was true.
  *
- * Two accuracy points worth keeping right as the code changes: there is no
- * third-party analytics or advertising tracker anywhere in this project, and
- * there is currently no marketing email, because the signup form was removed
- * and no subscriber table exists. Both claims are checkable, and both must be
- * revisited if either changes.
+ * Accuracy points worth keeping right as the code changes: the site loads
+ * Google Analytics (root layout, not on admin routes) and Google AdSense (root
+ * layout, every route), and both are disclosed below; and there is currently
+ * no marketing email, because the signup form was removed and no subscriber
+ * table exists. All are checkable, and each must be revisited if it changes.
  */
 export default function PrivacyPage() {
   return (
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
 
       <ContentPage
         title="Privacy Policy"
-        intro={`What we collect, why we collect it, who else handles it, and what you can ask us to do with it. Last updated ${LAST_UPDATED}.`}
+        intro={`What we collect, why we collect it, who else handles it, and what you can ask us to do with it. Last updated ${PRIVACY_LAST_UPDATED}.`}
       >
 
         <ContentSection title="What we collect">
@@ -78,9 +78,12 @@ export default function PrivacyPage() {
               you and whether sending succeeded.
             </li>
             <li>
-              <strong>Cookies</strong> — a sign-in session cookie, a basket cookie so your
-              bag survives a refresh, and a cookie holding an applied discount code. All
-              are strictly necessary for the shop to function.
+              <strong>Cookies</strong> — our own cookies are a sign-in session cookie, a
+              basket cookie so your bag survives a refresh, and a cookie holding an applied
+              discount code. All three are strictly necessary for the shop to function.
+              Google Analytics and Google AdSense may also set their own cookies or use
+              similar identifiers, as described under &ldquo;Analytics and
+              advertising&rdquo; below.
             </li>
             <li>
               <strong>Shop activity</strong> — we count product page views, basket
@@ -93,11 +96,50 @@ export default function PrivacyPage() {
           </ul>
         </ContentSection>
 
+        <ContentSection title="Analytics and advertising">
+          <p>
+            We use <strong>Google Analytics</strong> to measure, in aggregate, how people
+            find and use this website — for example, which pages are visited and how
+            visitors move between them. Google Analytics may use cookies or similar
+            identifiers to tell visits apart. It is not loaded on the pages our staff use
+            to run the shop.
+          </p>
+          <p>
+            We use <strong>Google AdSense</strong> to display advertisements on this
+            website. Google and its advertising partners may use cookies or similar
+            identifiers, and may process information about your visit — such as the pages
+            you view and your browser and device — to show, personalise and measure ads.
+            This happens according to Google&apos;s own systems and the consent choices
+            that apply to you.
+          </p>
+          <p>
+            Google processes this data under its own privacy policy. You can read{" "}
+            <a
+              href="https://policies.google.com/technologies/partner-sites"
+              className="underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              how Google uses information from sites that use its services
+            </a>{" "}
+            and manage ad personalisation in{" "}
+            <a
+              href="https://myadcenter.google.com"
+              className="underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              My Ad Center
+            </a>
+            .
+          </p>
+        </ContentSection>
+
         <ContentSection title="What we do not do">
           <p>
-            There is no third-party analytics, advertising or tracking script on this site.
-            We do not profile you, we do not build an advertising audience, and we do not
-            sell or rent personal data to anyone.
+            We do not sell or rent personal data to anyone. Our own shop records —
+            accounts, orders, downloads and the shop activity described above — are not
+            shared with advertisers.
           </p>
           <p>
             We do not currently send marketing email. If that changes, it will be
@@ -119,7 +161,7 @@ export default function PrivacyPage() {
         </ContentSection>
 
         <ContentSection title="Who else handles your data">
-          <p>Only the services needed to run the shop:</p>
+          <p>The services that run the shop, and Google for analytics and advertising:</p>
           <ul className="list-disc space-y-2 pl-5">
             <li>
               <strong>Paddle</strong> — payments. Paddle is the merchant of record for
@@ -134,6 +176,11 @@ export default function PrivacyPage() {
               <strong>Cloudinary</strong> — stores product images and the purchasable
               files themselves. Purchased files are stored privately and reached only
               through a link that expires within minutes.
+            </li>
+            <li>
+              <strong>Google</strong> — Google Analytics for website measurement and
+              Google AdSense for advertising, as described under &ldquo;Analytics and
+              advertising&rdquo; above.
             </li>
             <li>
               <strong>Our hosting and database providers</strong> — which store the data
