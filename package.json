@@ -34,6 +34,7 @@
     "test:concierge": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-concierge.ts",
     "test:uploads": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-uploads.ts",
     "test:meemi": "tsx scripts/test-meemi.ts",
+    "test:admin-motion": "tsx scripts/test-admin-motion.ts",
     "cloudinary:project-orphans": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/cloudinary-project-orphans.ts"
   },
   "dependencies": {

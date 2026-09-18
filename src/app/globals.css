@@ -961,6 +961,121 @@
     }
   }
 
+  /* ---- Motion, continued --------------------------------------------------
+     Entrances for the parts of the admin that had none. Same rules as above:
+     transform and opacity only, nothing overshoots, and every one of these
+     uses `backwards` fill — it styles the element only before and while it
+     runs. Once finished nothing is left behind (no lingering `transform`,
+     which would also make a transformed ancestor the containing block for
+     anything fixed inside it), so a paused or finished screen is exactly the
+     screen without motion.
+
+     All of it is scoped to the admin: `.admin-root`, the `.admin-page` hook
+     set by `app/admin/template.tsx`, or — for dialogs, which portal out to
+     <body> — `body:has(.admin-root)`. None of it can reach the storefront. */
+
+  /* Every admin page settles in when it is navigated to. `template.tsx`
+     remounts per navigation, so this plays once per page, not per render. */
+  .admin-page {
+    animation: admin-settle 200ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+  @keyframes admin-settle {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+
+  /* KPI rows outside the overview had no sequence; they take the overview's
+     own `admin-rise`, 40ms apart. */
+  .admin-kpi-row > * {
+    animation: admin-rise 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+  .admin-kpi-row > *:nth-child(2) {
+    animation-delay: 40ms;
+  }
+  .admin-kpi-row > *:nth-child(3) {
+    animation-delay: 80ms;
+  }
+  .admin-kpi-row > *:nth-child(n + 4) {
+    animation-delay: 120ms;
+  }
+
+  /* Table rows fade in when they first appear — on load, or when a filter or
+     page brings new rows. Opacity only: a table that slides reads as unstable.
+     Rows that persist across a refresh keep their element and do not replay. */
+  .admin-root tbody > tr {
+    animation: admin-fade 180ms ease-out backwards;
+  }
+  .admin-root tbody > tr:nth-child(2) {
+    animation-delay: 12ms;
+  }
+  .admin-root tbody > tr:nth-child(3) {
+    animation-delay: 24ms;
+  }
+  .admin-root tbody > tr:nth-child(4) {
+    animation-delay: 36ms;
+  }
+  .admin-root tbody > tr:nth-child(5) {
+    animation-delay: 48ms;
+  }
+  .admin-root tbody > tr:nth-child(n + 6) {
+    animation-delay: 60ms;
+  }
+  @keyframes admin-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Dialogs already fade and scale from 0.98; in the admin they also rise a
+     quarter-rem, in and out, through the same animation's own variables. */
+  body:has(.admin-root) [data-slot="dialog-content"] {
+    --tw-enter-translate-y: 0.25rem;
+    --tw-exit-translate-y: 0.25rem;
+  }
+
+  /* Error and confirmation messages settle in rather than blink on. Elements
+     with an inline style are left alone: those are Framer-animated already. */
+  body:has(.admin-root) [role="alert"]:not([style]) {
+    animation: admin-settle 180ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  /* Skeletons wait a beat and fade in, so a fast load shows no flash of grey. */
+  .admin-root .admin-shimmer {
+    animation:
+      admin-shimmer 1.5s ease-in-out infinite,
+      admin-fade 240ms ease-out 80ms backwards;
+  }
+
+  /* The opt-in card lift eases rather than jumps. Its resting and hover
+     styles are unchanged. */
+  .admin-card-interactive {
+    transition:
+      transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 180ms ease-out,
+      border-color 180ms ease-out;
+  }
+
+  /* Reduced motion. The global block below shortens every animation to
+     nothing but not its delay, so a staggered, `backwards`-filled element
+     would still sit invisible for its delay. These are removed outright. */
+  @media (prefers-reduced-motion: reduce) {
+    .admin-page,
+    .admin-kpi-row > *,
+    .admin-root tbody > tr,
+    body:has(.admin-root) [role="alert"]:not([style]) {
+      animation: none;
+    }
+    .admin-root .admin-shimmer {
+      animation: admin-shimmer 1.5s ease-in-out infinite;
+    }
+    body:has(.admin-root) [data-slot="dialog-content"] {
+      --tw-enter-translate-y: 0;
+      --tw-exit-translate-y: 0;
+    }
+  }
+
   /* Page gutter used by every section so the storefront lines up vertically. */
   .container-page {
     @apply mx-auto w-full max-w-[1400px] px-5 sm:px-8 lg:px-12;
