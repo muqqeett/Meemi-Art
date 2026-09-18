@@ -82,6 +82,14 @@ export default function PrivacyPage() {
               bag survives a refresh, and a cookie holding an applied discount code. All
               are strictly necessary for the shop to function.
             </li>
+            <li>
+              <strong>Shop activity</strong> — we count product page views, basket
+              additions, wishlist saves and downloads to understand which designs people
+              like. A view is counted anonymously: we store a code that changes every day
+              and can&apos;t be traced back to your address or device, with no cookie. When
+              you&apos;re signed in, a basket addition, wishlist save or download is recorded
+              against your account, like your orders are.
+            </li>
           </ul>
         </ContentSection>
 

@@ -35,6 +35,7 @@ model User {
   reviews                 Review[]
   sessions                Session[]
   wishlist                Wishlist?
+  analyticsEvents         AnalyticsEvent[]
 
   @@index([role])
   @@index([createdAt])
@@ -156,33 +157,33 @@ model Category {
 }
 
 model Product {
-  id               String          @id @default(cuid())
+  id               String             @id @default(cuid())
   name             String
-  slug             String          @unique
+  slug             String             @unique
   description      String
   shortDescription String?
   brand            String
-  sku              String          @unique
+  sku              String             @unique
   priceCents       Int
   compareAtCents   Int?
   categoryId       String
-  featured         Boolean         @default(false)
-  isActive         Boolean         @default(true)
-  ratingAvg        Float           @default(0)
-  reviewCount      Int             @default(0)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  featured         Boolean            @default(false)
+  isActive         Boolean            @default(true)
+  ratingAvg        Float              @default(0)
+  reviewCount      Int                @default(0)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   seoDescription   String?
   seoTitle         String?
   paddlePriceCents Int?
-  paddlePriceId    String?         @unique
+  paddlePriceId    String?            @unique
   /// Paddle catalogue link. `paddlePriceId` is the one-time price the checkout
   /// charges; `paddlePriceCents` records what that price was worth when it was
   /// last synced, so a drift between this row's `priceCents` and Paddle can be
   /// detected without an API call. All three are null until the product is
   /// synced — checkout refuses to sell an unsynced product rather than
   /// inventing a price.
-  paddleProductId  String?         @unique
+  paddleProductId  String?            @unique
   paddleSyncedAt   DateTime?
   /// One optional product video, shown second in the product-page gallery.
   ///
@@ -204,10 +205,11 @@ model Product {
   access           DigitalAccess[]
   asset            DigitalAsset?
   orderItems       OrderItem[]
-  category         Category        @relation(fields: [categoryId], references: [id])
+  category         Category           @relation(fields: [categoryId], references: [id])
   images           ProductImage[]
   reviews          Review[]
   wishlistItems    WishlistItem[]
+  analyticsEvents  AnalyticsEvent[]
 
   @@index([categoryId])
   @@index([featured])
@@ -291,7 +293,7 @@ model ProductDifficulty {
 }
 
 model Review {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   productId String
   userId    String
   rating    Int
@@ -304,11 +306,11 @@ model Review {
   status    ReviewStatus @default(APPROVED)
   /// * Orthogonal to `status`: a review is featured *and* approved, never
   /// * featured instead of approved.
-  featured  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  featured  Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([productId, userId])
   @@index([productId, createdAt])
@@ -669,4 +671,38 @@ enum EmailStatus {
   SKIPPED
   SENT
   FAILED
+}
+
+/// Behaviour the rest of the schema cannot reconstruct: product page views,
+/// add-to-cart, wishlist additions and completed downloads. Purchases, checkout
+/// starts, reviews and current wishlist state are deliberately NOT recorded
+/// here — Order, OrderItem, Review and WishlistItem stay the source of truth.
+///
+/// Minimal on purpose: no IP address, no user agent, no free-form metadata.
+/// `visitorKey` is a salted hash that rotates daily, so an anonymous visitor
+/// can be counted within a day but never followed across days.
+model AnalyticsEvent {
+  id         String             @id @default(cuid())
+  type       AnalyticsEventType
+  productId  String
+  /// Set for signed-in cart, wishlist and download events. Never for views.
+  userId     String?
+  /// Daily-rotating anonymous key. Set for views only.
+  visitorKey String?
+  /// Units added, for ADD_TO_CART only.
+  quantity   Int?
+  createdAt  DateTime           @default(now())
+  product    Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user       User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type, createdAt])
+  @@index([productId, type, createdAt])
+  @@index([userId])
+}
+
+enum AnalyticsEventType {
+  PRODUCT_VIEW
+  ADD_TO_CART
+  WISHLIST_ADD
+  DOWNLOAD
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { trackUserEvent } from "@/lib/analytics/events";
 import { getCurrentUser } from "@/lib/auth-guards";
 import {
   removeWishlistItemForUser,
@@ -31,8 +32,15 @@ export async function toggleWishlist(
   productId: string,
   saved?: boolean,
 ): Promise<WishlistResult> {
-  const result = await toggleWishlistForUser(await getCurrentUser(), productId, saved);
+  const user = await getCurrentUser();
+  const result = await toggleWishlistForUser(user, productId, saved);
   if (result.ok) revalidatePath("/account/wishlist");
+
+  // A save that actually happened is recorded after the response. Removals
+  // are not events: current state lives in WishlistItem.
+  if (result.ok && result.data.added && user) {
+    trackUserEvent("WISHLIST_ADD", productId, user);
+  }
   return result;
 }
 

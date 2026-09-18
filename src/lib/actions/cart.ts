@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
+import { trackAfterResponse } from "@/lib/analytics/events";
+import { getCurrentUser } from "@/lib/auth-guards";
 import { getOrCreateCartId, getCart } from "@/lib/cart/cart-service";
 import { validateCoupon, setAppliedCoupon, clearAppliedCoupon } from "@/lib/cart/coupon";
 import { addToCartSchema, updateCartItemSchema, couponCodeSchema } from "@/lib/validations/commerce";
@@ -66,6 +68,16 @@ export async function addToCart(input: {
     create: { cartId, productId, quantity: capped },
     update: { quantity: capped },
   });
+
+  // Recorded after the response, and only now that the item is in the cart.
+  // A failure here is logged and ignored — it can never undo the add.
+  const added = capped - (existing?.quantity ?? 0);
+  trackAfterResponse(async () => ({
+    type: "ADD_TO_CART",
+    productId,
+    quantity: added,
+    userId: (await getCurrentUser())?.id ?? null,
+  }));
 
   revalidatePath("/cart");
   revalidatePath("/checkout");

@@ -9,6 +9,7 @@ import { PdpReviews } from "@/components/product/pdp/pdp-reviews";
 import { PdpProjects } from "@/components/product/pdp/pdp-projects";
 import { RecentlyViewed } from "@/components/product/recently-viewed";
 import { MeemiGuideLoader } from "@/components/product/meemi/meemi-guide-loader";
+import { ProductViewBeacon } from "@/components/product/product-view-beacon";
 import { isAssistantConfigured } from "@/lib/ai/client";
 import { meemiFactsFor } from "@/lib/meemi/facts";
 import { Reveal } from "@/components/motion/reveal";
@@ -313,6 +314,10 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         facts={meemiFactsFor(product)}
         assistantAvailable={isAssistantConfigured() || process.env.NODE_ENV === "development"}
       />
+
+      {/* Counts the view once the page is really seen. Renders nothing, sets no
+          cookie; see `lib/analytics/product-views.ts`. */}
+      <ProductViewBeacon productId={product.id} />
     </>
   );
 }

@@ -3,7 +3,10 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
+  ArrowDown,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   Crown,
   Download,
   FileWarning,
@@ -12,16 +15,19 @@ import {
 } from "lucide-react";
 
 import { AdminPageHeader, AdminSection } from "@/components/admin/admin-page-header";
+import { AnalyticsRangePicker } from "@/components/admin/analytics-range-picker";
 import { ProductRevenueChart } from "@/components/admin/charts";
 import { EmptyState } from "@/components/brand/empty-state";
 import { ButtonLink } from "@/components/ui/button-link";
+import { rangeInputFrom, rangeSearch, resolveRange } from "@/lib/analytics/date-range";
+import { CONVERSION_DEFINITIONS, formatRate } from "@/lib/analytics/metrics";
+import { getProductPerformance, performanceState } from "@/lib/queries/product-performance";
 import {
-  PERIODS,
-  getProductPerformance,
-  parsePeriod,
-  performanceState,
-  type PeriodKey,
-} from "@/lib/queries/product-performance";
+  PRODUCT_SORTS,
+  getProductMetricsTable,
+  parseProductSort,
+  type ProductSort,
+} from "@/lib/queries/product-analytics";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -57,18 +63,38 @@ const STATE_STYLE = {
  * `SUCCESSFUL_ORDER_ITEM` filter. Verified to agree with the dashboard's own
  * revenue and order totals.
  *
- * There is no conversion rate anywhere on this page: nothing records product
- * views, so a conversion figure would be units divided by an unknown.
+ * The product funnel below the ranking adds views, add-to-cart and checkout
+ * starts from `product-analytics.ts`, with every rate's denominator stated. Views
+ * are counted only from the day the event log was deployed, so for older
+ * periods a conversion rate is "—" rather than a made-up figure.
+ *
+ * Periods are calendar days in Pakistan. The old `?period=` links still work.
  */
 export default async function ProductPerformancePage({
   searchParams,
 }: PageProps<"/admin/products/performance">) {
   const raw = await searchParams;
-  const periodParam = Array.isArray(raw.period) ? raw.period[0] : raw.period;
-  const period = parsePeriod(periodParam);
+  const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+  const input = rangeInputFrom(raw);
+  // Bookmarks from before the shared picker used `?period=7d` and friends.
+  if (!input.preset) input.preset = one(raw.period) ?? null;
+  const { range, invalid } = resolveRange(input, new Date(), { allowAll: true });
+  const periodLabel = range.label;
+  const sort = parseProductSort(one(raw.sort));
+  const requestedPage = Number.parseInt(one(raw.page) ?? "1", 10);
 
-  const data = await getProductPerformance(period);
+  const [data, table] = await Promise.all([
+    getProductPerformance(range),
+    getProductMetricsTable(range, sort, Number.isFinite(requestedPage) ? requestedPage : 1),
+  ]);
   const { products, totals, top } = data;
+  const period = rangeSearch(range);
+  const tableHref = (next: { sort?: ProductSort; page?: number }) => {
+    const params = new URLSearchParams(period);
+    params.set("sort", next.sort ?? sort);
+    if ((next.page ?? 1) > 1) params.set("page", String(next.page));
+    return `/admin/products/performance?${params.toString()}#product-funnel`;
+  };
 
   const sellers = products.filter((p) => p.revenueCents > 0);
   const hasProducts = products.length > 0;
@@ -82,25 +108,15 @@ export default async function ProductPerformancePage({
         description="Which products drive sales, revenue and downloads."
         className="mb-0"
         action={
-          // Real server-side filtering: each link re-runs the query with a
-          // different `placedAt` floor. Nothing is filtered in the browser.
-          <nav aria-label="Period" className="flex flex-wrap gap-1.5">
-            {(Object.keys(PERIODS) as PeriodKey[]).map((key) => (
-              <Link
-                key={key}
-                href={`/admin/products/performance?period=${key}`}
-                aria-current={period === key ? "page" : undefined}
-                className={cn(
-                  "inline-flex h-8 items-center rounded-md border px-3 text-[0.8125rem] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
-                  period === key
-                    ? "border-brand-300 bg-brand-50 font-medium text-brand-700"
-                    : "border-border text-muted-foreground hover:border-brand-200 hover:bg-[var(--admin-hover)] hover:text-foreground",
-                )}
-              >
-                {PERIODS[key].label}
-              </Link>
-            ))}
-          </nav>
+          // Real server-side filtering: each choice re-runs the queries with
+          // different `placedAt` bounds. Nothing is filtered in the browser.
+          <AnalyticsRangePicker
+            basePath="/admin/products/performance"
+            range={range}
+            invalid={invalid}
+            allowAll
+            keep={sort === "revenue" ? {} : { sort }}
+          />
         }
       />
 
@@ -131,7 +147,7 @@ export default async function ProductPerformancePage({
                 id="performance-hero"
                 className="text-[0.625rem] font-semibold tracking-[0.22em] text-brand-300 uppercase"
               >
-                {PERIODS[period].label} · revenue
+                {periodLabel} · revenue
               </p>
 
               <p className="admin-display admin-reveal-figure mt-3 text-white">
@@ -192,7 +208,7 @@ export default async function ProductPerformancePage({
               {
                 label: "Units sold",
                 value: String(totals.unitsSold),
-                hint: PERIODS[period].label.toLowerCase(),
+                hint: periodLabel,
               },
               {
                 label: "Orders",
@@ -225,7 +241,7 @@ export default async function ProductPerformancePage({
           {/* ---- Revenue chart -------------------------------------------- */}
           <AdminSection
             title="Revenue by product"
-            description={`Paid and completed orders · ${PERIODS[period].label.toLowerCase()}`}
+            description={`Paid and completed orders · ${periodLabel}`}
             className="admin-rise"
             style={step(2)}
           >
@@ -362,12 +378,128 @@ export default async function ProductPerformancePage({
             </div>
           </AdminSection>
 
+          {/* ---- Funnel per product ---------------------------------------- */}
+          <AdminSection
+            title="Product funnel"
+            description={`Views to purchases per product · ${periodLabel}. Conversion = ${CONVERSION_DEFINITIONS.conversion}. Reviews and rating are all time.`}
+            className="admin-rise scroll-mt-6"
+            style={step(4)}
+            bodyClassName="p-0"
+          >
+            <div id="product-funnel" className="w-full overflow-x-auto">
+              <table className="admin-table admin-table-stack sm:min-w-[1080px]">
+                <caption className="sr-only">
+                  Product funnel, sorted by {PRODUCT_SORTS[sort].toLowerCase()}, highest first
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Product</th>
+                    {(Object.keys(PRODUCT_SORTS) as ProductSort[]).map((key) => (
+                      <th
+                        key={key}
+                        scope="col"
+                        className="text-right"
+                        aria-sort={sort === key ? "descending" : undefined}
+                      >
+                        <Link
+                          href={tableHref({ sort: key })}
+                          className={cn(
+                            "inline-flex items-center gap-1 whitespace-nowrap hover:text-foreground",
+                            sort === key && "text-foreground",
+                          )}
+                        >
+                          {PRODUCT_SORTS[key]}
+                          {sort === key && <ArrowDown className="size-3" aria-hidden />}
+                        </Link>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {table.rows.map((row) => (
+                    <tr key={row.id}>
+                      <td data-label="Product">
+                        <span className="min-w-0">
+                          <Link
+                            href={`/admin/products/performance/${row.id}?${period}`}
+                            className="block truncate font-medium text-foreground hover:text-royal-600"
+                          >
+                            {row.name}
+                          </Link>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {row.categoryName}
+                            {!row.isActive && " · Draft"}
+                          </span>
+                        </span>
+                      </td>
+                      <td data-label="Revenue" className="text-right text-foreground tabular-nums">
+                        {formatMoney(row.revenueCents)}
+                      </td>
+                      <td data-label="Purchases" className="text-right tabular-nums text-muted-foreground">
+                        {row.purchases}
+                      </td>
+                      <td data-label="Views" className="text-right tabular-nums text-muted-foreground">
+                        {row.views}
+                      </td>
+                      <td data-label="Conversion" className="text-right tabular-nums text-muted-foreground">
+                        {formatRate(row.conversion)}
+                      </td>
+                      <td data-label="Add to cart" className="text-right tabular-nums text-muted-foreground">
+                        {row.addToCart}
+                      </td>
+                      <td data-label="Checkout starts" className="text-right tabular-nums text-muted-foreground">
+                        {row.checkoutStarts}
+                      </td>
+                      <td data-label="Wishlist adds" className="text-right tabular-nums text-muted-foreground">
+                        {row.wishlistAdds}
+                      </td>
+                      <td data-label="Downloads" className="text-right tabular-nums text-muted-foreground">
+                        {row.downloads}
+                      </td>
+                      <td data-label="Reviews" className="text-right tabular-nums text-muted-foreground">
+                        {row.reviews}
+                      </td>
+                      <td data-label="Rating" className="text-right tabular-nums text-muted-foreground">
+                        {row.rating === null ? "—" : row.rating.toFixed(1)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {table.pages > 1 && (
+              <nav
+                aria-label="Product funnel pages"
+                className="flex items-center justify-between gap-3 border-t border-border px-5 py-3 text-sm"
+              >
+                <span className="text-muted-foreground tabular-nums">
+                  Page {table.page} of {table.pages} · {table.total} products
+                </span>
+                <span className="flex gap-1.5">
+                  {table.page > 1 ? (
+                    <ButtonLink href={tableHref({ page: table.page - 1 })} variant="outline" size="sm">
+                      <ChevronLeft aria-hidden />
+                      Previous
+                    </ButtonLink>
+                  ) : null}
+                  {table.page < table.pages ? (
+                    <ButtonLink href={tableHref({ page: table.page + 1 })} variant="outline" size="sm">
+                      Next
+                      <ChevronRight aria-hidden />
+                    </ButtonLink>
+                  ) : null}
+                </span>
+              </nav>
+            )}
+          </AdminSection>
+
           {/* ---- Downloads ------------------------------------------------- */}
           <AdminSection
             title="Download performance"
             description="All time — the schema keeps a running total per grant, with no per-period history."
             className="admin-rise"
-            style={step(4)}
+            style={step(5)}
             bodyClassName="p-0"
           >
             {totals.downloadsAllTime === 0 ? (
@@ -411,7 +543,7 @@ export default async function ProductPerformancePage({
             <Link
               href="/admin/delivery"
               className="admin-rise group flex items-center gap-3 rounded-md border border-destructive/25 bg-destructive/[0.06] px-4 py-3 text-sm transition-colors duration-150 hover:bg-destructive/10"
-              style={step(5)}
+              style={step(6)}
             >
               <FileWarning className="size-4 shrink-0 text-destructive" aria-hidden />
               <span className="min-w-0 text-foreground">

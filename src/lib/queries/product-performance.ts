@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { DateRange } from "@/lib/analytics/date-range";
 import { prisma } from "@/lib/prisma";
 import { SUCCESSFUL_ORDER, SUCCESSFUL_ORDER_ITEM } from "@/lib/queries/successful-order";
 
@@ -16,31 +17,19 @@ import { SUCCESSFUL_ORDER, SUCCESSFUL_ORDER_ITEM } from "@/lib/queries/successfu
  * Measurable:  units sold, revenue, distinct orders per product, grants,
  *              download totals, file presence, published state.
  *
- * NOT measurable:
- *   · Product views. Nothing records them, so there is no conversion rate.
- *     A "conversion" here would be units divided by an unknown, which is why
- *     this module does not report one.
- *   · Downloads over time. `DigitalAccess` keeps a running `downloadCount`
- *     and only `lastDownloadAt`, so downloads are ALWAYS all-time and cannot
- *     honour the period filter. The page labels them as such rather than
- *     quietly showing an all-time number under a "last 7 days" heading.
+ * Views, add-to-cart and dated downloads are recorded separately as
+ * `AnalyticsEvent`s; the funnel and conversion figures built on them live in
+ * `product-analytics.ts`. This module stays the commercial and delivery view.
+ *
+ * NOT measurable here:
+ *   · Downloads over time, from `DigitalAccess`. It keeps a running
+ *     `downloadCount` and only `lastDownloadAt`, so these totals are ALWAYS
+ *     all-time and cannot honour the period filter. The page labels them as
+ *     such rather than quietly showing an all-time number under a "last 7
+ *     days" heading. (Dated downloads exist only from the event log onward.)
  *
  * Read-only throughout.
  */
-
-export const PERIODS = {
-  "7d": { label: "7 days", days: 7 },
-  "30d": { label: "30 days", days: 30 },
-  "90d": { label: "90 days", days: 90 },
-  all: { label: "All time", days: null },
-} as const;
-
-export type PeriodKey = keyof typeof PERIODS;
-
-/** Narrows an untrusted URL value so a hand-edited `?period=` cannot reach Prisma. */
-export function parsePeriod(value: string | undefined): PeriodKey {
-  return value && value in PERIODS ? (value as PeriodKey) : "30d";
-}
 
 export type ProductPerformance = Awaited<ReturnType<typeof getProductPerformance>>;
 
@@ -50,16 +39,17 @@ export type ProductPerformance = Awaited<ReturnType<typeof getProductPerformance
  * Five queries total regardless of how many products exist — four aggregates
  * and one narrow projection. Nothing runs per product.
  */
-export async function getProductPerformance(period: PeriodKey = "30d") {
-  const days = PERIODS[period].days;
-  const since = days === null ? null : new Date(Date.now() - days * 86_400_000);
-
+export async function getProductPerformance(range: DateRange) {
   // The period applies to when the order was placed, which is the only date an
-  // order line has. `SUCCESSFUL_ORDER_ITEM` already scopes to paid + completed.
+  // order line has: Pakistani calendar days, start inclusive, end exclusive.
+  // All time adds no date filter at all. `SUCCESSFUL_ORDER_ITEM` already scopes
+  // to paid + completed.
   const soldWhere = {
     ...SUCCESSFUL_ORDER_ITEM,
     productId: { not: null },
-    ...(since ? { order: { ...SUCCESSFUL_ORDER, placedAt: { gte: since } } } : {}),
+    ...(range.start
+      ? { order: { ...SUCCESSFUL_ORDER, placedAt: { gte: range.start, lt: range.end } } }
+      : {}),
   };
 
   const [sales, orderLines, products, access, downloadTotal] = await Promise.all([
@@ -167,8 +157,7 @@ export async function getProductPerformance(period: PeriodKey = "30d") {
   const distinctOrders = new Set(orderLines.map((l) => l.orderId)).size;
 
   return {
-    period,
-    since,
+    range,
     products: ranked,
     totals: {
       revenueCents,

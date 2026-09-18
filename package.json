@@ -35,6 +35,7 @@
     "test:uploads": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-uploads.ts",
     "test:meemi": "tsx scripts/test-meemi.ts",
     "test:admin-motion": "tsx scripts/test-admin-motion.ts",
+    "test:product-analytics": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-product-analytics.ts",
     "cloudinary:project-orphans": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/cloudinary-project-orphans.ts"
   },
   "dependencies": {

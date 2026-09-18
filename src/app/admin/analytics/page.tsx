@@ -1,13 +1,26 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DollarSign, ShoppingCart, Users, TrendingUp } from "lucide-react";
+import {
+  DollarSign,
+  Download,
+  Eye,
+  Heart,
+  Percent,
+  ShoppingBag,
+  ShoppingCart,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 
 import { AdminPageHeader, AdminTableCard } from "@/components/admin/admin-page-header";
+import { AnalyticsFunnel } from "@/components/admin/analytics-funnel";
+import { AnalyticsRangePicker } from "@/components/admin/analytics-range-picker";
 import { StatCard } from "@/components/admin/stat-card";
 import {
   RevenueChart,
   OrdersChart,
   CustomerGrowthChart,
+  DailyTrendChart,
 } from "@/components/admin/charts";
 import {
   getDashboardStats,
@@ -15,6 +28,9 @@ import {
   getBestSellers,
   getCustomerGrowth,
 } from "@/lib/queries/analytics";
+import { rangeInputFrom, resolveRange } from "@/lib/analytics/date-range";
+import { CONVERSION_DEFINITIONS, formatRate } from "@/lib/analytics/metrics";
+import { getAnalyticsOverview } from "@/lib/queries/product-analytics";
 import { formatMoney } from "@/lib/money";
 
 export const metadata: Metadata = { title: "Analytics" };
@@ -38,8 +54,21 @@ function Panel({
   );
 }
 
-export default async function AdminAnalyticsPage() {
-  const [stats, revenue, bestSellers, growth] = await Promise.all([
+/**
+ * Store-wide analytics.
+ *
+ * The headline figures, funnel and daily charts follow the chosen period —
+ * calendar days in Pakistan, compared with the same number of days just
+ * before. Revenue is `SUCCESSFUL_ORDER` totals by `placedAt`; views, add to
+ * cart, wishlist adds and downloads come from the event log (see
+ * `lib/analytics/metrics.ts` for every definition). The 12-month charts and
+ * best sellers below are unchanged and do not follow the period.
+ */
+export default async function AdminAnalyticsPage({ searchParams }: PageProps<"/admin/analytics">) {
+  const { range, invalid } = resolveRange(rangeInputFrom(await searchParams), new Date());
+
+  const [overview, stats, revenue, bestSellers, growth] = await Promise.all([
+    getAnalyticsOverview(range),
     getDashboardStats(),
     getRevenueSeries(),
     getBestSellers(10),
@@ -47,42 +76,112 @@ export default async function AdminAnalyticsPage() {
   ]);
 
   const totalUnits = bestSellers.reduce((sum, product) => sum + product.unitsSold, 0);
+  const { current, changes } = overview;
+  const deltaLabel = "vs previous period";
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="Analytics"
-        description="Revenue, orders and customer trends. Comparisons are against the previous 30 days."
+        description="Revenue, orders, customers and product activity. Comparisons are against the previous period of the same length."
+        action={<AnalyticsRangePicker basePath="/admin/analytics" range={range} invalid={invalid} />}
       />
 
       <div className="admin-kpi-row grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Revenue (30 days)"
-          value={formatMoney(stats.revenue30Cents)}
-          delta={stats.revenueDelta}
+          label="Revenue"
+          value={formatMoney(current.revenueCents)}
+          delta={changes.revenue}
+          deltaLabel={deltaLabel}
           icon={DollarSign}
         />
         <StatCard
-          label="Orders (30 days)"
-          value={String(stats.orders30)}
-          delta={stats.ordersDelta}
+          label="Orders"
+          value={String(current.orders)}
+          delta={changes.orders}
+          deltaLabel={deltaLabel}
+          hint="Paid and completed"
           icon={ShoppingCart}
         />
         <StatCard
+          label="Customers"
+          value={String(current.customers)}
+          delta={changes.customers}
+          deltaLabel={deltaLabel}
+          hint={`${current.newCustomers} new sign-ups · ${stats.customersTotal} total`}
+          icon={Users}
+        />
+        <StatCard
           label="Average order value"
-          value={formatMoney(stats.averageOrderCents)}
-          delta={null}
-          hint="Across all time"
+          value={current.averageOrderCents === null ? "—" : formatMoney(current.averageOrderCents)}
+          delta={changes.averageOrder}
+          deltaLabel={deltaLabel}
           icon={TrendingUp}
         />
         <StatCard
-          label="New customers (30 days)"
-          value={String(stats.customers30)}
+          label="Product views"
+          value={String(current.views)}
+          delta={changes.views}
+          deltaLabel={deltaLabel}
+          hint={`${current.visitorDays} visitor-days`}
+          icon={Eye}
+        />
+        <StatCard
+          label="Purchases"
+          value={String(current.purchases)}
+          delta={changes.purchases}
+          deltaLabel={deltaLabel}
+          hint="Units sold"
+          icon={ShoppingBag}
+        />
+        <StatCard
+          label="Conversion"
+          value={formatRate(current.conversion)}
           delta={null}
-          hint={`${stats.customersTotal} total`}
-          icon={Users}
+          hint={CONVERSION_DEFINITIONS.conversion}
+          icon={Percent}
+        />
+        <StatCard
+          label="Wishlist adds"
+          value={String(current.wishlistAdds)}
+          delta={changes.wishlistAdds}
+          deltaLabel={deltaLabel}
+          icon={Heart}
+        />
+        <StatCard
+          label="Downloads"
+          value={String(current.downloads)}
+          delta={changes.downloads}
+          deltaLabel={deltaLabel}
+          icon={Download}
         />
       </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <Panel title={`Store funnel — ${range.label}`}>
+          <AnalyticsFunnel counts={current} />
+        </Panel>
+        <Panel title="Daily revenue">
+          <DailyTrendChart
+            data={overview.series}
+            money
+            label={`Daily revenue, ${range.label}`}
+            series={[{ key: "revenue", label: "Revenue", tone: "brand" }]}
+          />
+        </Panel>
+      </div>
+
+      <Panel title="Daily activity">
+        <DailyTrendChart
+          data={overview.series}
+          label={`Daily product views, add to cart and purchases, ${range.label}`}
+          series={[
+            { key: "views", label: "Views", tone: "royal" },
+            { key: "addToCart", label: "Add to cart", tone: "violet" },
+            { key: "purchases", label: "Purchases", tone: "brand" },
+          ]}
+        />
+      </Panel>
 
       <Panel title="Revenue — last 12 months">
         <RevenueChart data={revenue} />

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { trackAfterResponse } from "@/lib/analytics/events";
 import { getCurrentUser } from "@/lib/auth-guards";
 import { digitalStorage, MAX_PROXY_BYTES } from "@/lib/storage/digital";
 import { findDownloadableAsset } from "@/lib/queries/download-access";
@@ -64,6 +65,10 @@ export async function GET(
   } catch (error) {
     console.warn("[download] could not record download", access.accessId, error);
   }
+
+  // The same authorised request, as a dated event for per-period reporting.
+  // Written after the response; it can never delay or deny the file.
+  trackAfterResponse({ type: "DOWNLOAD", productId, userId: user.id });
 
   // Very large files go back to a redirect: a serverless function is a poor
   // pipe for them. The extension is still correct there; only the original

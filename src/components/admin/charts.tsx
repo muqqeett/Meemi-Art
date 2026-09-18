@@ -8,6 +8,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -447,6 +449,117 @@ export function ProductRevenueChart({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- daily trends
+
+const TREND_TONES = { brand: BRAND, royal: ROYAL_PURPLE, blush: BLUSH_DEEP, violet: VIOLET } as const;
+
+/** "2026-08-03" → "3 Aug", read as a calendar day (no time zone can shift it). */
+function dayLabel(day: string): string {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, date)).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+}
+
+function TrendTooltip({
+  active,
+  payload,
+  label,
+  format,
+}: {
+  active?: boolean;
+  payload?: { name?: string; value?: number | string; color?: string }[];
+  label?: string;
+  format: (value: number) => string;
+}): ReactNode {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-md border border-border bg-card px-3 py-2 shadow-[0_12px_32px_-14px_rgb(36_17_63/0.35)]">
+      <p className="text-[0.6875rem] tracking-wide text-muted-foreground uppercase">{label ? dayLabel(label) : ""}</p>
+      <ul className="mt-1 space-y-0.5">
+        {payload.map((entry) => (
+          <li key={entry.name} className="flex items-center gap-2 text-sm text-foreground tabular-nums">
+            <span aria-hidden className="size-2 rounded-full" style={{ background: entry.color }} />
+            <span className="text-muted-foreground">{entry.name}</span>
+            <span className="ml-auto font-semibold">{format(Number(entry.value ?? 0))}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * One or more daily series over a reporting period.
+ *
+ * Days are Pakistani calendar days, zero-filled by the query, so a quiet day is
+ * a point at zero rather than a gap. A period with nothing in any series shows
+ * the empty state instead of a flat line. The chart is `role="img"` with the
+ * period totals as its label, and the legend underneath is plain text, so the
+ * figures are available without the SVG.
+ */
+export function DailyTrendChart({
+  data,
+  series,
+  money = false,
+  label,
+}: {
+  data: ({ day: string } & Record<string, number | string>)[];
+  series: { key: string; label: string; tone: keyof typeof TREND_TONES }[];
+  money?: boolean;
+  label: string;
+}) {
+  const animate = !prefersReducedMotion();
+  const format = (value: number) => (money ? formatMoneyCompact(Math.round(value * 100)) : value.toLocaleString("en-US"));
+  const totals = series.map((s) => ({ ...s, total: data.reduce((sum, point) => sum + Number(point[s.key] ?? 0), 0) }));
+
+  if (data.length === 0 || totals.every((s) => s.total === 0)) {
+    return <p className="py-10 text-center text-sm text-muted-foreground">No analytics data available for this period.</p>;
+  }
+
+  const summary = `${label}: ${totals.map((s) => `${s.label} ${format(s.total)}`).join(", ")}`;
+
+  return (
+    <div>
+      <div className="h-64 w-full" role="img" aria-label={summary}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 8, right: 8, left: money ? -4 : -16, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+            <XAxis dataKey="day" {...axisProps} tickFormatter={dayLabel} minTickGap={24} />
+            <YAxis {...axisProps} allowDecimals={money} width={money ? 60 : 40} tickFormatter={(v: number) => format(v)} />
+            <Tooltip cursor={{ stroke: GRID, strokeWidth: 1, strokeDasharray: "4 4" }} content={<TrendTooltip format={format} />} />
+            {series.map((s) => (
+              <Line
+                key={s.key}
+                type="monotone"
+                dataKey={s.key}
+                name={s.label}
+                stroke={TREND_TONES[s.tone]}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, strokeWidth: 2, stroke: "#ffffff" }}
+                isAnimationActive={animate}
+                animationDuration={700}
+                animationEasing="ease-out"
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground" aria-hidden>
+        {totals.map((s) => (
+          <li key={s.key} className="flex items-center gap-1.5">
+            <span className="size-2 rounded-full" style={{ background: TREND_TONES[s.tone] }} />
+            {s.label} <span className="font-medium text-foreground tabular-nums">{format(s.total)}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

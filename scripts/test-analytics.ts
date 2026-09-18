@@ -10,17 +10,62 @@
  *
  * Fixtures are namespaced `zz-analytics-` on their own inactive product, and
  * cleanup runs in `finally` and is verified.
+ *
+ * LOCAL DATABASE ONLY. This harness writes fixtures, so it refuses to start
+ * unless LOCAL_DATABASE_URL points at localhost, and it never reads the
+ * DATABASE_URL in .env (which may be production). Every outbound network
+ * request is refused and counted.
  */
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
+import http from "node:http";
+import https from "node:https";
 
-import { prisma } from "../src/lib/prisma";
-import {
-  getDashboardStats,
-  getRevenueSeries,
-  getBestSellers,
-  getSalesByCategory,
-} from "../src/lib/queries/analytics";
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+const localUrl = process.env.LOCAL_DATABASE_URL;
+if (!localUrl) {
+  console.error("Refusing to run: LOCAL_DATABASE_URL is not set.");
+  process.exit(1);
+}
+if (!LOCAL_HOSTS.has(new URL(localUrl).hostname)) {
+  console.error("Refusing to run: LOCAL_DATABASE_URL is not a local database.");
+  process.exit(1);
+}
+// Must happen before `src/lib/prisma` is imported — it reads DATABASE_URL once.
+// The imports below are dynamic for exactly that reason.
+process.env.DATABASE_URL = localUrl;
+
+for (const name of [
+  "CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
+  "CLOUDINARY_URL",
+  "UPSTASH_REDIS_REST_URL",
+  "UPSTASH_REDIS_REST_TOKEN",
+  "GEMINI_API_KEY",
+  "PADDLE_API_KEY",
+]) {
+  delete process.env[name];
+}
+
+let outbound = 0;
+const refuse = (): never => {
+  outbound++;
+  throw new Error("Outbound network request blocked by the analytics harness.");
+};
+globalThis.fetch = (async () => refuse()) as typeof fetch;
+https.request = refuse as unknown as typeof https.request;
+https.get = refuse as unknown as typeof https.get;
+http.request = refuse as unknown as typeof http.request;
+http.get = refuse as unknown as typeof http.get;
+
+type Queries = typeof import("../src/lib/queries/analytics");
+let prisma: typeof import("../src/lib/prisma")["prisma"];
+let getDashboardStats: Queries["getDashboardStats"];
+let getRevenueSeries: Queries["getRevenueSeries"];
+let getBestSellers: Queries["getBestSellers"];
+let getSalesByCategory: Queries["getSalesByCategory"];
 
 const TAG = `zz-analytics-${randomUUID().slice(0, 8)}`;
 const PRICE = 1234; // cents — distinctive, so contributions are unambiguous
@@ -163,6 +208,11 @@ async function contribution(
 }
 
 async function main() {
+  ({ prisma } = await import("../src/lib/prisma"));
+  ({ getDashboardStats, getRevenueSeries, getBestSellers, getSalesByCategory } = await import(
+    "../src/lib/queries/analytics"
+  ));
+
   console.log(`\nDashboard accuracy — fixtures tagged ${TAG}\n`);
 
   const category = await prisma.category.findFirstOrThrow({ select: { id: true } });
@@ -278,7 +328,14 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await cleanup();
-    await prisma.$disconnect();
+    // Unset only if the client failed to load, in which case nothing was written.
+    if (prisma) {
+      await cleanup();
+      await prisma.$disconnect();
+    }
+    if (outbound > 0) {
+      console.error(`${outbound} outbound network request(s) were attempted and blocked.`);
+      process.exitCode = 1;
+    }
     if (failed > 0) process.exitCode = 1;
   });
