@@ -61,6 +61,40 @@ export type AdminUploadConfig = {
   digitalFolder: string;
 };
 
+export const DEFAULT_IMAGE_FOLDER = "meemiart/products";
+export const DEFAULT_DIGITAL_FOLDER = "meemiart/digital-files";
+
+/**
+ * The folder part of a storage id, made safe to put in a `public_id`.
+ *
+ * Folders come from the environment, and an environment variable that exists
+ * with an empty value is not the same as one that is absent: `?? default`
+ * catches only the absent case, so an empty `CLOUDINARY_DIGITAL_FOLDER` used to
+ * survive as `""`. Every id then began with a slash — `"/pattern-abc123"` — and
+ * Cloudinary refused the upload outright:
+ *
+ *     400  public_id (/pattern-abc123) is invalid
+ *
+ * That is exactly what broke digital uploads in production while photos kept
+ * working, because photos read a different variable. The stored ids of files
+ * uploaded before the direct-upload change look flat for the same reason: the
+ * old relay passed the empty value as a separate `folder` parameter, which
+ * Cloudinary ignored.
+ *
+ * Trimming, dropping leading and trailing slashes and collapsing repeats makes
+ * a usable value out of the shapes a person actually types into a dashboard
+ * field. Anything left empty falls back to the default, so an id is never
+ * rooted at a slash and always matches the folder check used on the way back.
+ */
+export function normalizeFolder(value: string | undefined | null, fallback: string): string {
+  const cleaned = (value ?? "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/\/{2,}/g, "/")
+    .replace(/^\/+|\/+$/g, "");
+  return cleaned || fallback;
+}
+
 type ResourceType = "image" | "raw" | "video";
 type DeliveryType = "upload" | "private";
 
@@ -106,10 +140,15 @@ export function createAdminUploadStorage({
   client: AdminUploadClient;
   now?: () => number;
 }) {
+  // Normalised here, not only where the environment is read, so a folder can
+  // never reach Cloudinary — or the checks below — in a shape it rejects.
+  const imageFolder = config ? normalizeFolder(config.imageFolder, DEFAULT_IMAGE_FOLDER) : "";
+  const digitalFolder = config ? normalizeFolder(config.digitalFolder, DEFAULT_DIGITAL_FOLDER) : "";
+
   // One name as `buildObjectName` makes it, directly inside the folder. No
   // `..`, no nested path, no other folder.
-  const imageKey = config ? new RegExp(`^${escapeRegExp(config.imageFolder)}/[a-z0-9-]+$`) : null;
-  const digitalKey = config ? new RegExp(`^${escapeRegExp(config.digitalFolder)}/[a-z0-9-]+$`) : null;
+  const imageKey = config ? new RegExp(`^${escapeRegExp(imageFolder)}/[a-z0-9-]+$`) : null;
+  const digitalKey = config ? new RegExp(`^${escapeRegExp(digitalFolder)}/[a-z0-9-]+$`) : null;
 
   const timestamp = () => String(Math.floor(now() / 1000));
 
@@ -132,7 +171,7 @@ export function createAdminUploadStorage({
     signProductImage(filename: string): SignedDirectUpload {
       if (!config) throw new Error("Cloudinary is not configured.");
       const signed = {
-        public_id: `${config.imageFolder}/${buildObjectName(filename || "product-image")}`,
+        public_id: `${imageFolder}/${buildObjectName(filename || "product-image")}`,
         allowed_formats: ALLOWED_IMAGE_FORMATS.join(","),
         // A replay of this signature cannot replace an object already verified.
         overwrite: "false",
@@ -198,7 +237,7 @@ export function createAdminUploadStorage({
     signDigitalFile(filename: string): SignedDirectUpload {
       if (!config) throw new Error("Cloudinary is not configured.");
       const signed = {
-        public_id: `${config.digitalFolder}/${buildObjectName(filename || "download")}`,
+        public_id: `${digitalFolder}/${buildObjectName(filename || "download")}`,
         // Unreachable by its plain URL: only a signed request can fetch it.
         type: "private",
         overwrite: "false",
@@ -336,6 +375,21 @@ async function fetchHead(
 /** Exposed for the upload harness, which drives it with a stand-in `fetch`. */
 export const readStorageHead = fetchHead;
 
+const imageFolderInUse = normalizeFolder(process.env.CLOUDINARY_FOLDER, DEFAULT_IMAGE_FOLDER);
+const digitalFolderInUse = normalizeFolder(process.env.CLOUDINARY_DIGITAL_FOLDER, DEFAULT_DIGITAL_FOLDER);
+
+if (configured) {
+  // Only the variable name and the folder actually used — both safe — because
+  // the failure this guards against was silent: Cloudinary refused every
+  // digital upload and nothing on this side said why.
+  if (process.env.CLOUDINARY_FOLDER !== undefined && process.env.CLOUDINARY_FOLDER !== imageFolderInUse) {
+    console.warn(`[storage] CLOUDINARY_FOLDER is not usable as written; using "${imageFolderInUse}".`);
+  }
+  if (process.env.CLOUDINARY_DIGITAL_FOLDER !== undefined && process.env.CLOUDINARY_DIGITAL_FOLDER !== digitalFolderInUse) {
+    console.warn(`[storage] CLOUDINARY_DIGITAL_FOLDER is not usable as written; using "${digitalFolderInUse}".`);
+  }
+}
+
 export const adminUploadStorage = createAdminUploadStorage({
   config: configured
     ? {
@@ -343,8 +397,10 @@ export const adminUploadStorage = createAdminUploadStorage({
         apiKey: API_KEY as string,
         apiSecret: API_SECRET as string,
         // The same folders the image relay and the digital driver always used.
-        imageFolder: process.env.CLOUDINARY_FOLDER ?? "meemiart/products",
-        digitalFolder: process.env.CLOUDINARY_DIGITAL_FOLDER ?? "meemiart/digital-files",
+        // Normalised, because an environment variable that is present but empty
+        // is not the same as one that is absent — see `normalizeFolder`.
+        imageFolder: imageFolderInUse,
+        digitalFolder: digitalFolderInUse,
       }
     : null,
   client: {

@@ -121,6 +121,20 @@ export async function createProduct(input: ProductInput): Promise<AdminResult<{ 
   const videoProblem = await checkVideoClaim(null, data.videoUrl || null, data.videoKey ?? null);
   if (videoProblem) return videoProblem;
 
+  // A product that does not exist yet cannot have a file: the digital file is
+  // uploaded against a saved product. So a new product may not be created
+  // already published — the same rule the update path enforces below, which
+  // only ran once a product existed. Without this, a published product with
+  // nothing to deliver could be created in one step, and a customer could buy
+  // it and receive nothing.
+  if (data.isActive) {
+    return {
+      ok: false,
+      error: "Create the product unpublished, upload its digital file, then publish it.",
+      fieldErrors: { isActive: "A published product must have a file to deliver." },
+    };
+  }
+
   const clash = await prisma.product.findFirst({
     where: { OR: [{ slug: data.slug }, { sku: data.sku }] },
     select: { slug: true, sku: true },

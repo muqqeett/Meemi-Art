@@ -26,8 +26,10 @@
  */
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import http from "node:http";
 import https from "node:https";
+import path from "node:path";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
@@ -332,6 +334,60 @@ async function main() {
     cloud.failHead(false);
     check("content that cannot be read is not accepted", !unreadable.ok && unreadable.reason === "unavailable");
 
+    // ------------------------------------------------- folder configuration
+    //
+    // Regression: an empty CLOUDINARY_DIGITAL_FOLDER produced `public_id`
+    // "/name", and Cloudinary refused every digital upload with
+    // `400 public_id (/name) is invalid`. Photos were unaffected because they
+    // read a different variable, which is why the admin could add images but
+    // never a file. `?? default` does not catch a variable that exists and is
+    // empty, so the folder is normalised instead.
+    console.log("\nFolder configuration (regression)");
+    const { normalizeFolder, DEFAULT_DIGITAL_FOLDER, DEFAULT_IMAGE_FOLDER } = uploadsStorage;
+    check("an absent folder falls back to the default", normalizeFolder(undefined, DEFAULT_DIGITAL_FOLDER) === "meemiart/digital-files");
+    check("an empty folder falls back to the default", normalizeFolder("", DEFAULT_DIGITAL_FOLDER) === "meemiart/digital-files");
+    check("whitespace only falls back to the default", normalizeFolder("   ", DEFAULT_DIGITAL_FOLDER) === "meemiart/digital-files");
+    check("leading and trailing slashes are dropped", normalizeFolder("/meemiart/digital-files/", DEFAULT_DIGITAL_FOLDER) === "meemiart/digital-files");
+    check("repeated slashes are collapsed", normalizeFolder("meemiart//digital-files", DEFAULT_DIGITAL_FOLDER) === "meemiart/digital-files");
+    check("backslashes are treated as separators", normalizeFolder("meemiart\\digital-files", DEFAULT_DIGITAL_FOLDER) === "meemiart/digital-files");
+    check("a usable folder is left alone", normalizeFolder("shop/files", DEFAULT_DIGITAL_FOLDER) === "shop/files");
+    check(
+      "photos and files keep their own separate defaults",
+      DEFAULT_IMAGE_FOLDER === "meemiart/products" &&
+        DEFAULT_DIGITAL_FOLDER === "meemiart/digital-files" &&
+        normalizeFolder("", DEFAULT_IMAGE_FOLDER) !== normalizeFolder("", DEFAULT_DIGITAL_FOLDER),
+    );
+
+    // Cloudinary refuses an id that is rooted at a slash or holds an empty
+    // segment, so no configured value may produce one.
+    const validPublicId = (id: string) => /^[a-z0-9][a-z0-9/-]*$/.test(id) && !id.includes("//") && !id.startsWith("/") && !id.endsWith("/");
+    for (const folder of ["", "   ", "/meemiart/digital-files/", "meemiart//digital-files", "meemiart\\digital-files", "shop/files"]) {
+      const storageForFolder = createAdminUploadStorage({
+        config: { ...CONFIG, imageFolder: folder, digitalFolder: folder },
+        client: cloud.client,
+      });
+      const digitalId = storageForFolder.signDigitalFile("Pattern (US Letter).pdf").fields.public_id;
+      const imageId = storageForFolder.signProductImage("Photo.jpg").fields.public_id;
+      const label = folder === "" ? "(empty)" : folder === "   " ? "(whitespace)" : folder;
+      check(
+        `folder ${label} signs an id Cloudinary accepts, for both kinds`,
+        validPublicId(digitalId) && validPublicId(imageId),
+        `${digitalId} | ${imageId}`,
+      );
+      check(
+        `folder ${label} signs an id its own verification accepts`,
+        storageForFolder.isDigitalFileKey(digitalId) && storageForFolder.isProductImageKey(imageId),
+        digitalId,
+      );
+      // The signature has to cover the id actually sent, normalised or not.
+      const { signature, api_key: _k, ...signedFields } = storageForFolder.signDigitalFile("Pattern.pdf").fields;
+      void _k;
+      check(
+        `folder ${label} signs exactly the fields it sends`,
+        signature === cloudinary.utils.api_sign_request(signedFields, CONFIG.apiSecret) && signedFields.type === "private",
+      );
+    }
+
     // ------------------------------------------------- reading the stored head
     //
     // Regression: this read used to open the response as a stream, take the
@@ -554,6 +610,41 @@ async function main() {
     check("path-traversal storage keys are refused", !traversalKey.ok && traversalKey.status === 400);
 
     // -------------------------------------------------------------- download authorization unchanged
+    // ------------------------------------------------- publishing needs a file
+    //
+    // The update path has always refused to publish a product with no file.
+    // The create path did not, so a product could be created already published
+    // with nothing to deliver — and one such product exists in production. A
+    // new product cannot have a file yet (the upload targets a saved product),
+    // so creating one published is refused outright.
+    //
+    // Checked in source: `createProduct` reaches for the session before any of
+    // this, which a harness outside a request cannot provide.
+    console.log("\nPublishing requires a file (regression)");
+    const productActions = readFileSync(path.resolve(__dirname, "..", "src/lib/actions/admin/products.ts"), "utf8");
+    const createBody = productActions.slice(
+      productActions.indexOf("export async function createProduct"),
+      productActions.indexOf("export async function updateProduct"),
+    );
+    check("the create path has a published-without-a-file guard", /if \(data\.isActive\) \{/.test(createBody));
+    check(
+      "it refuses before the product row is written",
+      createBody.indexOf("if (data.isActive) {") > 0 &&
+        createBody.indexOf("if (data.isActive) {") < createBody.indexOf("prisma.product.create"),
+    );
+    check(
+      "it names the same rule the update path states",
+      /A published product must have a file to deliver\./.test(createBody),
+    );
+    check(
+      "the update path's own guard is untouched",
+      /if \(data\.isActive && !existing\.asset\) \{/.test(productActions),
+    );
+    check(
+      "neither path silently publishes instead of refusing",
+      !/isActive: false,\s*\/\/ forced/.test(productActions) && /ok: false/.test(createBody),
+    );
+
     console.log("\nDownload authorization (unchanged)");
     const buyer = await prisma.user.create({ data: { email: `${RUN}-buyer@example.test`, name: "Buyer" }, select: { id: true } });
     const stranger = await prisma.user.create({ data: { email: `${RUN}-stranger@example.test`, name: "Stranger" }, select: { id: true } });
