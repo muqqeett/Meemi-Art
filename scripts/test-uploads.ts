@@ -115,7 +115,8 @@ async function main() {
   const { v2: cloudinary } = await import("cloudinary");
   const { prisma } = await import("../src/lib/prisma");
   const types = await import("../src/lib/storage/types");
-  const { createAdminUploadStorage, PRODUCT_IMAGE_TRANSFORMATION } = await import("../src/lib/storage/admin-uploads");
+  const uploadsStorage = await import("../src/lib/storage/admin-uploads");
+  const { createAdminUploadStorage, PRODUCT_IMAGE_TRANSFORMATION } = uploadsStorage;
   const uploads = await import("../src/lib/admin/product-uploads");
   const { findDownloadableAsset } = await import("../src/lib/queries/download-access");
   const digitalRoute = await import("../src/app/api/admin/digital-upload/route");
@@ -330,6 +331,77 @@ async function main() {
     const unreadable = await storage.verifyDigitalFile("meemiart/digital-files/unreadable", "application/pdf");
     cloud.failHead(false);
     check("content that cannot be read is not accepted", !unreadable.ok && unreadable.reason === "unavailable");
+
+    // ------------------------------------------------- reading the stored head
+    //
+    // Regression: this read used to open the response as a stream, take the
+    // first chunk and cancel the rest. Against a private Cloudinary download
+    // the cancel did not return for over two minutes and poisoned the
+    // connection pool, so finalizing an upload ran past the platform's function
+    // timeout and every upload of a good PDF reported "PDF upload failed".
+    console.log("\nReading the stored head (regression)");
+    const headOf = (body: Uint8Array, status = 206, extra: Partial<Response> = {}) =>
+      ({
+        ok: status >= 200 && status < 300,
+        status,
+        arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+        ...extra,
+      }) as unknown as Response;
+
+    // A body comfortably larger than the sniff window, opening like a PDF.
+    const longPdf = new Uint8Array(4096).fill(0x20);
+    longPdf.set(pdf.subarray(0, Math.min(pdf.length, 64)), 0);
+
+    let lastInit: RequestInit | undefined;
+    const rangeFetch = (async (_url: string | URL | Request, init?: RequestInit) => {
+      lastInit = init;
+      return headOf(longPdf.subarray(0, types.CONTENT_SNIFF_BYTES));
+    }) as unknown as typeof fetch;
+
+    const head = await uploadsStorage.readStorageHead("https://storage.invalid/x", types.CONTENT_SNIFF_BYTES, rangeFetch);
+    const rangeHeader = new Headers(lastInit?.headers).get("range");
+    check("the head read asks for only the sniff window", rangeHeader === `bytes=0-${types.CONTENT_SNIFF_BYTES - 1}`, String(rangeHeader));
+    check("a 206 partial response is read whole", head.length === types.CONTENT_SNIFF_BYTES && head[0] === 0x25 && head[1] === 0x50, `${head.length} bytes`);
+    check("the head read never streams, so nothing has to be cancelled", lastInit?.signal instanceof AbortSignal && !("cancelled" in (lastInit ?? {})));
+
+    // A server that ignores Range answers 200 with the whole object.
+    const fullFetch = (async () => headOf(longPdf, 200)) as unknown as typeof fetch;
+    const sliced = await uploadsStorage.readStorageHead("https://storage.invalid/x", types.CONTENT_SNIFF_BYTES, fullFetch);
+    check("a server that ignores Range is still bounded to the sniff window", sliced.length === types.CONTENT_SNIFF_BYTES);
+
+    // The old code would hang here: it cancelled a stream that never settles.
+    const hangingBody = {
+      getReader: () => ({
+        read: async () => ({ done: false, value: longPdf.subarray(0, 512) }),
+        cancel: () => new Promise<void>(() => {}),
+      }),
+    };
+    const hangingCancelFetch = (async () =>
+      headOf(longPdf.subarray(0, types.CONTENT_SNIFF_BYTES), 206, { body: hangingBody } as unknown as Partial<Response>)) as unknown as typeof fetch;
+    const raced = await Promise.race([
+      uploadsStorage.readStorageHead("https://storage.invalid/x", types.CONTENT_SNIFF_BYTES, hangingCancelFetch).then(() => "read"),
+      new Promise((resolve) => setTimeout(() => resolve("hung"), 2_000)),
+    ]);
+    check("a body whose cancel never settles no longer blocks the read", raced === "read");
+
+    let threw = "";
+    await uploadsStorage
+      .readStorageHead("https://storage.invalid/x", types.CONTENT_SNIFF_BYTES, (async () => headOf(longPdf, 404)) as unknown as typeof fetch)
+      .catch((error: Error) => { threw = error.message; });
+    check("an error status is surfaced, not treated as content", threw.includes("404"), threw);
+
+    // Storage that never answers must fail fast, not hang the request.
+    const startedAt = Date.now();
+    let timedOut = false;
+    const stalling = ((_url: string | URL | Request, init?: RequestInit) =>
+      new Promise((_, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+      })) as unknown as typeof fetch;
+    await uploadsStorage
+      .readStorageHead("https://storage.invalid/x", types.CONTENT_SNIFF_BYTES, stalling, 300)
+      .catch(() => { timedOut = true; });
+    check("storage that never answers aborts on its own timeout", timedOut && Date.now() - startedAt < 2_000, `${Date.now() - startedAt}ms`);
+    check("the production timeout is bounded well under a serverless limit", uploadsStorage.STORAGE_READ_TIMEOUT_MS <= 10_000);
 
     const unconfigured = createAdminUploadStorage({ config: null, client: cloud.client });
     check("unconfigured storage reports so and signs nothing", !unconfigured.isConfigured && (() => { try { unconfigured.signDigitalFile("x.pdf"); return false; } catch { return true; } })());

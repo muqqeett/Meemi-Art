@@ -280,32 +280,61 @@ if (configured) {
   cloudinary.config({ cloud_name: CLOUD_NAME, api_key: API_KEY, api_secret: API_SECRET, secure: true });
 }
 
-/** Read at most `maxBytes` from the start of a response body, then stop the download. */
-async function readPrefix(response: Response, maxBytes: number): Promise<Uint8Array> {
-  if (!response.ok || !response.body) throw new Error(`storage read failed (${response.status})`);
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let total = 0;
+/**
+ * A storage read that cannot answer in this long is treated as unavailable.
+ *
+ * Deliberately short. Reading a kilobyte takes well under a second, and the
+ * rest of finalizing an upload — the admin check, two queries, the resource
+ * lookup, the row write — has to fit inside the platform's function budget
+ * alongside it. Five seconds is generous for the read and still leaves the
+ * whole request comfortably inside a ten-second limit, so a slow storage
+ * produces a real error message rather than a gateway timeout.
+ */
+export const STORAGE_READ_TIMEOUT_MS = 5_000;
+
+/**
+ * Read the first `maxBytes` of a stored object, for the content check.
+ *
+ * Asks for exactly that many bytes with a `Range` header and reads the whole
+ * (tiny) reply. It does NOT open the body as a stream and cancel it partway:
+ * that is what this used to do, and cancelling the response of a private
+ * Cloudinary download left the connection undrained — the cancel itself took
+ * over two minutes, and the next request to the same host then failed in the
+ * poisoned pool. Finalizing an upload ran past the platform's function timeout,
+ * so the browser got a gateway error instead of JSON and every upload of a
+ * perfectly good PDF ended in "PDF upload failed. Please try again.", with the
+ * file sitting in storage and no `DigitalAsset` row pointing at it.
+ *
+ * A server that ignores `Range` answers 200 with the whole object; that is
+ * still bounded, because the size was checked before this is ever called, and
+ * the result is sliced either way. The timeout means an unreachable or slow
+ * storage fails in seconds with a message the admin can act on, rather than
+ * hanging until something else kills it.
+ */
+async function fetchHead(
+  url: string,
+  maxBytes: number,
+  fetchImpl: typeof fetch = fetch,
+  timeoutMs = STORAGE_READ_TIMEOUT_MS,
+): Promise<Uint8Array> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    while (total < maxBytes) {
-      const { done, value } = await reader.read();
-      if (done || !value) break;
-      chunks.push(value);
-      total += value.length;
-    }
+    const response = await fetchImpl(url, {
+      cache: "no-store",
+      signal: controller.signal,
+      headers: { Range: `bytes=0-${maxBytes - 1}` },
+    });
+    if (!response.ok) throw new Error(`storage read failed (${response.status})`);
+    const body = new Uint8Array(await response.arrayBuffer());
+    return body.length > maxBytes ? body.subarray(0, maxBytes) : body;
   } finally {
-    await reader.cancel().catch(() => {});
+    clearTimeout(timer);
   }
-  const out = new Uint8Array(Math.min(total, maxBytes));
-  let offset = 0;
-  for (const chunk of chunks) {
-    const part = chunk.subarray(0, out.length - offset);
-    out.set(part, offset);
-    offset += part.length;
-    if (offset >= out.length) break;
-  }
-  return out;
 }
+
+/** Exposed for the upload harness, which drives it with a stand-in `fetch`. */
+export const readStorageHead = fetchHead;
 
 export const adminUploadStorage = createAdminUploadStorage({
   config: configured
@@ -330,7 +359,7 @@ export const adminUploadStorage = createAdminUploadStorage({
         type: "private",
         expires_at: Math.floor(Date.now() / 1000) + 60,
       });
-      return readPrefix(await fetch(url, { cache: "no-store" }), maxBytes);
+      return fetchHead(url, maxBytes);
     },
   },
 });
