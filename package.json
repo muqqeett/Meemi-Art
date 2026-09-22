@@ -36,7 +36,8 @@
     "test:meemi": "tsx scripts/test-meemi.ts",
     "test:admin-motion": "tsx scripts/test-admin-motion.ts",
     "test:product-analytics": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-product-analytics.ts",
-    "cloudinary:project-orphans": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/cloudinary-project-orphans.ts"
+    "cloudinary:project-orphans": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/cloudinary-project-orphans.ts",
+    "test:notifications": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-notifications.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

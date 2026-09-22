@@ -36,6 +36,7 @@ model User {
   sessions                Session[]
   wishlist                Wishlist?
   analyticsEvents         AnalyticsEvent[]
+  notificationReads       AdminNotificationRead[]
 
   @@index([role])
   @@index([createdAt])
@@ -705,4 +706,67 @@ enum AnalyticsEventType {
   ADD_TO_CART
   WISHLIST_ADD
   DOWNLOAD
+}
+
+/// Something an administrator should know happened.
+///
+/// A notification is a record of a real occurrence, derived from the table
+/// that is the authority for it — an order from `Order`, a review from
+/// `Review`, a download from `AnalyticsEvent` — never an event of its own
+/// invention. It is shared by every admin; whether each one has read it lives
+/// in `AdminNotificationRead`, so one admin opening it does not hide it from
+/// another.
+///
+/// `dedupeKey` is the idempotency guarantee. Each kind of occurrence has a
+/// deterministic key (an order id, a product and a day, a product and a week),
+/// and the unique constraint makes a second write of the same occurrence a
+/// no-op however many times, or from however many servers, it is detected.
+///
+/// Holds no customer details: no email, no name, no payment reason. `href` is
+/// always an internal /admin path, and `metadata` only what a row needs to
+/// read well later (a product name, an order number, a count).
+model AdminNotification {
+  id         String                  @id @default(cuid())
+  type       AdminNotificationType
+  title      String
+  message    String
+  /// Where to go to act on it. Always an internal /admin path.
+  href       String?
+  entityType String?
+  entityId   String?
+  dedupeKey  String                  @unique
+  /// When the underlying thing happened — not when it was noticed.
+  occurredAt DateTime
+  createdAt  DateTime                @default(now())
+  metadata   Json?
+  reads      AdminNotificationRead[]
+
+  @@index([occurredAt])
+  @@index([type, occurredAt])
+  @@index([entityType, entityId])
+}
+
+/// One admin has read one notification.
+///
+/// The row's presence is the read state; its absence is unread. Deleting a
+/// user or a notification removes the rows that refer to it.
+model AdminNotificationRead {
+  notificationId String
+  userId         String
+  readAt         DateTime          @default(now())
+  notification   AdminNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([notificationId, userId])
+  @@index([userId])
+}
+
+enum AdminNotificationType {
+  ORDER_COMPLETED
+  PAYMENT_FAILED
+  REVIEW_SUBMITTED
+  PRODUCT_DOWNLOADED
+  WISHLIST_ACTIVITY
+  PRODUCT_ATTENTION
+  PRODUCT_CONFIGURATION
 }

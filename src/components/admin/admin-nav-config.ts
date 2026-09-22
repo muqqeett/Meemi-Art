@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Settings,
   History,
+  Bell,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +47,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     label: "Home",
     items: [
       { href: "/admin", label: "Overview", Icon: LayoutDashboard, exact: true },
+      { href: "/admin/notifications", label: "Notifications", Icon: Bell },
     ],
   },
   {

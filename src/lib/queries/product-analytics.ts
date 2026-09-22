@@ -233,6 +233,52 @@ export type ProductMetricsRow = {
  * Reviews and rating are all-time, like the product page shows them.
  */
 export async function getProductMetricsTable(range: DateRange, sort: ProductSort, page: number) {
+  const rows = await getProductMetricsRows(range);
+
+  const value = (row: ProductMetricsRow): number | null => {
+    switch (sort) {
+      case "revenue": return row.revenueCents;
+      case "purchases": return row.purchases;
+      case "views": return row.views;
+      case "conversion": return row.conversion;
+      case "cart": return row.addToCart;
+      case "checkout": return row.checkoutStarts;
+      case "wishlist": return row.wishlistAdds;
+      case "downloads": return row.downloads;
+      case "reviews": return row.reviews;
+      case "rating": return row.rating;
+    }
+  };
+
+  // Highest first; undefined values ("—") after every real number; name breaks ties.
+  rows.sort((a, b) => {
+    const va = value(a);
+    const vb = value(b);
+    if (va === null && vb !== null) return 1;
+    if (vb === null && va !== null) return -1;
+    return (vb ?? 0) - (va ?? 0) || a.name.localeCompare(b.name);
+  });
+
+  const pages = Math.max(1, Math.ceil(rows.length / PRODUCT_PAGE_SIZE));
+  const current = Math.min(Math.max(1, page), pages);
+
+  return {
+    rows: rows.slice((current - 1) * PRODUCT_PAGE_SIZE, current * PRODUCT_PAGE_SIZE),
+    total: rows.length,
+    page: current,
+    pages,
+    sort,
+  };
+}
+
+/**
+ * Every product's funnel for a period, unsorted and unpaged — the rows the
+ * table above sorts and pages. Five queries however many products exist.
+ *
+ * Exported so other readers of product performance (the admin notifications'
+ * attention checks) use this one engine rather than a second copy of it.
+ */
+export async function getProductMetricsRows(range: DateRange): Promise<ProductMetricsRow[]> {
   const placedAt = window(range);
 
   const [products, events, sales, attempts, reviews] = await Promise.all([
@@ -306,40 +352,7 @@ export async function getProductMetricsTable(range: DateRange, sort: ProductSort
     };
   });
 
-  const value = (row: ProductMetricsRow): number | null => {
-    switch (sort) {
-      case "revenue": return row.revenueCents;
-      case "purchases": return row.purchases;
-      case "views": return row.views;
-      case "conversion": return row.conversion;
-      case "cart": return row.addToCart;
-      case "checkout": return row.checkoutStarts;
-      case "wishlist": return row.wishlistAdds;
-      case "downloads": return row.downloads;
-      case "reviews": return row.reviews;
-      case "rating": return row.rating;
-    }
-  };
-
-  // Highest first; undefined values ("—") after every real number; name breaks ties.
-  rows.sort((a, b) => {
-    const va = value(a);
-    const vb = value(b);
-    if (va === null && vb !== null) return 1;
-    if (vb === null && va !== null) return -1;
-    return (vb ?? 0) - (va ?? 0) || a.name.localeCompare(b.name);
-  });
-
-  const pages = Math.max(1, Math.ceil(rows.length / PRODUCT_PAGE_SIZE));
-  const current = Math.min(Math.max(1, page), pages);
-
-  return {
-    rows: rows.slice((current - 1) * PRODUCT_PAGE_SIZE, current * PRODUCT_PAGE_SIZE),
-    total: rows.length,
-    page: current,
-    pages,
-    sort,
-  };
+  return rows;
 }
 
 // ---------------------------------------------------------------- one product

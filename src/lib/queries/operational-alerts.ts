@@ -20,6 +20,15 @@ import { FAILED_EMAIL } from "@/lib/queries/email-health";
 
 export type AlertTone = "critical" | "warning" | "info";
 
+/**
+ * Published, therefore purchasable, but with no file to deliver.
+ *
+ * Exported so the admin notifications raise the same condition this dashboard
+ * counts, from one definition — the two can never disagree about which
+ * products are undeliverable.
+ */
+export const UNSELLABLE_PRODUCT = { isActive: true, asset: { is: null } } as const;
+
 export type OperationalAlert = {
   id: string;
   tone: AlertTone;
@@ -60,7 +69,7 @@ export async function getOperationalAlerts(): Promise<OperationalAlert[]> {
     prisma.review.count({ where: { status: "PENDING" } }),
 
     // Published, therefore purchasable, but with no file to deliver.
-    prisma.product.count({ where: { isActive: true, asset: { is: null } } }),
+    prisma.product.count({ where: UNSELLABLE_PRODUCT }),
 
     // Paid and completed, but nothing was granted — the customer has been
     // charged for a file they cannot download. The worst state in the system.

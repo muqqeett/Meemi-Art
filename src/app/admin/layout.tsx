@@ -4,7 +4,10 @@ import Link from "next/link";
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/admin-sidebar";
 import { AdminBreadcrumbs } from "@/components/admin/admin-breadcrumbs";
 import { AdminCommandPalette } from "@/components/admin/admin-command-palette";
+import { NotificationBell } from "@/components/admin/notification-bell";
 import { requireAdmin } from "@/lib/auth-guards";
+import { unreadCount } from "@/lib/notifications/feed";
+import { syncNotificationsIfDue } from "@/lib/notifications/sync";
 
 export const metadata: Metadata = {
   title: { default: "Admin", template: "%s | Meemi Art Admin" },
@@ -26,6 +29,18 @@ export const metadata: Metadata = {
  */
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const admin = await requireAdmin();
+
+  // Notifications are brought up to date here, and only here: behind
+  // `requireAdmin`, so nothing public can make the sweep run. It is throttled
+  // (at most once a minute per server) and never throws, so it cannot slow or
+  // break an admin page beyond one cheap sweep a minute.
+  await syncNotificationsIfDue();
+  // The badge must never be the reason an admin page fails: if the count
+  // cannot be read, the bell simply shows no number.
+  const noBadge = { count: 0, capped: false };
+  const badge = await unreadCount({ currentAdmin: async () => admin })
+    .then((unread) => (unread.ok ? unread.data : noBadge))
+    .catch(() => noBadge);
 
   return (
     // `admin-root` scopes the admin's quieter hairlines and surface ladder —
@@ -51,6 +66,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
           <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
             <AdminCommandPalette />
+
+            <NotificationBell count={badge.count} capped={badge.capped} />
 
             <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />
 
