@@ -146,6 +146,7 @@ export const mainNav = [
   { title: "Flowers", href: "/shop/crochet-flowers" },
   { title: "Plushies", href: "/shop/crochet-plushies" },
   { title: "Gifts", href: "/shop/crochet-gifts" },
+  { title: "Learn", href: "/learn" },
   { title: "About", href: "/about" },
 ] as const;
 
@@ -160,6 +161,7 @@ export const legalNav = [
   { title: "Terms & Conditions", href: "/terms" },
   { title: "Refund Policy", href: "/refunds" },
   { title: "Privacy Policy", href: "/privacy" },
+  { title: "Learn", href: "/learn" },
   { title: "Contact", href: "/contact" },
 ] as const;
 

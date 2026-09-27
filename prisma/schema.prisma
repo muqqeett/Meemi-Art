@@ -211,6 +211,8 @@ model Product {
   reviews          Review[]
   wishlistItems    WishlistItem[]
   analyticsEvents  AnalyticsEvent[]
+  articleLinks     ArticleProduct[]
+  tutorialLinks    TutorialProduct[]
 
   @@index([categoryId])
   @@index([featured])
@@ -769,4 +771,144 @@ enum AdminNotificationType {
   WISHLIST_ACTIVITY
   PRODUCT_ATTENTION
   PRODUCT_CONFIGURATION
+}
+
+/// *
+/// * A topic shared by articles and tutorials.
+/// *
+/// * One vocabulary for both, so "Pattern reading" means the same thing on the
+/// * blog and in the tutorials and a reader can move between them.
+model ContentTopic {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  name        String
+  description String
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  articles    Article[]
+  tutorials   Tutorial[]
+}
+
+/// *
+/// * An article on the crochet blog.
+/// *
+/// * `body` is an ordered list of typed blocks (see `lib/content/blocks.ts`),
+/// * not HTML and not markdown: nothing stored here can become markup, so no
+/// * editor input can inject script into a public page, and every block renders
+/// * through the site's own components.
+/// *
+/// * `teaches` holds slugs from the Project Difficulty technique vocabulary —
+/// * the same list products are tagged with. That is what lets an article about
+/// * the magic ring find the patterns that use it without a hand-maintained
+/// * table of links. `products` is the curated override for the cases judgement
+/// * beats inference.
+/// *
+/// * Nothing is public until `status` is PUBLISHED and `publishedAt` has passed:
+/// * the public queries, the sitemap and the feeds all apply that one rule.
+model Article {
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  title          String
+  excerpt        String
+  body           Json
+  coverImageUrl  String?
+  coverImageAlt  String?
+  topicId        String?
+  /// Technique slugs, from the Project Difficulty vocabulary.
+  teaches        String[]         @default([])
+  tags           String[]         @default([])
+  status         ContentStatus    @default(DRAFT)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+  /// Set only when this article is a secondary copy of something else.
+  canonicalUrl   String?
+  /// Whole minutes, derived from the body when it is saved.
+  readingMinutes Int              @default(1)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  topic          ContentTopic?    @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  products       ArticleProduct[]
+
+  @@index([status, publishedAt])
+  @@index([topicId, status, publishedAt])
+}
+
+/// *
+/// * A step-by-step crochet tutorial.
+/// *
+/// * Same content model as an article, plus what a tutorial needs to be
+/// * followed: how hard it is, how long it takes, what to have to hand, and the
+/// * ordered steps themselves. Steps carry optional image slots so real
+/// * instructional photography can be added later without a migration.
+model Tutorial {
+  id             String             @id @default(cuid())
+  slug           String             @unique
+  title          String
+  excerpt        String
+  /// Blocks shown before the steps.
+  intro          Json
+  /// Ordered steps; see `lib/content/blocks.ts`.
+  steps          Json
+  /// Blocks shown after the steps — tips, common mistakes, what to try next.
+  outro          Json?
+  /// What to have to hand, as plain strings.
+  materials      String[]           @default([])
+  difficulty     TutorialDifficulty @default(BEGINNER)
+  minutesMin     Int?
+  minutesMax     Int?
+  coverImageUrl  String?
+  coverImageAlt  String?
+  topicId        String?
+  teaches        String[]           @default([])
+  tags           String[]           @default([])
+  status         ContentStatus      @default(DRAFT)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+  canonicalUrl   String?
+  readingMinutes Int                @default(1)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  topic          ContentTopic?      @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  products       TutorialProduct[]
+
+  @@index([status, publishedAt])
+  @@index([topicId, status, publishedAt])
+}
+
+/// A curated link from an article to a pattern it genuinely relates to.
+model ArticleProduct {
+  articleId String
+  productId String
+  sortOrder Int     @default(0)
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, productId])
+  @@index([productId])
+}
+
+/// A curated link from a tutorial to a pattern it genuinely relates to.
+model TutorialProduct {
+  tutorialId String
+  productId  String
+  sortOrder  Int      @default(0)
+  tutorial   Tutorial @relation(fields: [tutorialId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([tutorialId, productId])
+  @@index([productId])
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum TutorialDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
 }

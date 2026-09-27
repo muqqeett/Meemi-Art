@@ -40,6 +40,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/shipping", destination: "/refunds", permanent: true },
       { source: "/size-guide", destination: "/faq", permanent: true },
+      // The learning hub is /learn; /resources is where people guess, and the
+      // individual references live beneath it.
+      { source: "/resources", destination: "/learn", permanent: true },
     ];
   },
 

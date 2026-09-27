@@ -32,7 +32,9 @@ export type ActivityEntity =
   | "coupon"
   | "payment"
   | "email"
-  | "project";
+  | "project"
+  | "article"
+  | "tutorial";
 
 export async function recordActivity(input: {
   actorId: string;

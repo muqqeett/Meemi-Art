@@ -18,6 +18,9 @@ import {
   Settings,
   History,
   Bell,
+  GraduationCap,
+  Newspaper,
+  Tags,
   type LucideIcon,
 } from "lucide-react";
 
@@ -75,6 +78,14 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       { href: "/admin/projects", label: "Projects", Icon: Images },
       { href: "/admin/files", label: "Digital Files", Icon: FileDown },
       { href: "/admin/delivery", label: "Delivery Health", Icon: PackageCheck },
+    ],
+  },
+  {
+    label: "Content",
+    items: [
+      { href: "/admin/content/articles", label: "Articles", Icon: Newspaper },
+      { href: "/admin/content/tutorials", label: "Tutorials", Icon: GraduationCap },
+      { href: "/admin/content/topics", label: "Topics", Icon: Tags },
     ],
   },
   {
