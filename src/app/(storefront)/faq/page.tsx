@@ -8,6 +8,7 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { siteConfig } from "@/lib/config";
+import { safeJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "FAQ",
@@ -74,8 +75,29 @@ const FAQS = [
 ] as const;
 
 export default function FaqPage() {
+  /**
+   * FAQPage structured data, describing the questions and answers that are
+   * visible on this page and nowhere else — same wording, same order, no extra
+   * entries. Google restricted FAQ rich results to a narrow set of sites in
+   * 2023, so this is not here to win a snippet; it is here because the page is
+   * genuinely a question-and-answer document and saying so plainly is what the
+   * vocabulary is for.
+   */
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": `${siteConfig.url}/faq#faq`,
+    mainEntity: FAQS.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: { "@type": "Answer", text: faq.a },
+    })),
+  };
+
   return (
     <div className="container-page py-10 lg:py-14">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
+
       <Breadcrumbs items={[{ label: "FAQ" }]} />
 
       <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:gap-20">
@@ -93,7 +115,16 @@ export default function FaqPage() {
           </p>
         </header>
 
-        <Accordion>
+        {/*
+          `hiddenUntilFound` renders every answer into the HTML and hides the
+          closed ones with `hidden="until-found"` rather than unmounting them.
+          Three things follow: the browser's own find-in-page can locate an
+          answer and open the panel around it, a reader with JavaScript off
+          still gets the text, and anything reading the page for its content
+          sees all ten answers instead of only the ten questions. The panel
+          behaviour, animation and styling are unchanged.
+        */}
+        <Accordion hiddenUntilFound>
           {FAQS.map((faq) => (
             <AccordionItem key={faq.q} value={faq.q}>
               <AccordionTrigger>{faq.q}</AccordionTrigger>

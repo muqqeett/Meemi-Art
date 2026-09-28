@@ -29,6 +29,12 @@ export async function generateMetadata({
   }
 
   const faceted = isFacetedView(raw);
+  // An empty category is an under-construction page: it renders "No products
+  // yet" and nothing else worth indexing. `follow` stays on so the crawler
+  // still reaches the header and footer links from it. Driven by the live
+  // count, so publishing a product into the category makes it indexable again
+  // with no switch to remember.
+  const empty = category._count.products === 0;
 
   const title = `Handmade ${category.name}`;
   const description =
@@ -41,7 +47,7 @@ export async function generateMetadata({
     // Always the clean category URL: filter and sort permutations consolidate
     // here rather than competing with it.
     alternates: { canonical: `/shop/${category.slug}` },
-    robots: faceted ? { index: false, follow: true } : { index: true, follow: true },
+    robots: faceted || empty ? { index: false, follow: true } : { index: true, follow: true },
     openGraph: {
       type: "website",
       siteName: siteConfig.name,
