@@ -625,6 +625,39 @@ async function main() {
       read("src/app/(storefront)/blog/[slug]/page.tsx").includes("related.tutorials.length > 0"),
     );
 
+    // The product-page direction: what a shopper can read about the techniques
+    // the pattern in front of them uses.
+    const learnLinks = await links.contentForTechniques(["magic-ring"], 4);
+    check(
+      "a product's techniques find the published tutorial that teaches them",
+      learnLinks.some((c) => c.kind === "tutorial" && c.slug === liveTutorial.slug),
+    );
+    check(
+      "a product's techniques find the published article that explains them",
+      learnLinks.some((c) => c.kind === "article" && c.slug === liveArticle.slug),
+    );
+    check(
+      "a product never links to draft content",
+      !learnLinks.some((c) => c.slug === draftTutorial.slug || c.slug === draftArticle.slug),
+    );
+    check(
+      "a product never links to content scheduled for later",
+      !learnLinks.some((c) => c.slug === scheduledTutorial.slug || c.slug === scheduledArticle.slug),
+    );
+    check("a product with no techniques links to no content", (await links.contentForTechniques([])).length === 0);
+    check(
+      "content with no shared technique is not offered on a product",
+      (await links.contentForTechniques(["tapestry-crochet"], 4)).every((c) => c.slug !== liveTutorial.slug),
+    );
+    check("the number of guides on a product is bounded", (await links.contentForTechniques(["magic-ring"], 1)).length <= 1);
+    check(
+      "every guide offered on a product has a route that can be built",
+      learnLinks.every((c) => c.slug.length > 0 && (c.kind === "tutorial" || c.kind === "article")),
+    );
+    const pdpLearn = read("src/components/product/pdp/pdp-learn.tsx");
+    check("the product page only offers guides when the difficulty profile is on", read("src/app/(storefront)/products/[slug]/page.tsx").includes("product.difficulty?.enabled ? product.difficulty.techniques : []"));
+    check("the product guide section renders nothing when there is no match", pdpLearn.includes("if (content.length === 0) return null;"));
+
     await prisma.tutorialProduct.create({ data: { tutorialId: liveTutorial.id, productId: liveProductId } });
     const mergedTutorial = await tutorials.getTutorialRelations(fullTutorial!);
     check(

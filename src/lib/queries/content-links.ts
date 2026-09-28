@@ -55,6 +55,52 @@ export async function productsForTechniques(techniques: readonly string[], take 
   }));
 }
 
+export type LinkedContent = {
+  kind: "article" | "tutorial";
+  slug: string;
+  title: string;
+  excerpt: string;
+};
+
+/**
+ * The reverse of `productsForTechniques`: what a shopper can read about the
+ * techniques a pattern uses.
+ *
+ * Same matching rule, same vocabulary, pointed the other way — so a product
+ * page can offer the article that explains a stitch and the tutorial that walks
+ * through it, without anyone maintaining a list by hand.
+ *
+ * Published only, and filtered by the same clause the public pages use, so a
+ * draft can never be surfaced on a product page.
+ */
+export async function contentForTechniques(
+  techniques: readonly string[],
+  take = 4,
+  now: Date = new Date(),
+): Promise<LinkedContent[]> {
+  if (techniques.length === 0) return [];
+
+  const where = {
+    status: "PUBLISHED" as const,
+    publishedAt: { not: null, lte: now },
+    teaches: { hasSome: [...techniques] },
+  };
+  const select = { slug: true, title: true, excerpt: true } as const;
+  const order = [{ publishedAt: "desc" as const }];
+
+  const [tutorials, articles] = await Promise.all([
+    prisma.tutorial.findMany({ where, select, orderBy: order, take }),
+    prisma.article.findMany({ where, select, orderBy: order, take }),
+  ]);
+
+  // Tutorials first: on a product page the reader is about to make something,
+  // and the step-by-step piece is the more useful of the two.
+  return [
+    ...tutorials.map((row) => ({ kind: "tutorial" as const, ...row })),
+    ...articles.map((row) => ({ kind: "article" as const, ...row })),
+  ].slice(0, take);
+}
+
 /**
  * A few published patterns to show where nothing more specific applies.
  *

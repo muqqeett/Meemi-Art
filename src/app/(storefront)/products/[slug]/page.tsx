@@ -7,6 +7,7 @@ import { PdpBuyBlock } from "@/components/product/pdp/pdp-buy-block";
 import { PdpProductRail } from "@/components/product/pdp/pdp-product-rail";
 import { PdpReviews } from "@/components/product/pdp/pdp-reviews";
 import { PdpProjects } from "@/components/product/pdp/pdp-projects";
+import { PdpLearn } from "@/components/product/pdp/pdp-learn";
 import { RecentlyViewed } from "@/components/product/recently-viewed";
 import { MeemiGuideLoader } from "@/components/product/meemi/meemi-guide-loader";
 import { ProductViewBeacon } from "@/components/product/product-view-beacon";
@@ -272,6 +273,13 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
         </div>
 
         <div className="mt-20 flex flex-col gap-20">
+          {/* Renders nothing unless a published guide covers a technique this
+              pattern is actually tagged with. */}
+          <PdpLearn
+            techniques={product.difficulty?.enabled ? product.difficulty.techniques : []}
+            productName={product.name}
+          />
+
           <PdpProductRail
             title="Related Product"
             href={`/shop/${product.category.slug}`}

@@ -64,14 +64,26 @@ export async function SiteHeader() {
    * The rail's seven slots, filled from what the shop actually has: the real
    * categories first, then the standing nav entries. Sliced to seven so the row
    * matches the drawn rhythm and cannot wrap.
+   *
+   * "Learn" is pinned to the last slot rather than left to the slice. With six
+   * categories the slice ended after the first `mainNav` entry, so on desktop
+   * the learning section had no entry point at all — it existed only in the
+   * mobile sheet. The rail still holds exactly seven links; the pin decides
+   * which one is dropped when the catalogue grows, and a category the shopper
+   * can still reach from the menu panel is the cheaper thing to lose.
    */
-  const railLinks = [
+  const LEARN_HREF = "/learn";
+  const learnEntry = mainNav.find((item) => item.href === LEARN_HREF);
+  const unpinned = [
     ...megaCategories.map((category) => ({
       title: category.name,
       href: `/shop/${category.slug}`,
     })),
-    ...mainNav.map((item) => ({ title: item.title, href: item.href })),
-  ].slice(0, 7);
+    ...mainNav.filter((item) => item.href !== LEARN_HREF).map((item) => ({ title: item.title, href: item.href })),
+  ];
+  const railLinks = learnEntry
+    ? [...unpinned.slice(0, 6), { title: learnEntry.title, href: learnEntry.href }]
+    : unpinned.slice(0, 7);
 
   return (
     <>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Compass } from "lucide-react";
+import { ArrowRight, BookOpen, Compass, GraduationCap, Newspaper } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/brand/breadcrumbs";
 import { RESOURCES, resourcePath } from "@/lib/content/resources";
@@ -44,6 +44,35 @@ export default async function LearnPage() {
           end to end.
         </p>
       </header>
+
+      {/* The three kinds of thing in this section, always reachable.
+          The recent-article and recent-tutorial strips further down appear only
+          once something is published, which left the indexes with no entry
+          point at all while they were empty. These three do not depend on
+          content existing: each index states its own empty case. */}
+      <nav aria-label="Browse the learning section" className="mb-10 grid gap-3 sm:grid-cols-3">
+        {[
+          { href: "/blog", label: "Articles", blurb: "How patterns, hooks and yarn actually work", Icon: Newspaper },
+          { href: "/tutorials", label: "Tutorials", blurb: "One skill at a time, written as steps", Icon: GraduationCap },
+          { href: "#references", label: "References", blurb: "Tables to check mid-project", Icon: BookOpen },
+        ].map(({ href, label, blurb, Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className="group flex items-start gap-3 rounded-sm border border-border bg-surface-alt/50 px-4 py-3.5 transition-colors duration-200 hover:border-brand-300 hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+          >
+            <Icon className="mt-0.5 size-4 shrink-0 text-brand-600" aria-hidden />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-foreground group-hover:text-brand-700">{label}</span>
+              <span className="text-body mt-0.5 block text-xs leading-relaxed">{blurb}</span>
+            </span>
+          </Link>
+        ))}
+      </nav>
+
+      <h2 id="references" className="heading-sub mb-5 scroll-mt-24">
+        References
+      </h2>
 
       <ul className="grid gap-5 sm:grid-cols-2">
         {RESOURCES.map((resource) => (
