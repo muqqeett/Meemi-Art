@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { Breadcrumbs } from "@/components/brand/breadcrumbs";
+import { PlumPage, PlumPageHead } from "@/components/shop/plum-page-head";
 import { ShopResults } from "@/components/shop/shop-results";
 import { listProducts } from "@/lib/queries/products";
 import {
@@ -82,15 +82,12 @@ export default async function CategoryPage({
   ]);
 
   return (
-    <div className="container-page py-10 lg:py-14">
-      <Breadcrumbs
-        items={[{ label: "Shop", href: "/shop" }, { label: category.name }]}
+    <PlumPage>
+      <PlumPageHead
+        crumbs={[{ label: "Shop", href: "/shop" }, { label: category.name }]}
+        title={category.name}
+        lead={category.description}
       />
-
-      <header className="mt-6 mb-10 max-w-2xl">
-        <h1 className="heading-section">{category.name}</h1>
-        {category.description && <p className="text-body mt-3">{category.description}</p>}
-      </header>
 
       <ShopResults
         result={result}
@@ -102,6 +99,6 @@ export default async function CategoryPage({
         emptyTitle={`Nothing in ${category.name} matches those filters`}
         emptyDescription="Try widening the price range, or clear the filters to see the whole category."
       />
-    </div>
+    </PlumPage>
   );
 }

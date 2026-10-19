@@ -26,7 +26,7 @@ export function AccountNav() {
 
   return (
     <nav aria-label="Account">
-      <ul className="no-scrollbar flex gap-1 overflow-x-auto border-b border-border pb-px lg:flex-col lg:overflow-visible lg:border-0 lg:pb-0">
+      <ul className="no-scrollbar font-figtree flex gap-1 overflow-x-auto border-b border-pl-line pb-px lg:flex-col lg:overflow-visible lg:border-0 lg:pb-0">
         {LINKS.map(({ href, label, Icon, exact }) => {
           const active = exact
             ? pathname === href
@@ -38,11 +38,10 @@ export function AccountNav() {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-11 items-center gap-2.5 rounded-lg px-3.5 text-sm font-medium whitespace-nowrap transition-colors",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
+                  "pl-focus flex min-h-11 items-center gap-2.5 rounded-full px-4 text-[15px] leading-[18px] font-bold whitespace-nowrap transition-colors",
                   active
-                    ? "bg-brand-50 text-brand-700"
-                    : "text-muted-foreground hover:bg-surface-alt hover:text-foreground",
+                    ? "bg-plum-100 text-pl-text"
+                    : "text-pl-muted hover:bg-plum-100 hover:text-pl-text",
                 )}
               >
                 <Icon className="size-4" aria-hidden />
@@ -52,11 +51,11 @@ export function AccountNav() {
           );
         })}
 
-        <li className="shrink-0 lg:mt-4 lg:border-t lg:border-border lg:pt-4">
+        <li className="shrink-0 lg:mt-4 lg:border-t lg:border-pl-line lg:pt-4">
           <form action={signOutAction}>
             <button
               type="submit"
-              className="flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3.5 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-destructive/5 hover:text-destructive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+              className="pl-focus flex min-h-11 w-full items-center gap-2.5 rounded-full px-4 text-[15px] leading-[18px] font-bold whitespace-nowrap text-pl-muted transition-colors hover:bg-destructive/5 hover:text-destructive"
             >
               <LogOut className="size-4" aria-hidden />
               Sign out

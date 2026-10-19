@@ -4,21 +4,27 @@ import Link from "next/link";
 import type { ArticleCard } from "@/lib/queries/articles";
 
 /**
- * One article in a list.
+ * One article in a list — Plum Studio "Post card" (15:553).
+ *
+ * A 1.91:1 cover on a plum tint with a 20px radius, then a plum eyebrow, a
+ * Bricolage title, a 14/22 excerpt and a caption line. The whole card is one
+ * link, so its title is the accessible name.
  *
  * The cover image is optional by design — an article without one is a real
- * article, not a broken card, so the layout holds without it rather than
- * reserving a grey rectangle. Dates are real publication dates and the
- * reading time is derived from the words actually in the piece.
+ * article, not a broken card. The design's illustrated covers are not drawn
+ * for it: there is nothing to say about the piece in a placeholder picture, and
+ * an empty tinted rectangle would only reserve space for one. Dates are real
+ * publication dates and the reading time is derived from the words actually in
+ * the piece.
  */
 export function ArticleCardLink({ article }: { article: ArticleCard }) {
   return (
     <Link
       href={`/blog/${article.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-sm border border-border bg-card transition-colors duration-200 hover:border-brand-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+      className="pl-focus group font-figtree flex h-full flex-col gap-3 rounded-[20px]"
     >
       {article.coverImageUrl && (
-        <span className="relative block aspect-[16/9] overflow-hidden bg-surface-alt">
+        <span className="relative block aspect-[1600/840] overflow-hidden rounded-[20px] bg-pl-tint-crochet">
           <Image
             src={article.coverImageUrl}
             alt={article.coverImageAlt ?? ""}
@@ -29,17 +35,21 @@ export function ArticleCardLink({ article }: { article: ArticleCard }) {
         </span>
       )}
 
-      <span className="flex flex-1 flex-col px-5 py-5">
-        {article.topic && <span className="label-caps text-brand-600">{article.topic.name}</span>}
-        <span className="mt-2 block text-base leading-snug font-medium text-foreground group-hover:text-brand-700">
+      <span className="flex flex-1 flex-col gap-1.5">
+        {article.topic && <span className="pl-eyebrow">{article.topic.name}</span>}
+        <span className="pl-h3 block group-hover:underline group-hover:underline-offset-4">
           {article.title}
         </span>
-        <span className="text-body mt-2 block flex-1 text-sm leading-relaxed">{article.excerpt}</span>
-        <span className="text-body mt-4 flex items-center gap-2 text-xs">
+        <span className="block flex-1 text-sm leading-[22px] text-pl-muted">{article.excerpt}</span>
+        <span className="flex items-center gap-2 text-[13px] leading-[18px] font-medium text-pl-muted">
           <time dateTime={article.publishedAt.toISOString()}>
-            {article.publishedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+            {article.publishedAt.toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </time>
-          <span aria-hidden className="opacity-40">·</span>
+          <span aria-hidden>·</span>
           <span>{article.readingMinutes} min read</span>
         </span>
       </span>

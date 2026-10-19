@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
 import { addToCart } from "@/lib/actions/cart";
@@ -12,6 +12,12 @@ type QuickAddButtonProps = {
   productId: string;
   productName: string;
   className?: string;
+  /**
+   * `plum` is the Plum Studio card control: marigold pill, plum outline, bag
+   * glyph and "Add". Marigold is the buy colour, so it is used here and only
+   * for purchase actions.
+   */
+  variant?: "default" | "plum";
 };
 
 /**
@@ -25,6 +31,7 @@ export function QuickAddButton({
   productId,
   productName,
   className,
+  variant = "default",
 }: QuickAddButtonProps) {
   const [pending, startTransition] = useTransition();
   const [justAdded, setJustAdded] = useState(false);
@@ -60,11 +67,19 @@ export function QuickAddButton({
         `Add ${productName} to bag`
       }
       className={cn(
-        "label-caps flex h-11 w-full items-center justify-center gap-2 rounded-xs",
-        "bg-surface/95 text-brand-700 backdrop-blur-sm transition-colors",
-        "hover:bg-brand-700 hover:text-white",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600",
-        "disabled:pointer-events-none disabled:opacity-70",
+        variant === "plum"
+          ? [
+              "pl-focus font-figtree inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-full px-3",
+              "border-2 border-plum-900 bg-pl-buy text-[14px] leading-[18px] font-bold text-pl-text transition-colors",
+              "hover:brightness-95 disabled:pointer-events-none disabled:opacity-70",
+            ]
+          : [
+              "label-caps flex h-11 w-full items-center justify-center gap-2 rounded-xs",
+              "bg-surface/95 text-brand-700 backdrop-blur-sm transition-colors",
+              "hover:bg-brand-700 hover:text-white",
+              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600",
+              "disabled:pointer-events-none disabled:opacity-70",
+            ],
         className,
       )}
     >
@@ -77,6 +92,11 @@ export function QuickAddButton({
         <>
           <Check className="size-3.5" aria-hidden />
           Added
+        </>
+      ) : variant === "plum" ? (
+        <>
+          <ShoppingBag className="size-5" aria-hidden />
+          Add
         </>
       ) : (
         label

@@ -30,7 +30,9 @@ const EMPTY: Suggestions = { products: [], categories: [] };
  * Header search. Opens a dialog with debounced typeahead suggestions and hands
  * the full query off to `/search`, where the real server-side filtering runs.
  */
-export function SearchDialog({ variant = "icon" }: { variant?: "icon" | "pill" } = {}) {
+export function SearchDialog({
+  variant = "icon",
+}: { variant?: "icon" | "pill" | "plum" | "plum-icon" } = {}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -110,7 +112,28 @@ export function SearchDialog({ variant = "icon" }: { variant?: "icon" | "pill" }
 
         `icon` stays for the compact header row, where a 704px field cannot fit.
       */}
-      {variant === "pill" ? (
+      {variant === "plum" ? (
+        /* Plum Studio header field: sunken pill, 44px, plum-muted placeholder.
+           Still a button that opens the dialog — see the note above. */
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="pl-focus font-figtree flex h-11 w-full items-center gap-2 rounded-full bg-pl-sunken px-4 text-left text-sm leading-[22px] text-pl-muted transition-colors hover:bg-plum-100"
+          aria-label="Search products"
+        >
+          <Search className="size-5 shrink-0" aria-hidden />
+          <span className="truncate">Search patterns…</span>
+        </button>
+      ) : variant === "plum-icon" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="pl-focus inline-flex size-11 items-center justify-center rounded-full text-pl-text transition-colors hover:bg-plum-100"
+          aria-label="Search products"
+        >
+          <Search className="size-6" aria-hidden />
+        </button>
+      ) : variant === "pill" ? (
         <button
           type="button"
           onClick={() => setOpen(true)}

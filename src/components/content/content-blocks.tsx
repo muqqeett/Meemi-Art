@@ -15,12 +15,16 @@ import { cn } from "@/lib/utils";
  * what makes editor input safe by construction rather than by sanitising.
  *
  * Server components — an article ships no JavaScript to read.
+ *
+ * Set in the Plum Studio article style (Figma 27:2773): Bricolage 36/40 section
+ * headings, Figtree 16/26 body, plum bullets and links, 20px-radius callouts
+ * and media.
  */
 
 const CALLOUT_STYLE: Record<CalloutTone, { icon: typeof Info; className: string; label: string }> = {
-  tip: { icon: Lightbulb, className: "border-brand-200 bg-brand-50/60", label: "Tip" },
-  note: { icon: Info, className: "border-border bg-surface-alt/70", label: "Note" },
-  warning: { icon: TriangleAlert, className: "border-warning/30 bg-warning/8", label: "Watch out" },
+  tip: { icon: Lightbulb, className: "border-transparent bg-plum-100", label: "Tip" },
+  note: { icon: Info, className: "border-pl-line bg-pl-subtle", label: "Note" },
+  warning: { icon: TriangleAlert, className: "border-transparent bg-pl-tint-templates", label: "Watch out" },
 };
 
 function InlineText({ nodes }: { nodes: Inline[] }) {
@@ -30,11 +34,11 @@ function InlineText({ nodes }: { nodes: Inline[] }) {
         if (typeof node === "string") return <span key={index}>{node}</span>;
 
         const content = node.code ? (
-          <code className="rounded-xs bg-surface-alt px-1 py-0.5 font-mono text-[0.9em] text-foreground">
+          <code className="rounded-[6px] bg-pl-sunken px-1 py-0.5 font-mono text-[0.9em] text-pl-text">
             {node.text}
           </code>
         ) : node.strong ? (
-          <strong className="font-semibold text-foreground">{node.text}</strong>
+          <strong className="font-bold text-pl-text">{node.text}</strong>
         ) : (
           node.text
         );
@@ -49,7 +53,7 @@ function InlineText({ nodes }: { nodes: Inline[] }) {
             href={node.href}
             target="_blank"
             rel="noopener noreferrer nofollow"
-            className="text-brand-700 underline underline-offset-4 hover:text-brand-800"
+            className="pl-focus rounded-sm text-plum-500 underline underline-offset-4 hover:text-plum-800"
           >
             {content}
           </a>
@@ -57,7 +61,7 @@ function InlineText({ nodes }: { nodes: Inline[] }) {
           <Link
             key={index}
             href={node.href}
-            className="text-brand-700 underline underline-offset-4 hover:text-brand-800"
+            className="pl-focus rounded-sm text-plum-500 underline underline-offset-4 hover:text-plum-800"
           >
             {content}
           </Link>
@@ -72,11 +76,11 @@ function BlockView({ block }: { block: Block }) {
     case "heading": {
       const id = headingId(block.text);
       return block.level === 2 ? (
-        <h2 id={id} className="heading-sub scroll-mt-24 pt-4">
+        <h2 id={id} className="pl-display pl-h2 scroll-mt-24 pt-4">
           {block.text}
         </h2>
       ) : (
-        <h3 id={id} className="scroll-mt-24 pt-2 text-base font-semibold text-foreground">
+        <h3 id={id} className="pl-h3 scroll-mt-24 pt-2">
           {block.text}
         </h3>
       );
@@ -84,13 +88,13 @@ function BlockView({ block }: { block: Block }) {
 
     case "paragraph":
       return (
-        <p className="text-body leading-relaxed">
+        <p className="pl-body text-pl-text">
           <InlineText nodes={block.content} />
         </p>
       );
 
     case "list": {
-      const className = "text-body space-y-2 pl-5 leading-relaxed";
+      const className = "pl-body space-y-2 pl-5 text-pl-text marker:text-plum-500";
       return block.ordered ? (
         <ol className={cn(className, "list-decimal")}>
           {block.items.map((item, index) => (
@@ -114,10 +118,12 @@ function BlockView({ block }: { block: Block }) {
       const style = CALLOUT_STYLE[block.tone];
       const Icon = style.icon;
       return (
-        <aside className={cn("flex gap-3 rounded-sm border px-4 py-3.5", style.className)}>
-          <Icon className="mt-0.5 size-4 shrink-0 text-brand-700" aria-hidden />
-          <div className="text-body min-w-0 text-sm leading-relaxed">
-            <p className="font-medium text-foreground">{block.title ?? style.label}</p>
+        <aside className={cn("flex gap-3 rounded-[20px] border px-5 py-4", style.className)}>
+          <Icon className="mt-0.5 size-5 shrink-0 text-plum-500" aria-hidden />
+          <div className="min-w-0 text-sm leading-[22px] text-pl-muted">
+            <p className="text-base leading-[22px] font-bold tracking-[-0.005em] text-pl-text">
+              {block.title ?? style.label}
+            </p>
             <p className="mt-1">
               <InlineText nodes={block.content} />
             </p>
@@ -136,21 +142,25 @@ function BlockView({ block }: { block: Block }) {
             {block.rows.map((row, index) => (
               <tr key={index}>
                 {row.map((cell, cellIndex) => (
-                  <td key={cellIndex} className={cn("py-2.5 pr-4", cellIndex === 0 ? "text-foreground" : "text-body")}>
+                  <td key={cellIndex} className={cn("py-3 pr-4", cellIndex === 0 ? "font-bold text-pl-text" : "text-pl-muted")}>
                     {cell}
                   </td>
                 ))}
               </tr>
             ))}
           </ReferenceTable>
-          {block.caption && <figcaption className="text-body mt-2 text-xs">{block.caption}</figcaption>}
+          {block.caption && (
+            <figcaption className="mt-2 text-[13px] leading-[18px] font-medium text-pl-muted">
+              {block.caption}
+            </figcaption>
+          )}
         </figure>
       );
 
     case "image":
       return (
         <figure>
-          <div className="relative overflow-hidden rounded-sm border border-border bg-surface-alt">
+          <div className="relative overflow-hidden rounded-[20px] bg-pl-tint-crochet">
             <Image
               src={block.url}
               alt={block.alt}
@@ -160,7 +170,11 @@ function BlockView({ block }: { block: Block }) {
               className="h-auto w-full object-cover"
             />
           </div>
-          {block.caption && <figcaption className="text-body mt-2 text-xs">{block.caption}</figcaption>}
+          {block.caption && (
+            <figcaption className="mt-2 text-[13px] leading-[18px] font-medium text-pl-muted">
+              {block.caption}
+            </figcaption>
+          )}
         </figure>
       );
 
@@ -168,11 +182,15 @@ function BlockView({ block }: { block: Block }) {
       // A pattern excerpt: mono, one instruction a line, and not a code
       // element — this is craft notation, not source code.
       return (
-        <figure className="overflow-x-auto rounded-sm border border-border bg-surface-alt/70 px-4 py-4">
-          <pre className="font-mono text-[0.8125rem] leading-relaxed text-foreground">
+        <figure className="overflow-x-auto rounded-[12px] bg-pl-sunken px-4 py-4">
+          <pre className="font-mono text-[0.8125rem] leading-relaxed text-pl-text">
             {block.lines.join("\n")}
           </pre>
-          {block.caption && <figcaption className="text-body mt-2 text-xs">{block.caption}</figcaption>}
+          {block.caption && (
+            <figcaption className="mt-2 text-[13px] leading-[18px] font-medium text-pl-muted">
+              {block.caption}
+            </figcaption>
+          )}
         </figure>
       );
 

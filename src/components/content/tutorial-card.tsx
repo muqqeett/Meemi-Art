@@ -8,7 +8,7 @@ import {
 } from "@/lib/queries/tutorials";
 
 /**
- * One tutorial in a list.
+ * One tutorial in a list — the same Plum Studio "Post card" as an article.
  *
  * Shows the two things that decide whether someone will start it now: how hard
  * it is and roughly how long it takes. Both come from stored values — a
@@ -21,10 +21,10 @@ export function TutorialCardLink({ tutorial }: { tutorial: TutorialCardData }) {
   return (
     <Link
       href={`/tutorials/${tutorial.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-sm border border-border bg-card transition-colors duration-200 hover:border-brand-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+      className="pl-focus group font-figtree flex h-full flex-col gap-3 rounded-[20px]"
     >
       {tutorial.coverImageUrl && (
-        <span className="relative block aspect-[16/9] overflow-hidden bg-surface-alt">
+        <span className="relative block aspect-[1600/840] overflow-hidden rounded-[20px] bg-pl-tint-crochet">
           <Image
             src={tutorial.coverImageUrl}
             alt={tutorial.coverImageAlt ?? ""}
@@ -35,20 +35,20 @@ export function TutorialCardLink({ tutorial }: { tutorial: TutorialCardData }) {
         </span>
       )}
 
-      <span className="flex flex-1 flex-col px-5 py-5">
-        <span className="label-caps text-brand-600">
+      <span className="flex flex-1 flex-col gap-1.5">
+        <span className="pl-eyebrow">
           {TUTORIAL_DIFFICULTY_LABELS[tutorial.difficulty]}
-          {tutorial.topic && <span className="text-muted-foreground"> · {tutorial.topic.name}</span>}
+          {tutorial.topic && <span className="text-pl-muted"> · {tutorial.topic.name}</span>}
         </span>
-        <span className="mt-2 block text-base leading-snug font-medium text-foreground group-hover:text-brand-700">
+        <span className="pl-h3 block group-hover:underline group-hover:underline-offset-4">
           {tutorial.title}
         </span>
-        <span className="text-body mt-2 block flex-1 text-sm leading-relaxed">{tutorial.excerpt}</span>
-        <span className="text-body mt-4 flex flex-wrap items-center gap-2 text-xs">
+        <span className="block flex-1 text-sm leading-[22px] text-pl-muted">{tutorial.excerpt}</span>
+        <span className="flex flex-wrap items-center gap-2 text-[13px] leading-[18px] font-medium text-pl-muted">
           {time && (
             <>
               <span>{time}</span>
-              <span aria-hidden className="opacity-40">·</span>
+              <span aria-hidden>·</span>
             </>
           )}
           <span>{tutorial.readingMinutes} min read</span>

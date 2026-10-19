@@ -22,22 +22,26 @@ export function PdpDifficulty({ result }: { result: DifficultyResult }) {
 
   return (
     // `data-meemi-anchor`: where the product page's Meemi guide may offer to explain.
-    <section aria-labelledby="pdp-difficulty-heading" data-meemi-anchor="difficulty" className="flex flex-col gap-5">
+    <section
+      aria-labelledby="pdp-difficulty-heading"
+      data-meemi-anchor="difficulty"
+      className="font-figtree flex flex-col gap-4 rounded-[20px] bg-plum-100/60 p-4"
+    >
       <h2
         id="pdp-difficulty-heading"
-        className="text-[0.6875rem] leading-none font-semibold tracking-[0.22em] text-pdp-label uppercase"
+        className="text-base leading-[22px] font-bold tracking-[-0.005em] text-pl-text"
       >
         Project difficulty
       </h2>
 
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <p className="flex items-baseline gap-1.5">
-          <span className="font-display text-[2.25rem] leading-none font-semibold tracking-[-0.02em] text-pdp-title tabular-nums">
+          <span className="pl-display text-[32px] leading-[36px] tracking-[-0.015em] tabular-nums">
             {result.score}
           </span>
-          <span className="text-sm font-medium text-pdp-meta">/ 10</span>
+          <span className="text-sm font-medium text-pl-muted">/ 10</span>
         </p>
-        <p className="text-[0.6875rem] leading-none font-semibold tracking-[0.16em] text-brand-600 uppercase">
+        <p className="rounded-full bg-plum-500 px-2.5 py-1 text-[13px] leading-4 font-bold text-pl-on-dark">
           {result.levelLabel}
         </p>
       </div>
@@ -57,27 +61,27 @@ export function PdpDifficulty({ result }: { result: DifficultyResult }) {
             aria-hidden
             className={
               index < result.meterSegments
-                ? "h-1.5 flex-1 rounded-full bg-brand-600"
-                : "h-1.5 flex-1 rounded-full bg-pdp-track"
+                ? "h-2 flex-1 rounded-full bg-plum-500"
+                : "h-2 flex-1 rounded-full bg-pl-line"
             }
           />
         ))}
       </div>
 
       <dl className="flex flex-col">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-pdp-hairline/70 py-3 first:pt-0">
-          <dt className="text-sm text-pdp-meta">Estimated time</dt>
-          <dd className="text-[0.9375rem] font-medium text-pdp-title">{result.estimatedTime}</dd>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-pl-line py-3">
+          <dt className="text-sm leading-[22px] text-pl-muted">Estimated time</dt>
+          <dd className="text-base leading-[22px] font-bold text-pl-text">{result.estimatedTime}</dd>
         </div>
 
-        <div className="flex flex-col gap-2 border-b border-pdp-hairline/70 py-3">
-          <dt className="text-sm text-pdp-meta">What makes it challenging</dt>
+        <div className="flex flex-col gap-2 border-t border-pl-line py-3">
+          <dt className="text-sm leading-[22px] text-pl-muted">What makes it challenging</dt>
           <dd>
             {result.challenges.length > 0 ? (
-              <ul className="flex flex-col gap-1 text-[0.9375rem] leading-[1.6] text-pdp-body">
+              <ul className="flex flex-col gap-1 text-base leading-[26px] text-pl-text">
                 {result.challenges.map((challenge) => (
                   <li key={challenge} className="flex gap-2.5">
-                    <span aria-hidden className="text-brand-400">
+                    <span aria-hidden className="text-plum-500">
                       —
                     </span>
                     {challenge}
@@ -85,21 +89,21 @@ export function PdpDifficulty({ result }: { result: DifficultyResult }) {
                 ))}
               </ul>
             ) : (
-              <p className="text-[0.9375rem] leading-[1.6] text-pdp-body">No particularly demanding steps.</p>
+              <p className="text-base leading-[26px] text-pl-text">No particularly demanding steps.</p>
             )}
           </dd>
         </div>
 
         {result.techniques.length > 0 && (
-          <div data-meemi-anchor="techniques" className="flex flex-col gap-2 border-b border-pdp-hairline/70 py-3 last:border-0">
-            <dt className="text-sm text-pdp-meta">Techniques</dt>
+          <div data-meemi-anchor="techniques" className="flex flex-col gap-2 border-t border-pl-line py-3 last:pb-0">
+            <dt className="text-sm leading-[22px] text-pl-muted">Techniques</dt>
             <dd>
-              <ul className="flex flex-wrap gap-x-2 gap-y-1 text-[0.9375rem] leading-[1.6] text-pdp-body">
+              <ul className="flex flex-wrap gap-x-2 gap-y-1 text-base leading-[26px] text-pl-text">
                 {result.techniques.map((technique, index) => (
                   <li key={technique.slug}>
                     {technique.label}
                     {index < result.techniques.length - 1 && (
-                      <span aria-hidden className="ml-2 text-pdp-label">
+                      <span aria-hidden className="ml-2 text-pl-muted">
                         ·
                       </span>
                     )}
@@ -112,7 +116,7 @@ export function PdpDifficulty({ result }: { result: DifficultyResult }) {
       </dl>
 
       <details className="group">
-        <summary className="cursor-pointer text-[0.6875rem] font-semibold tracking-[0.14em] text-pdp-title uppercase underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700">
+        <summary className="pl-focus w-fit cursor-pointer rounded-sm text-sm leading-[22px] font-bold text-pl-text underline-offset-4 hover:underline">
           How this score is worked out
         </summary>
 
@@ -120,18 +124,18 @@ export function PdpDifficulty({ result }: { result: DifficultyResult }) {
           <dl className="flex flex-col gap-2.5">
             {result.breakdown.map((row) => (
               <div key={row.dimension} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5">
-                <dt className="text-sm text-pdp-body">
+                <dt className="text-sm text-pl-text">
                   {row.label}
-                  <span className="text-pdp-subtle"> · {DIFFICULTY_WEIGHTS[row.dimension]}%</span>
+                  <span className="text-pl-muted"> · {DIFFICULTY_WEIGHTS[row.dimension]}%</span>
                 </dt>
-                <dd className="text-sm font-medium text-pdp-title tabular-nums">{row.rating} / 10</dd>
-                <div aria-hidden className="col-span-2 h-1 overflow-hidden rounded-full bg-pdp-track">
-                  <div className="h-full rounded-full bg-brand-400" style={{ width: `${row.rating * 10}%` }} />
+                <dd className="text-sm font-bold text-pl-text tabular-nums">{row.rating} / 10</dd>
+                <div aria-hidden className="col-span-2 h-1 overflow-hidden rounded-full bg-pl-line">
+                  <div className="h-full rounded-full bg-plum-500" style={{ width: `${row.rating * 10}%` }} />
                 </div>
               </div>
             ))}
           </dl>
-          <p className="text-sm leading-[1.6] text-pdp-meta">
+          <p className="text-sm leading-[22px] text-pl-muted">
             Six ratings, weighted towards stitches, construction and shaping. A pattern is never scored more
             than two points below its most demanding part.
           </p>

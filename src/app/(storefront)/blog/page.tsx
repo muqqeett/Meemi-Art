@@ -1,8 +1,9 @@
 import Link from "next/link";
 
 import { ArticleCardLink } from "@/components/content/article-card";
-import { Breadcrumbs } from "@/components/brand/breadcrumbs";
 import { EmptyState } from "@/components/brand/empty-state";
+import { PlumColumn, PlumGround, PlumHero, PlumTabTrack } from "@/components/content/plum";
+import { plumButtonClass } from "@/components/ui/plum-button";
 import { PaginationNav } from "@/components/shop/pagination-nav";
 import { BookOpen } from "lucide-react";
 import { learnMetadata } from "@/lib/content/seo";
@@ -32,46 +33,52 @@ export default async function BlogPage({ searchParams }: PageProps<"/blog">) {
   ]);
 
   return (
-    <div className="container-page max-w-5xl py-10 lg:py-14">
-      <Breadcrumbs items={[{ label: "Learn", href: "/learn" }, { label: "Articles" }]} />
+    <PlumGround>
+      <PlumHero
+        crumbs={[{ label: "Learn", href: "/learn" }, { label: "Articles" }]}
+        eyebrow="Articles"
+        title="Crochet articles and guides"
+        lead={
+          <>
+            Longer pieces on the things patterns assume you already know — how to read them, what
+            to make them with, and why a stitch behaves the way it does. For quick lookups, the{" "}
+            <Link href="/learn" className="pl-focus rounded-sm text-plum-500 underline underline-offset-4">
+              reference pages
+            </Link>{" "}
+            are faster.
+          </>
+        }
+      >
+        {topics.length > 0 && (
+          <PlumTabTrack
+            label="Article topics"
+            items={[
+              { key: "all", label: "All articles", href: "/blog", current: true },
+              ...topics.map((topic) => ({
+                key: topic.slug,
+                label: (
+                  <>
+                    {topic.name}
+                    <span className="ml-1.5 tabular-nums opacity-60">{topic.count}</span>
+                  </>
+                ),
+                href: `/blog/topic/${topic.slug}`,
+              })),
+            ]}
+          />
+        )}
+      </PlumHero>
 
-      <header className="mt-6 mb-10 border-b border-border pb-8">
-        <p className="label-caps text-brand-600">Articles</p>
-        <h1 className="heading-section mt-2">Crochet articles and guides</h1>
-        <p className="text-body mt-4 max-w-2xl text-base leading-relaxed">
-          Longer pieces on the things patterns assume you already know — how to
-          read them, what to make them with, and why a stitch behaves the way it
-          does. For quick lookups, the{" "}
-          <Link href="/learn" className="text-brand-700 underline underline-offset-4">
-            reference pages
-          </Link>{" "}
-          are faster.
-        </p>
-      </header>
-
-      {topics.length > 0 && (
-        <nav aria-label="Article topics" className="mb-8 flex flex-wrap gap-2">
-          {topics.map((topic) => (
-            <Link
-              key={topic.slug}
-              href={`/blog/topic/${topic.slug}`}
-              className="inline-flex h-8 items-center rounded-md border border-border px-3 text-[0.8125rem] text-muted-foreground transition-colors duration-150 hover:border-brand-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-            >
-              {topic.name}
-              <span className="ml-1.5 tabular-nums opacity-60">{topic.count}</span>
-            </Link>
-          ))}
-        </nav>
-      )}
-
+      <PlumColumn className="py-10 lg:py-14">
       {articles.length === 0 ? (
         <EmptyState
           variant="inline"
           icon={BookOpen}
+          tone="plum"
           title="No articles published yet"
           description="Articles are written and edited before they go live, so this page stays empty until the first one is ready. The reference guides are already available."
           action={
-            <Link href="/learn" className="text-sm font-medium text-royal-600 hover:underline">
+            <Link href="/learn" className={plumButtonClass({ style: "primary", size: "md" })}>
               Browse the reference guides
             </Link>
           }
@@ -86,13 +93,14 @@ export default async function BlogPage({ searchParams }: PageProps<"/blog">) {
             ))}
           </ul>
 
-          <p className="text-body mt-8 text-xs tabular-nums">
+          <p className="mt-8 text-sm leading-[22px] text-pl-muted tabular-nums">
             {total} {total === 1 ? "article" : "articles"}
           </p>
 
           <PaginationNav page={current} pageCount={pageCount} baseQuery="" basePath="/blog" />
         </>
       )}
-    </div>
+      </PlumColumn>
+    </PlumGround>
   );
 }

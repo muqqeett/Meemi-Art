@@ -17,7 +17,15 @@ import type { Role } from "@/generated/prisma/enums";
 
 type AccountMenuProps = {
   user: { name: string | null; email: string; role: Role } | null;
+  /** `plum` restyles the trigger for the Plum Studio header; the menu is unchanged. */
+  variant?: "default" | "plum";
 };
+
+const TRIGGER = {
+  default:
+    "inline-flex size-11 items-center justify-center rounded-full text-brand-700 transition-colors hover:bg-surface-alt hover:text-royal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600",
+  plum: "pl-focus inline-flex size-11 items-center justify-center rounded-full text-pl-text transition-colors hover:bg-plum-100",
+} as const;
 
 const LINKS = [
   { href: "/account", label: "Overview", Icon: User },
@@ -27,15 +35,12 @@ const LINKS = [
   { href: "/account/settings", label: "Settings", Icon: Settings },
 ] as const;
 
-export function AccountMenu({ user }: AccountMenuProps) {
+export function AccountMenu({ user, variant = "default" }: AccountMenuProps) {
+  const iconSize = variant === "plum" ? "size-6" : "size-5";
   if (!user) {
     return (
-      <Link
-        href="/login"
-        className="inline-flex size-11 items-center justify-center rounded-full text-brand-700 transition-colors hover:bg-surface-alt hover:text-royal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600"
-        aria-label="Sign in"
-      >
-        <User className="size-5" aria-hidden />
+      <Link href="/login" className={TRIGGER[variant]} aria-label="Sign in">
+        <User className={iconSize} aria-hidden />
       </Link>
     );
   }
@@ -46,12 +51,12 @@ export function AccountMenu({ user }: AccountMenuProps) {
         render={
           <button
             type="button"
-            className="inline-flex size-11 items-center justify-center rounded-full text-brand-700 transition-colors hover:bg-surface-alt hover:text-royal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600"
+            className={TRIGGER[variant]}
             aria-label="Account menu"
           />
         }
       >
-        <User className="size-5" aria-hidden />
+        <User className={iconSize} aria-hidden />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-60">

@@ -18,7 +18,14 @@ import { cn } from "@/lib/utils";
  * since that path does not open the drawer. It fires on increase only: a
  * removal should not be celebrated, and the first render should not animate.
  */
-export function CartButton({ serverCount }: { serverCount: number }) {
+export function CartButton({
+  serverCount,
+  variant = "default",
+}: {
+  serverCount: number;
+  /** `plum` is the Plum Studio header: marigold count badge, plum ink. */
+  variant?: "default" | "plum";
+}) {
   const { count, setCount, open } = useCartUI();
   const controls = useAnimationControls();
   const previous = useRef<number | null>(null);
@@ -45,11 +52,17 @@ export function CartButton({ serverCount }: { serverCount: number }) {
     <button
       type="button"
       onClick={open}
-      className={cn(
-        "relative inline-flex size-11 items-center justify-center rounded-full text-brand-700 transition-colors",
-        "hover:bg-surface-alt hover:text-royal-600",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600",
-      )}
+      className={
+        variant === "plum"
+          ? "pl-focus relative inline-flex size-11 items-center justify-center rounded-full text-pl-text transition-colors hover:bg-plum-100"
+          : // The earlier design's string, verbatim: the homepage renders this
+            // and its markup is protected.
+            cn(
+              "relative inline-flex size-11 items-center justify-center rounded-full text-brand-700 transition-colors",
+              "hover:bg-surface-alt hover:text-royal-600",
+              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600",
+            )
+      }
       aria-label={
         displayed > 0
           ? `Open bag, ${displayed} ${displayed === 1 ? "item" : "items"}`
@@ -57,7 +70,7 @@ export function CartButton({ serverCount }: { serverCount: number }) {
       }
     >
       <motion.span animate={controls} className="inline-flex">
-        <ShoppingBag className="size-5" aria-hidden />
+        <ShoppingBag className={variant === "plum" ? "size-6" : "size-5"} aria-hidden />
       </motion.span>
 
       <AnimatePresence>
@@ -69,7 +82,12 @@ export function CartButton({ serverCount }: { serverCount: number }) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.6 }}
             transition={{ duration: duration.fast, ease: ease.standard }}
-            className="absolute -top-0.5 -right-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-royal-600 px-1.5 text-[0.6875rem] font-semibold text-white tabular-nums"
+            className={cn(
+              "absolute inline-flex min-w-5 items-center justify-center rounded-full tabular-nums",
+              variant === "plum"
+                ? "font-figtree top-0 left-6 h-5 border-2 border-white bg-pl-buy px-1 text-[11px] leading-5 font-bold text-pl-text"
+                : "-top-0.5 -right-0.5 bg-royal-600 px-1.5 text-[0.6875rem] font-semibold text-white",
+            )}
           >
             {displayed > 99 ? "99+" : displayed}
           </motion.span>

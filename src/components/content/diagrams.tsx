@@ -198,9 +198,9 @@ export function StitchDiagram({ name, caption }: { name: string; caption?: strin
   if (!diagram) return null;
 
   return (
-    <figure className="rounded-sm border border-border bg-surface-alt/50 px-5 py-6">
+    <figure className="rounded-[20px] bg-pl-subtle px-5 py-6 text-pl-text">
       <div className="flex justify-center">{diagram.render()}</div>
-      <figcaption className="text-body mt-4 text-xs leading-relaxed">
+      <figcaption className="font-figtree mt-4 text-[13px] leading-[18px] font-medium text-pl-muted">
         <span className="font-medium text-foreground">{diagram.title}.</span> {caption ?? diagram.description}
       </figcaption>
     </figure>

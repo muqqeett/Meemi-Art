@@ -40,11 +40,11 @@ export function PdpBuyBlock({
           productId={productId}
           productName={productName}
           initialSaved={isWishlisted}
-          variant="inline"
+          variant="plum-pill"
         />
         <Link
           href="/refunds"
-          className="inline-flex items-center gap-2 text-sm text-pdp-body underline-offset-4 transition-colors hover:text-pdp-title hover:underline"
+          className="pl-focus font-figtree inline-flex items-center gap-2 rounded-sm text-sm leading-[22px] text-pl-muted underline-offset-4 transition-colors hover:text-pl-text hover:underline"
         >
           <ShieldCheck className="size-4 shrink-0" aria-hidden />
           14-day refund policy

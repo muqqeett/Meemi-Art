@@ -3,6 +3,8 @@
 @import "shadcn/tailwind.css";
 /* Self-hosted @font-face rules and the --font-* variables they define. */
 @import "./fonts.css";
+/* Plum Studio theme: additive tokens for the redesigned storefront routes. */
+@import "./plum.css";
 
 @custom-variant dark (&:is(.dark *));
 

@@ -3,7 +3,8 @@ import { Search } from "lucide-react";
 
 import { ShopResults } from "@/components/shop/shop-results";
 import { EmptyState } from "@/components/brand/empty-state";
-import { ButtonLink } from "@/components/ui/button-link";
+import { PlumButtonLink } from "@/components/ui/plum-button";
+import { PlumPage, PlumPageHead } from "@/components/shop/plum-page-head";
 import { listProducts } from "@/lib/queries/products";
 import { getAllCategories } from "@/lib/queries/categories";
 import { parseFilters, buildBaseQuery } from "@/lib/shop-params";
@@ -22,19 +23,20 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
   if (!query) {
     return (
-      <div className="container-page py-10 lg:py-14">
-        <h1 className="heading-section">Search</h1>
+      <PlumPage>
+        <PlumPageHead crumbs={[{ label: "Search" }]} title="Search" />
         <EmptyState
+          tone="plum"
           icon={Search}
           title="What are you looking for?"
           description="Search by product name, brand or category — or browse the full collection."
           action={
-            <ButtonLink href="/shop" variant="brand" size="pill">
+            <PlumButtonLink href="/shop" style="primary">
               Browse the shop
-            </ButtonLink>
+            </PlumButtonLink>
           }
         />
-      </div>
+      </PlumPage>
     );
   }
 
@@ -44,17 +46,20 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   ]);
 
   return (
-    <div className="container-page py-10 lg:py-14">
-      <header className="mb-8">
-        <h1 className="heading-section">
-          Results for <span className="text-brand-600">“{query}”</span>
-        </h1>
-        <p className="text-body mt-2">
-          {result.total === 0
+    <PlumPage>
+      <PlumPageHead
+        crumbs={[{ label: "Search" }]}
+        title={
+          <>
+            Results for <span className="text-plum-500">“{query}”</span>
+          </>
+        }
+        lead={
+          result.total === 0
             ? "We couldn't find a match."
-            : `${result.total} ${result.total === 1 ? "product" : "products"} found.`}
-        </p>
-      </header>
+            : `${result.total} ${result.total === 1 ? "product" : "products"} found.`
+        }
+      />
 
       <ShopResults
         result={result}
@@ -65,6 +70,6 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
         emptyTitle={`No results for “${query}”`}
         emptyDescription="Check the spelling, try a broader term, or browse the categories instead."
       />
-    </div>
+    </PlumPage>
   );
 }

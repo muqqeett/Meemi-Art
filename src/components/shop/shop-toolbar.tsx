@@ -12,7 +12,7 @@ import {
   SheetFooter,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+import { plumButtonClass } from "@/components/ui/plum-button";
 import { FilterPanel, type FilterPanelProps } from "@/components/shop/filter-panel";
 import { useFilterParams } from "@/components/shop/use-filter-params";
 import { SORT_OPTIONS } from "@/lib/config";
@@ -32,14 +32,14 @@ export function ShopToolbar({ total, showing, ...filterProps }: ShopToolbarProps
   const sort = get("sort") ?? "newest";
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-      <p className="text-sm text-muted-foreground" aria-live="polite">
+    <div className="font-figtree flex flex-wrap items-center justify-between gap-3">
+      <p className="pl-small text-pl-muted" aria-live="polite">
         {total === 0 ? (
           "No products"
         ) : (
           <>
-            Showing <span className="font-medium text-foreground">{showing}</span> of{" "}
-            <span className="font-medium text-foreground">{total}</span>{" "}
+            Showing <span className="font-bold text-pl-text">{showing}</span> of{" "}
+            <span className="font-bold text-pl-text">{total}</span>{" "}
             {total === 1 ? "product" : "products"}
           </>
         )}
@@ -49,12 +49,11 @@ export function ShopToolbar({ total, showing, ...filterProps }: ShopToolbarProps
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger
             render={
-              <Button
-                variant="brandOutline"
-                size="pillSm"
-                // 36px is below a comfortable thumb target. Only ever rendered
+              <button
+                type="button"
+                // 44px: the design's minimum touch target. Only ever rendered
                 // below lg, so desktop sizing is unaffected.
-                className="h-11 lg:hidden"
+                className={plumButtonClass({ style: "secondary", size: "md", className: "lg:hidden" })}
               />
             }
           >
@@ -64,10 +63,12 @@ export function ShopToolbar({ total, showing, ...filterProps }: ShopToolbarProps
 
           <SheetContent
             side="bottom"
-            className="max-h-[85vh] gap-0 rounded-t-2xl p-0 sm:max-w-none"
+            className="font-figtree max-h-[85vh] gap-0 rounded-t-[20px] bg-pl-page p-0 sm:max-w-none"
           >
-            <SheetHeader className="border-b border-border px-5 py-4">
-              <SheetTitle className="text-left">Filters</SheetTitle>
+            <SheetHeader className="border-b border-pl-line px-5 py-4">
+              <SheetTitle className="pl-display text-left text-2xl leading-8 tracking-[-0.02em]">
+                Filters
+              </SheetTitle>
               <SheetDescription className="sr-only">
                 Narrow the product list by category, price, rating, brand and availability.
               </SheetDescription>
@@ -77,15 +78,14 @@ export function ShopToolbar({ total, showing, ...filterProps }: ShopToolbarProps
               <FilterPanel {...filterProps} />
             </div>
 
-            <SheetFooter className="border-t border-border p-4">
-              <Button
-                variant="brand"
-                size="pill"
-                className="w-full"
+            <SheetFooter className="border-t border-pl-line p-4">
+              <button
+                type="button"
+                className={plumButtonClass({ style: "primary", size: "md", className: "w-full" })}
                 onClick={() => setOpen(false)}
               >
                 Show {total} {total === 1 ? "result" : "results"}
-              </Button>
+              </button>
             </SheetFooter>
           </SheetContent>
         </Sheet>
@@ -98,7 +98,7 @@ export function ShopToolbar({ total, showing, ...filterProps }: ShopToolbarProps
             id="sort"
             value={sort}
             onChange={(event) => setFilters({ sort: event.target.value })}
-            className="h-9 rounded-full border border-border bg-background px-3.5 pr-8 text-[0.8125rem] text-foreground transition-colors hover:border-brand-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            className="pl-focus font-figtree h-11 rounded-full border-[1.5px] border-pl-line-strong bg-pl-surface px-4 pr-8 text-[14px] leading-[18px] font-bold text-pl-text transition-colors hover:bg-plum-100"
           >
             {SORT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>

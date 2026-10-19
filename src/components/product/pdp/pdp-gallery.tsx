@@ -121,7 +121,7 @@ export function PdpGallery({
 
   if (!active) {
     return (
-      <div className="flex aspect-square w-full items-center justify-center rounded-[3px] bg-pdp-field ring-1 ring-pdp-hairline text-sm text-pdp-body">
+      <div className="font-figtree flex aspect-square w-full items-center justify-center rounded-[24px] bg-pl-tint-crochet text-sm text-pl-muted">
         No image available
       </div>
     );
@@ -193,14 +193,10 @@ export function PdpGallery({
             `group` drives the hover zoom and the controls' reveal; the whole
             thing is a button, so the image is clickable and keyboard-reachable
             without a nested-interactive warning. */}
-        <div className="group/stage relative aspect-square w-full overflow-hidden rounded-[3px] bg-pdp-field ring-1 ring-pdp-hairline">
-          {/* Ambient glow. Two very low-opacity radial washes in brand tokens —
-              enough to lift the product off a flat rectangle, nowhere near
-              enough to tint it. Sits under the image and ignores pointers. */}
-          <div aria-hidden className="pointer-events-none absolute inset-0">
-            <div className="absolute -top-1/4 left-1/2 size-[85%] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,var(--color-royal-200)_0%,transparent_70%)] opacity-40 blur-[64px]" />
-            <div className="absolute -bottom-1/4 left-1/2 size-[70%] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,var(--color-brand-200)_0%,transparent_70%)] opacity-35 blur-[64px]" />
-          </div>
+        {/* Plum Studio media well (19:1264): a flat plum-100 tint with a 24px
+            radius. The earlier design's blurred colour glow is gone — the
+            design has none. */}
+        <div className="group/stage relative aspect-square w-full overflow-hidden rounded-[24px] bg-pl-tint-crochet">
 
           {active.kind === "image" ? (
             <button
@@ -419,12 +415,12 @@ export function PdpGallery({
                   setIndex(i);
                 }}
                 className={cn(
-                  "group/thumb relative size-16 shrink-0 overflow-hidden rounded-[3px] bg-pdp-field sm:size-[76px]",
+                  "group/thumb relative size-16 shrink-0 overflow-hidden rounded-[12px] bg-pl-tint-crochet sm:size-[76px]",
                   "transition-[box-shadow,opacity] duration-[160ms] ease-out",
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pdp-price",
                   i === index
-                    ? "opacity-100 ring-2 ring-brand-400"
-                    : "opacity-55 ring-1 ring-pdp-hairline hover:opacity-100 hover:ring-brand-300",
+                    ? "opacity-100 ring-2 ring-plum-900"
+                    : "opacity-70 hover:opacity-100",
                 )}
               >
                 {/* Contained too, so a thumbnail is a true index of the frame
@@ -457,8 +453,8 @@ export function PdpGallery({
                     className={cn(
                       "absolute bottom-0 left-0 px-1.5 py-0.5 text-[0.625rem] leading-none font-semibold tracking-[0.1em] tabular-nums transition-colors duration-[160ms]",
                       i === index
-                        ? "bg-brand-400 text-white"
-                        : "bg-white/75 text-pdp-meta group-hover/thumb:bg-white",
+                        ? "bg-plum-900 text-pl-on-dark"
+                        : "bg-white/75 text-pl-muted group-hover/thumb:bg-white",
                     )}
                   >
                     {String(i + 1).padStart(2, "0")}
@@ -480,7 +476,7 @@ export function PdpGallery({
             productName={productName}
             initialSaved={isWishlisted}
             variant="inline"
-            className="size-[52px] rounded-[8px] border-0 bg-pdp-surface text-pdp-price hover:bg-pdp-hairline"
+            className="size-[52px] rounded-full border-0 bg-pl-surface text-pl-text shadow-pl-sm hover:bg-plum-100"
           />
 
           <button type="button" onClick={share} className={railButton} aria-label={copied ? "Link copied" : `Share ${productName}`}>

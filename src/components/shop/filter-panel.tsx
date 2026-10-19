@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Star, X } from "lucide-react";
+import { Check, Star, X } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { useFilterParams, type CurrentParams } from "@/components/shop/use-filter-params";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -31,14 +29,58 @@ function centsToInput(value: string | undefined): string {
   return String(cents / 100);
 }
 
+/** Plum Studio group heading — Label/Strong, 16/22 bold. */
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="border-b border-border py-5 first:pt-0 last:border-0">
-      <h3 className="mb-3 text-sm font-semibold text-foreground">{title}</h3>
+    <section className="flex flex-col gap-2 py-4 first:pt-0">
+      <h3 className="pl-strong text-pl-text">{title}</h3>
       {children}
     </section>
   );
 }
+
+/**
+ * The design's facet row: a 24px box, the label, a caption-size count. The
+ * whole row is the button (Figma Checkbox, 7:80), `aria-pressed` carries the
+ * state, and the box fills plum when it is on.
+ */
+function FacetRow({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count?: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className="pl-focus group/facet flex min-h-11 w-full items-center gap-2.5 rounded-md py-1.5 text-left lg:min-h-0"
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "inline-flex size-6 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors",
+          active
+            ? "border-plum-900 bg-plum-900 text-pl-on-dark"
+            : "border-pl-line-strong bg-pl-surface group-hover/facet:border-plum-500",
+        )}
+      >
+        {active && <Check className="size-4" strokeWidth={3} />}
+      </span>
+      <span className="pl-body text-pl-text">{label}</span>
+      {count !== undefined && <span className="pl-caption text-pl-muted">{count}</span>}
+    </button>
+  );
+}
+
+const FIELD =
+  "pl-focus font-figtree h-11 w-full rounded-[12px] border-[1.5px] border-pl-line-strong bg-pl-surface px-3 text-base text-pl-text placeholder:text-pl-muted focus-visible:border-plum-500";
 
 /**
  * Filter controls shared by the desktop sidebar and the mobile drawer. Every
@@ -83,19 +125,19 @@ export function FilterPanel({
     Boolean(get("minPrice") || get("maxPrice"));
 
   return (
-    <div className={cn("text-sm", pending && "opacity-70")}>
+    <div className={cn("font-figtree text-sm text-pl-text", pending && "opacity-70")}>
       {hasActive && (
         <div className="flex items-center justify-between pb-4">
-          <span className="text-xs font-medium text-muted-foreground">Filters applied</span>
+          <span className="pl-caption text-pl-muted">Filters applied</span>
           <button
             type="button"
             onClick={() => {
               clearAll();
               onApplied?.();
             }}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline"
+            className="pl-focus inline-flex items-center gap-1 rounded-full px-2 py-1 text-[13px] leading-[18px] font-bold text-plum-500 hover:bg-plum-100"
           >
-            <X className="size-3" aria-hidden />
+            <X className="size-3.5" aria-hidden />
             Clear all
           </button>
         </div>
@@ -103,48 +145,30 @@ export function FilterPanel({
 
       {showCategories && (
         <Group title="Category">
-          <ul className="space-y-1">
+          <ul>
             <li>
-              <button
-                type="button"
+              <FacetRow
+                active={!activeCategory}
+                label="All products"
                 onClick={() => {
                   setFilters({ category: null });
                   onApplied?.();
                 }}
-                aria-pressed={!activeCategory}
-                className={cn(
-                  "flex w-full min-h-11 items-center justify-between rounded-md px-2 py-2 text-left transition-colors lg:min-h-0",
-                  !activeCategory
-                    ? "bg-brand-50 font-medium text-brand-700"
-                    : "hover:bg-surface-alt",
-                )}
-              >
-                All products
-              </button>
+              />
             </li>
             {categories.map((category) => {
               const active = activeCategory === category.slug;
               return (
                 <li key={category.id}>
-                  <button
-                    type="button"
+                  <FacetRow
+                    active={active}
+                    label={category.name}
+                    count={category._count.products}
                     onClick={() => {
                       setFilters({ category: active ? null : category.slug });
                       onApplied?.();
                     }}
-                    aria-pressed={active}
-                    className={cn(
-                      "flex w-full min-h-11 items-center justify-between rounded-md px-2 py-2 text-left transition-colors lg:min-h-0",
-                      active
-                        ? "bg-brand-50 font-medium text-brand-700"
-                        : "hover:bg-surface-alt",
-                    )}
-                  >
-                    <span>{category.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {category._count.products}
-                    </span>
-                  </button>
+                  />
                 </li>
               );
             })}
@@ -159,46 +183,50 @@ export function FilterPanel({
               <Label htmlFor="filter-min-price" className="sr-only">
                 Minimum price
               </Label>
-              <Input
+              <input
                 id="filter-min-price"
                 inputMode="decimal"
                 placeholder={String(Math.floor(priceRange.minCents / 100))}
                 value={minPrice}
                 onChange={(event) => setMinDraft(event.target.value)}
-                className="h-10"
+                className={FIELD}
               />
             </div>
-            <span aria-hidden className="text-muted-foreground">
+            <span aria-hidden className="text-pl-muted">
               –
             </span>
             <div className="flex-1">
               <Label htmlFor="filter-max-price" className="sr-only">
                 Maximum price
               </Label>
-              <Input
+              <input
                 id="filter-max-price"
                 inputMode="decimal"
                 placeholder={String(Math.ceil(priceRange.maxCents / 100))}
                 value={maxPrice}
                 onChange={(event) => setMaxDraft(event.target.value)}
-                className="h-10"
+                className={FIELD}
               />
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="pl-caption text-pl-muted">
             Catalogue range {formatMoney(priceRange.minCents)} –{" "}
             {formatMoney(priceRange.maxCents)}
           </p>
 
-          <Button type="submit" variant="outline" size="pillSm" className="w-full">
+          {/* Secondary button: outlined, 36px, sentence case. */}
+          <button
+            type="submit"
+            className="pl-focus font-figtree h-10 w-full rounded-full border-[1.5px] border-pl-line-strong bg-pl-surface text-[14px] leading-[18px] font-bold text-pl-text transition-colors hover:bg-plum-100"
+          >
             Apply price
-          </Button>
+          </button>
         </form>
       </Group>
 
       <Group title="Rating">
-        <ul className="space-y-1">
+        <ul>
           {RATINGS.map((rating) => {
             const active = activeRating === String(rating);
             return (
@@ -211,8 +239,8 @@ export function FilterPanel({
                   }}
                   aria-pressed={active}
                   className={cn(
-                    "flex w-full min-h-11 items-center gap-2 rounded-md px-2 py-2 transition-colors lg:min-h-0",
-                    active ? "bg-brand-50 text-brand-700" : "hover:bg-surface-alt",
+                    "pl-focus flex min-h-11 w-full items-center gap-2 rounded-[12px] px-2 py-1.5 transition-colors lg:min-h-0",
+                    active ? "bg-plum-100" : "hover:bg-plum-100/60",
                   )}
                 >
                   <span aria-hidden className="inline-flex">
@@ -222,13 +250,13 @@ export function FilterPanel({
                         className={cn(
                           "size-3.5",
                           index < rating
-                            ? "fill-star text-star"
-                            : "fill-transparent text-muted-foreground/40",
+                            ? "fill-plum-500 text-plum-500"
+                            : "fill-transparent text-pl-line-strong",
                         )}
                       />
                     ))}
                   </span>
-                  <span>{rating} & up</span>
+                  <span className="pl-small">{rating} & up</span>
                 </button>
               </li>
             );
@@ -238,28 +266,20 @@ export function FilterPanel({
 
       {brands.length > 1 && (
         <Group title="Brand">
-          <ul className="space-y-1">
+          <ul>
             {brands.map((brand) => {
               const active = activeBrand === brand.name;
               return (
                 <li key={brand.name}>
-                  <button
-                    type="button"
+                  <FacetRow
+                    active={active}
+                    label={brand.name}
+                    count={brand.count}
                     onClick={() => {
                       setFilters({ brand: active ? null : brand.name });
                       onApplied?.();
                     }}
-                    aria-pressed={active}
-                    className={cn(
-                      "flex w-full min-h-11 items-center justify-between rounded-md px-2 py-2 text-left transition-colors lg:min-h-0",
-                      active
-                        ? "bg-brand-50 font-medium text-brand-700"
-                        : "hover:bg-surface-alt",
-                    )}
-                  >
-                    <span>{brand.name}</span>
-                    <span className="text-xs text-muted-foreground">{brand.count}</span>
-                  </button>
+                  />
                 </li>
               );
             })}

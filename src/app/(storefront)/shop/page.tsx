@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { Breadcrumbs } from "@/components/brand/breadcrumbs";
+import { PlumPage, PlumPageHead } from "@/components/shop/plum-page-head";
 import { ShopResults } from "@/components/shop/shop-results";
 import { listProducts } from "@/lib/queries/products";
 import { getAllCategories } from "@/lib/queries/categories";
@@ -42,16 +42,12 @@ export default async function ShopPage({ searchParams }: PageProps<"/shop">) {
   ]);
 
   return (
-    <div className="container-page py-10 lg:py-14">
-      <Breadcrumbs items={[{ label: "Shop" }]} />
-
-      <header className="mt-6 mb-10 max-w-2xl">
-        <h1 className="heading-section">Shop all</h1>
-        <p className="text-body mt-3">
-          Every piece we make, in one place. Filter by category, price or availability to
-          narrow it down.
-        </p>
-      </header>
+    <PlumPage>
+      <PlumPageHead
+        crumbs={[{ label: "Shop" }]}
+        title="Shop all"
+        lead="Every piece we make, in one place. Filter by category, price or availability to narrow it down."
+      />
 
       <ShopResults
         result={result}
@@ -60,6 +56,6 @@ export default async function ShopPage({ searchParams }: PageProps<"/shop">) {
         basePath="/shop"
         baseQuery={buildBaseQuery(raw)}
       />
-    </div>
+    </PlumPage>
   );
 }

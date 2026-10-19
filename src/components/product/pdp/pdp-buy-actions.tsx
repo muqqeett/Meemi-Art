@@ -2,19 +2,20 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
 import { addToCart } from "@/lib/actions/cart";
 import { emitProductEvent } from "@/lib/product-events";
 import { useCartUI } from "@/lib/stores/cart-ui";
+import { plumButtonClass } from "@/components/ui/plum-button";
 
 /**
- * "Add To Cart" and "Checkout Now" — Figma 57:1411.
+ * "Add to cart" and "Buy now" — Plum Studio "Buy row" (19:1385).
  *
- *   row       24px apart, 520 wide
- *   primary   #141414, 8px radius, 296 wide, Clash Grotesk Semibold 20/1.2
- *   secondary white with a #B8B8B8 hairline, 200 × 58, Clash Grotesk Medium
+ *   primary   Buy / Large: marigold, 2px plum outline, 56px pill, takes the
+ *             remaining width. The only marigold control on the page.
+ *   secondary Secondary / Large: white, 1.5px outline.
  *
  * The two do different things on purpose. "Add To Cart" adds and opens the
  * drawer, leaving the shopper on the page. "Checkout Now" adds and then goes
@@ -68,7 +69,7 @@ export function PdpBuyActions({
     return (
       <p
         role="status"
-        className="rounded-[3px] border border-pdp-border px-6 py-4 text-center text-base text-pdp-body"
+        className="font-figtree rounded-[20px] border border-pl-line bg-pl-surface px-6 py-4 text-center text-base text-pl-muted"
       >
         This piece isn&apos;t available to buy at the moment.
       </p>
@@ -93,13 +94,19 @@ export function PdpBuyActions({
            column, so `flex: 1 1 0%` would set a zero basis on the *vertical*
            axis and collapse the button to 24px — measured, at 320. Full width
            in the column, remaining width in the row. */
-        className="inline-flex h-14 w-full items-center justify-center rounded-[3px] bg-brand-700 px-6 text-[0.8125rem] font-semibold tracking-[0.14em] text-white uppercase transition-[background-color,transform] duration-200 hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:translate-y-px active:bg-brand-800 disabled:pointer-events-none disabled:opacity-60 min-[380px]:w-auto min-[380px]:flex-1"
+        className={plumButtonClass({
+          style: "buy",
+          size: "lg",
+          className: "w-full min-[380px]:w-auto min-[380px]:flex-1",
+        })}
       >
         {busy === "cart" ? (
-          <Loader2 className="mr-2 size-5 animate-spin" aria-hidden />
+          <Loader2 className="size-5 animate-spin" aria-hidden />
         ) : justAdded ? (
-          <Check className="mr-2 size-5" aria-hidden />
-        ) : null}
+          <Check className="size-5" aria-hidden />
+        ) : (
+          <ShoppingBag className="size-5" aria-hidden />
+        )}
         {justAdded ? "Added to bag" : "Add to cart"}
       </button>
 
@@ -111,9 +118,13 @@ export function PdpBuyActions({
         onClick={() => add("checkout")}
         disabled={pending}
         aria-busy={pending}
-        className="inline-flex h-14 w-full shrink-0 items-center justify-center rounded-[3px] border border-brand-700/35 bg-transparent px-6 text-[0.8125rem] font-semibold tracking-[0.14em] text-pdp-title uppercase transition-[background-color,border-color,transform] duration-200 hover:border-brand-700/60 hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:translate-y-px disabled:pointer-events-none disabled:opacity-60 min-[380px]:w-[150px] sm:w-[170px]"
+        className={plumButtonClass({
+          style: "secondary",
+          size: "lg",
+          className: "w-full shrink-0 min-[380px]:w-auto",
+        })}
       >
-        {busy === "checkout" && <Loader2 className="mr-2 size-5 animate-spin" aria-hidden />}
+        {busy === "checkout" && <Loader2 className="size-5 animate-spin" aria-hidden />}
         Buy now
       </button>
     </div>

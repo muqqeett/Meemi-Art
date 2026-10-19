@@ -168,24 +168,30 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
       />
 
       {/*
-        Product detail — Figma 57:1305.
+        Product detail — Plum Studio "Product" (19:1214).
 
-        The design's own header and footer are not built here: this site has
-        one of each already, and a product page carrying a second set would be
-        the only page that does.
+        The design's header and footer are the site's own (the Plum chrome the
+        storefront layout supplies), so none is built here.
 
-        Its 1512 frame holds a 1200 content column, so from 1440 up the gutter
-        is the homepage's own 120px and the two pages' left edges land on the
-        same line. Below that the gutter narrows rather than holding 240px of
-        empty margin around a column that no longer has room for it — the
-        homepage keeps its own ladder, so nothing there moves.
+        1280 frame, 32px gutters, a 600px gallery and a 56px gap, the info
+        column taking the rest. Below lg it stacks.
+
+        Three blocks, two placements. On a phone this is one column and the
+        source order rules: gallery, purchase, then everything to read. From
+        `lg` the gallery spans both rows of column one while the detail column
+        stacks reading above buying, which puts the CTA where the eye lands
+        after the tabs. One `PdpBuyBlock` serves both, moved by grid placement
+        rather than rendered twice, so its add-to-cart state is never
+        duplicated and a screen reader meets one "Add to cart" button.
+
+        `[&>*]:min-w-0` because a grid item's automatic minimum is its
+        min-content width, and the gallery's fixed-size thumbnails would
+        otherwise hold the column open on a narrow screen.
       */}
-      {/* Warm ivory rather than white. The whole page used to sit on one flat
-          sheet, so the gallery, the reading and the reviews all had the same
-          ground and none of them had a place. Paper first; the white gallery
-          card and the photography lift off it. */}
-      <div className="mx-auto w-full max-w-[1440px] bg-pdp-ivory px-5 py-8 sm:max-lg:px-8 lg:max-wide:px-12 lg:py-10 wide:px-[135px]">
+      <div data-fill className="font-figtree w-full bg-pl-page text-pl-text">
+      <div className="mx-auto w-full max-w-[1280px] px-4 pt-6 pb-20 sm:px-6 lg:px-8 lg:pt-8">
         <Breadcrumbs
+          variant="plum"
           items={[
             { label: "Shop", href: "/shop" },
             { label: product.category.name, href: `/shop/${product.category.slug}` },
@@ -193,42 +199,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           ]}
         />
 
-        {/* The drawn split is 1170 of content: a gallery column, a 63px gap
-            and a 537px detail column. Held literally from 1440 up, shared by
-            ratio between lg and there, stacked below lg.
-
-            The ranges are written disjoint (`lg:max-wide:` against `wide:`)
-            rather than as a plain `lg:` that `wide:` overrides — see the note
-            on `--breakpoint-wide` in globals.css for why the override loses.
-
-            `[&>*]:min-w-0` because a grid item's automatic minimum is its
-            min-content width, and the gallery's fixed 76px thumbnails would
-            otherwise hold the column open at 364px on a 375px screen. */}
-        {/*
-          Three blocks, two placements.
-
-          On a phone this is one column and the source order rules: gallery,
-          purchase, then everything to read. That is the point of the layout —
-          the image is the hero and the thing to do about it is the next thing
-          you meet, not something four screens down.
-
-          From `lg` the gallery spans both rows of column one while the detail
-          column stacks reading above buying, which puts the CTA where the eye
-          lands after the tabs. One `PdpBuyBlock` serves both, moved by grid
-          placement rather than rendered twice — see that component for why.
-
-          `[&>*]:min-w-0` because a grid item's automatic minimum is its
-          min-content width, and the gallery's fixed 76px thumbnails would
-          otherwise hold the column open at 364px on a 375px screen.
-        */}
-        {/* The split is no longer even. The drawn 1fr/537 gave the gallery 570
-            of the 1170, and once the title grew to 3.25rem the type column
-            out-weighed the photograph — the image is meant to be the first
-            thing on this page, not the second. Widening the gallery to 700 and
-            narrowing the reading column to 468 restores that order, and 468 is
-            still a comfortable measure for the description. Below `wide` the
-            gallery takes the larger share of the two by ratio. */}
-        <div className="mt-8 grid items-start gap-8 [&>*]:min-w-0 lg:max-wide:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:max-wide:gap-12 lg:gap-y-10 wide:grid-cols-[minmax(0,1fr)_468px] wide:gap-x-[63px]">
+        <div className="mt-6 grid items-start gap-8 [&>*]:min-w-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-x-14 lg:gap-y-8 wide:grid-cols-[600px_minmax(0,1fr)]">
           {/* Above the fold, so it animates on mount rather than paying for a
               viewport observer that would fire immediately. */}
           <Reveal variant="in" onMount className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
@@ -259,6 +230,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             <PdpInfo
               brand={product.brand}
               name={product.name}
+              categoryName={product.category.name}
               description={product.description}
               priceCents={product.priceCents}
               compareAtCents={product.compareAtCents}
@@ -309,6 +281,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             soldCounts={soldCounts}
           />
         </div>
+      </div>
       </div>
 
       <RecentlyViewed currentSlug={product.slug} />

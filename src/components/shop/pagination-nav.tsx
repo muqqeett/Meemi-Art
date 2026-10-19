@@ -48,7 +48,7 @@ export function PaginationNav({ page, pageCount, baseQuery, basePath }: Paginati
   };
 
   const itemClass =
-    "inline-flex h-10 min-w-10 items-center justify-center rounded-lg px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600";
+    "pl-focus font-figtree inline-flex h-11 min-w-11 items-center justify-center rounded-full px-3 text-[14px] font-bold text-pl-text transition-colors";
 
   return (
     <nav aria-label="Pagination" className="mt-10 flex justify-center">
@@ -59,14 +59,14 @@ export function PaginationNav({ page, pageCount, baseQuery, basePath }: Paginati
               href={href(page - 1)}
               rel="prev"
               aria-label="Previous page"
-              className={cn(itemClass, "border border-border hover:bg-surface-alt")}
+              className={cn(itemClass, "border-[1.5px] border-pl-line hover:bg-plum-100")}
             >
               <ChevronLeft className="size-4" aria-hidden />
             </Link>
           ) : (
             <span
               aria-hidden
-              className={cn(itemClass, "border border-border/60 text-muted-foreground/40")}
+              className={cn(itemClass, "border-[1.5px] border-pl-line text-pl-line-strong")}
             >
               <ChevronLeft className="size-4" />
             </span>
@@ -76,7 +76,7 @@ export function PaginationNav({ page, pageCount, baseQuery, basePath }: Paginati
         {pageWindow(page, pageCount).map((entry, index) =>
           entry === "gap" ? (
             <li key={`gap-${index}`}>
-              <span className={cn(itemClass, "text-muted-foreground")} aria-hidden>
+              <span className={cn(itemClass, "text-pl-muted")} aria-hidden>
                 …
               </span>
             </li>
@@ -89,8 +89,8 @@ export function PaginationNav({ page, pageCount, baseQuery, basePath }: Paginati
                 className={cn(
                   itemClass,
                   entry === page
-                    ? "bg-brand-600 font-semibold text-white"
-                    : "border border-border hover:bg-surface-alt",
+                    ? "bg-plum-900 text-pl-on-dark"
+                    : "border-[1.5px] border-pl-line hover:bg-plum-100",
                 )}
               >
                 {entry}
@@ -105,14 +105,14 @@ export function PaginationNav({ page, pageCount, baseQuery, basePath }: Paginati
               href={href(page + 1)}
               rel="next"
               aria-label="Next page"
-              className={cn(itemClass, "border border-border hover:bg-surface-alt")}
+              className={cn(itemClass, "border-[1.5px] border-pl-line hover:bg-plum-100")}
             >
               <ChevronRight className="size-4" aria-hidden />
             </Link>
           ) : (
             <span
               aria-hidden
-              className={cn(itemClass, "border border-border/60 text-muted-foreground/40")}
+              className={cn(itemClass, "border-[1.5px] border-pl-line text-pl-line-strong")}
             >
               <ChevronRight className="size-4" />
             </span>

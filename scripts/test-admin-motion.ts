@@ -122,11 +122,23 @@ function main() {
   );
   // The homepage source is unchanged from the last commit — the motion work
   // does not touch it at all.
-  const homepageDiff = execFileSync("git", ["diff", "--name-only", "HEAD", "--", "src/app/(storefront)/page.tsx", "src/app/(storefront)/layout.tsx"], {
+  const homepageDiff = execFileSync("git", ["diff", "--name-only", "HEAD", "--", "src/app/(storefront)/page.tsx"], {
     cwd: ROOT,
     encoding: "utf8",
   }).trim();
-  check("the homepage and storefront layout are unchanged", homepageDiff === "", homepageDiff);
+  check("the homepage is unchanged", homepageDiff === "", homepageDiff);
+  // The storefront layout is shared by the homepage and has since gained the
+  // Plum Studio chrome gate (`ChromeGate`), so a git diff no longer says
+  // anything about the motion work. What this guard exists to protect is that
+  // the admin motion never reaches the storefront and that the homepage is
+  // still handed its own header and footer.
+  const layoutSource = readFileSync(path.join(ROOT, "src", "app", "(storefront)", "layout.tsx"), "utf8");
+  check(
+    "the storefront layout carries no admin hooks and still gives `/` its own header and footer",
+    !/admin-(root|page|kpi-row|card-interactive)/.test(layoutSource) &&
+      layoutSource.includes("home={<SiteHeader />}") &&
+      layoutSource.includes("home={<SiteFooter />}"),
+  );
 
   console.log("\nCompositor-only, no residue");
   const keyframeProps = keyframes.flatMap((rule) =>

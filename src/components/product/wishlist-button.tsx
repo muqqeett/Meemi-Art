@@ -15,8 +15,11 @@ type WishlistButtonProps = {
   productId: string;
   productName: string;
   initialSaved: boolean;
-  /** `floating` overlays the product image; `inline` sits in a row of buttons. */
-  variant?: "floating" | "inline";
+  /**
+   * `floating` overlays the product image; `inline` sits in a row of buttons;
+   * `plum` is the Plum Studio card heart (white 44px disc, violet when saved).
+   */
+  variant?: "floating" | "inline" | "plum" | "plum-pill";
   className?: string;
 };
 
@@ -105,12 +108,17 @@ export function WishlistButton({
       transition={{ duration: duration.fast, ease: ease.standard }}
       className={cn(
         "inline-flex items-center justify-center transition-all",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
+        variant === "plum"
+          ? "pl-focus size-11 rounded-full bg-pl-surface text-pl-text shadow-pl-sm hover:bg-plum-100"
+          : variant === "plum-pill"
+            ? "pl-focus font-figtree h-14 gap-2 rounded-full border-[1.5px] border-pl-line-strong bg-pl-surface px-7 text-[15px] leading-[18px] font-bold text-pl-text hover:bg-plum-100"
+            : "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
         variant === "floating"
           ? // 44px on touch screens, the drawn 36px from sm up where a cursor
             // is doing the pointing.
             "size-11 sm:size-9 rounded-full bg-white/90 text-ink shadow-sm backdrop-blur-sm hover:bg-white hover:text-brand-700"
-          : "size-11 rounded-full border border-border bg-background text-muted-foreground hover:border-brand-300 hover:text-brand-700",
+          : variant === "inline" &&
+            "size-11 rounded-full border border-border bg-background text-muted-foreground hover:border-brand-300 hover:text-brand-700",
         pending && "opacity-70",
         className,
       )}
@@ -130,12 +138,20 @@ export function WishlistButton({
           <Heart
             aria-hidden
             className={cn(
-              "size-4 transition-colors",
-              saved && "fill-brand-700 text-brand-700",
+              variant === "plum"
+                ? "size-[18px] transition-colors"
+                : variant === "plum-pill"
+                  ? "size-5 transition-colors"
+                  : "size-4 transition-colors",
+              saved &&
+                (variant === "plum" || variant === "plum-pill"
+                  ? "fill-plum-500 text-plum-500"
+                  : "fill-brand-700 text-brand-700"),
             )}
           />
         </motion.span>
       )}
+      {variant === "plum-pill" && (saved ? "Saved" : "Save")}
     </motion.button>
   );
 }

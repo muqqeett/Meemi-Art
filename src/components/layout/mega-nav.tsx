@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Menu, X } from "lucide-react";
+import { ArrowRight, ChevronDown, Menu, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
@@ -36,9 +36,12 @@ export type MegaProduct = {
 export function MegaNav({
   categories,
   featured,
+  variant = "default",
 }: {
   categories: MegaCategory[];
   featured: MegaProduct[];
+  /** `plum` renders the trigger as the Plum Studio "Shop ⌄" nav pill. */
+  variant?: "default" | "plum";
 }) {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<number | undefined>(undefined);
@@ -95,15 +98,32 @@ export function MegaNav({
             setOpen(true);
           }}
           onClick={() => setOpen((value) => !value)}
-          className={cn(
-            "inline-flex size-12 items-center justify-center rounded-full transition-colors",
-            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600",
-            open
-              ? "bg-near-black/8 text-royal-600"
-              : "text-near-black hover:bg-near-black/5 hover:text-royal-600",
-          )}
+          className={
+            variant === "plum"
+              ? cn(
+                  "pl-focus font-figtree inline-flex h-11 items-center justify-center gap-1 rounded-full px-3 text-[15px] leading-[18px] font-bold text-pl-text transition-colors",
+                  open ? "bg-plum-100" : "hover:bg-plum-100",
+                )
+              : // The earlier design's call, verbatim: the homepage renders
+                // this and its markup is protected.
+                cn(
+                  "inline-flex size-12 items-center justify-center rounded-full transition-colors",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600",
+                  open
+                    ? "bg-near-black/8 text-royal-600"
+                    : "text-near-black hover:bg-near-black/5 hover:text-royal-600",
+                )
+          }
         >
-          {open ? (
+          {variant === "plum" ? (
+            <>
+              Shop
+              <ChevronDown
+                className={cn("size-5 transition-transform", open && "rotate-180")}
+                aria-hidden
+              />
+            </>
+          ) : open ? (
             <X className="size-6" aria-hidden />
           ) : (
             <Menu className="size-6" aria-hidden />

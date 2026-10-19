@@ -24,6 +24,8 @@ type MobileNavProps = {
   isSignedIn: boolean;
   userName: string | null;
   categories: MegaCategory[];
+  /** `plum` restyles the trigger for the Plum Studio header; the sheet is unchanged. */
+  variant?: "default" | "plum";
 };
 
 /**
@@ -31,7 +33,12 @@ type MobileNavProps = {
  * menu: category tiles you can actually see, 48px rows, and the account block
  * kept below the shopping links where it belongs.
  */
-export function MobileNav({ isSignedIn, userName, categories }: MobileNavProps) {
+export function MobileNav({
+  isSignedIn,
+  userName,
+  categories,
+  variant = "default",
+}: MobileNavProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -43,12 +50,16 @@ export function MobileNav({ isSignedIn, userName, categories }: MobileNavProps) 
         render={
           <button
             type="button"
-            className="inline-flex size-11 items-center justify-center rounded-xs text-brand-700 transition-colors hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600"
+            className={
+              variant === "plum"
+                ? "pl-focus inline-flex size-11 items-center justify-center rounded-full text-pl-text transition-colors hover:bg-plum-100"
+                : "inline-flex size-11 items-center justify-center rounded-xs text-brand-700 transition-colors hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600"
+            }
             aria-label="Open menu"
           />
         }
       >
-        <Menu className="size-5" aria-hidden />
+        <Menu className={variant === "plum" ? "size-6" : "size-5"} aria-hidden />
       </SheetTrigger>
 
       <SheetContent side="left" className="w-[88vw] max-w-sm gap-0 p-0">

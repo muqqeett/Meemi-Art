@@ -41,12 +41,12 @@ export function PdpDescription({ text }: { text: string }) {
   const collapsed = needsToggle && !open;
 
   return (
-    <div className="flex flex-col gap-2.5">
-      <h2 className="font-raleway text-xl leading-[1.2] font-bold text-pdp-title">
-        Description:
+    <div className="font-figtree flex flex-col gap-2">
+      <h2 className="text-base leading-[22px] font-bold tracking-[-0.005em] text-pl-text">
+        Description
       </h2>
 
-      <p className="font-clash text-base leading-[1.3] whitespace-pre-line text-pdp-body">
+      <p className="text-base leading-[26px] whitespace-pre-line text-pl-muted">
         {head}
         {collapsed && "… "}
         {needsToggle && (
@@ -62,9 +62,9 @@ export function PdpDescription({ text }: { text: string }) {
               onClick={() => setOpen((value) => !value)}
               aria-expanded={!collapsed}
               aria-controls="pdp-description-rest"
-              className="font-clash font-medium text-black underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pdp-price"
+              className="pl-focus rounded-sm font-bold text-pl-text underline underline-offset-2 hover:text-plum-500"
             >
-              {collapsed ? "See More...." : "See Less"}
+              {collapsed ? "See more" : "See less"}
             </button>
           </>
         )}

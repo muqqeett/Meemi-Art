@@ -1,4 +1,5 @@
 import { AccountNav } from "@/components/account/account-nav";
+import { PlumColumn, PlumGround } from "@/components/content/plum";
 import { requireUser } from "@/lib/auth-guards";
 
 /**
@@ -9,11 +10,12 @@ export default async function AccountLayout({ children }: LayoutProps<"/account"
   const user = await requireUser("/account");
 
   return (
-    <div className="container-page py-8 lg:py-12">
+    <PlumGround>
+      <PlumColumn className="py-8 lg:py-12">
       <header className="mb-8">
-        <h1 className="heading-section">My account</h1>
-        <p className="text-body mt-1">
-          Signed in as <span className="font-medium text-foreground">{user.email}</span>
+        <h1 className="pl-display pl-h2">My account</h1>
+        <p className="mt-1 text-base leading-[26px] text-pl-muted">
+          Signed in as <span className="font-bold text-pl-text">{user.email}</span>
         </p>
       </header>
 
@@ -27,6 +29,7 @@ export default async function AccountLayout({ children }: LayoutProps<"/account"
         </aside>
         <div className="min-w-0">{children}</div>
       </div>
-    </div>
+      </PlumColumn>
+    </PlumGround>
   );
 }

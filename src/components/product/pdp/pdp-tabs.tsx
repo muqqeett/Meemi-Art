@@ -5,17 +5,16 @@ import { useId, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * The segmented control under the buy row — Figma 8211:1523.
+ * Segmented tabs — Plum Studio "Tab" (12:322) on an ink-100 pill track.
  *
- *   track    `#eaecf0`, 60px radius, 4px padding, full column width
- *   segment  equal width, 60px radius, 16px Medium
- *   active   white, lifted on a soft two-layer shadow
+ *   track    ink-100, pill, 4px padding
+ *   segment  36px tall, 12px radius, 14/18 bold
+ *   active   white, lifted on the small two-layer shadow
  *
- * The design's three segments are Details / Packaging / Shipping details. Two
- * of those describe a parcel. Nothing here is posted, so the panels carry what
- * a buyer of a file actually needs — what it is, what arrives, and what happens
- * if it is wrong — rather than an empty "Shipping" tab that would be a lie in a
- * tab bar.
+ * The design's three segments are Details / What's included / Reviews. This
+ * product's panels carry what a buyer of a file needs — what it is, what
+ * arrives, and what happens if it is wrong. Reviews have their own section
+ * further down the page, so a tab for them would duplicate it.
  *
  * Built as a real ARIA tablist: roving `aria-selected`, arrow keys, and one
  * panel per tab, so a keyboard or screen-reader user gets the same three
@@ -44,11 +43,7 @@ export function PdpTabs({ tabs }: { tabs: PdpTab[] }) {
         role="tablist"
         aria-label="Product information"
         onKeyDown={onKeyDown}
-        /* Was a grey pill track with a lifted white segment — the loudest
-           object in the column, and the most generic. An underlined rule is
-           how a magazine sets section navigation: the labels are the design,
-           and the line tells you where you are. */
-        className="flex gap-7 border-b border-pdp-hairline sm:gap-10"
+        className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-full bg-pl-sunken p-1"
       >
         {tabs.map((tab, index) => {
           const selected = index === active;
@@ -63,15 +58,10 @@ export function PdpTabs({ tabs }: { tabs: PdpTab[] }) {
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(index)}
               className={cn(
-                "relative -mb-px pb-3.5 text-[0.6875rem] font-semibold tracking-[0.16em] whitespace-nowrap uppercase transition-colors duration-200",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700",
-                // The rule wipes in from the left rather than cutting: a
-                // transform, so it costs no layout and reads as the underline
-                // travelling to the label you chose.
-                "after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-brand-600 after:transition-transform after:duration-200 after:ease-out",
+                "pl-focus font-figtree h-9 rounded-[12px] px-4 text-[14px] leading-[18px] font-bold whitespace-nowrap transition-colors",
                 selected
-                  ? "text-pdp-title after:scale-x-100"
-                  : "text-pdp-label hover:text-pdp-title after:scale-x-0",
+                  ? "bg-pl-surface text-pl-text shadow-pl-sm"
+                  : "text-pl-muted hover:text-pl-text",
               )}
             >
               {tab.label}
@@ -87,7 +77,7 @@ export function PdpTabs({ tabs }: { tabs: PdpTab[] }) {
           role="tabpanel"
           aria-labelledby={`${base}-tab-${index}`}
           hidden={index !== active}
-          className="text-base leading-[1.6] text-pdp-body"
+          className="font-figtree text-base leading-[26px] text-pl-muted"
         >
           {tab.panel}
         </div>

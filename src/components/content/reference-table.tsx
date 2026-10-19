@@ -28,22 +28,22 @@ export function ReferenceTable({
       role="region"
       aria-label={caption}
     >
-      <table className="w-full min-w-[34rem] border-collapse text-sm">
+      <table className="font-figtree w-full min-w-[34rem] border-collapse text-sm leading-[22px]">
         <caption className="sr-only">{caption}</caption>
         <thead>
-          <tr className="border-b border-border">
+          <tr className="border-b border-pl-line">
             {columns.map((column) => (
               <th
                 key={column.label}
                 scope="col"
-                className={`label-caps py-2.5 pr-4 text-left align-bottom text-muted-foreground ${column.numeric ? "tabular-nums" : ""}`}
+                className={`py-2.5 pr-4 text-left align-bottom text-[13px] leading-[18px] font-bold tracking-[0.04em] text-pl-muted uppercase ${column.numeric ? "tabular-nums" : ""}`}
               >
                 {column.label}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-border/70">{children}</tbody>
+        <tbody className="divide-y divide-pl-line">{children}</tbody>
       </table>
     </div>
   );

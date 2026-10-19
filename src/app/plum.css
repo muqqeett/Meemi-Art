@@ -1,0 +1,155 @@
+/* ---------------------------------------------------------------------------
+   Plum Studio — the redesigned storefront routes.
+
+   Source of truth: Figma "Meemi Art — Plum Studio Design System"
+   (file 42TwN22cmYzMS6myJjiU6B). Token values below are the file's own
+   variables, read from the Home frame (17:96).
+
+   SCOPE
+   Everything here is additive. The theme block only *adds* `plum-*`, `pl-*`
+   colours, two font families and one shadow; no existing token is redefined,
+   so the homepage and the routes still on the earlier design are untouched.
+   The component classes are all prefixed `.pl-` and only take effect where a
+   redesigned component puts them.
+   --------------------------------------------------------------------------- */
+
+@theme inline {
+  --font-figtree: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-bricolage: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+
+  /* Brand plum scale (Figma --plum-*). */
+  --color-plum-100: #efe7fb;
+  --color-plum-200: #dccdf2;
+  --color-plum-500: #6d43c9;
+  --color-plum-800: #301b5c;
+  --color-plum-900: #24113f;
+
+  /* Role tokens. */
+  --color-pl-page: #fbf8ff; /* --bg-page */
+  --color-pl-surface: #ffffff; /* --bg-surface */
+  --color-pl-inverse: #24113f; /* --bg-inverse */
+  --color-pl-sunken: #f1eff5; /* --ink-100 */
+  --color-pl-subtle: #f7f3fc; /* --bg-subtle */
+  --color-pl-text: #24113f; /* --text-primary */
+  --color-pl-muted: #5f5275; /* --text-secondary */
+  --color-pl-on-dark: #fbf8ff; /* --text-inverse */
+  --color-pl-line: #e3e0ea; /* --border-default */
+  --color-pl-line-strong: #c9c4d3; /* --border-strong */
+  /* Marigold. Purchase actions only (Add to cart, checkout, buy CTAs). */
+  --color-pl-buy: #f5b02e; /* --action-buy */
+
+  /* Category and product-media tints. */
+  --color-pl-tint-crochet: #efe7fb;
+  --color-pl-tint-templates: #fff1d6;
+  --color-pl-tint-printables: #e3f3ea;
+  --color-pl-tint-assets: #e3eefb;
+  --color-pl-tint-ebooks: #e9e3f5;
+
+  --shadow-pl-sm: 0 1px 2px rgb(36 17 63 / 0.06), 0 1px 1px rgb(36 17 63 / 0.04);
+  --shadow-pl-md: 0 8px 24px -8px rgb(36 17 63 / 0.18);
+}
+
+@layer components {
+  /* Display face. The design pins the optical-size axis at 14, so the glyphs
+     keep the same weight and spacing at every size instead of the browser
+     re-cutting them per font-size. */
+  .pl-display {
+    font-family: var(--font-bricolage);
+    font-weight: 800;
+    font-optical-sizing: none;
+    font-variation-settings: "opsz" 14, "wdth" 100;
+    color: var(--color-pl-text);
+  }
+
+  /* Heading/H1 — 52/56, -3%. */
+  .pl-h1 {
+    font-size: 52px;
+    line-height: 56px;
+    letter-spacing: -0.03em;
+  }
+  /* Heading/H2 — 36/40, -2.2%. */
+  .pl-h2 {
+    font-size: 36px;
+    line-height: 40px;
+    letter-spacing: -0.022em;
+  }
+  /* Price/Card — 20/24, -1.5%. */
+  .pl-price {
+    font-size: 20px;
+    line-height: 24px;
+    letter-spacing: -0.015em;
+  }
+
+  @media (max-width: 639px) {
+    .pl-h1 {
+      font-size: 38px;
+      line-height: 42px;
+    }
+    .pl-h2 {
+      font-size: 28px;
+      line-height: 32px;
+    }
+  }
+
+  /* Heading/H3 — 20/24 Bold, -1%. Bricolage at 700, not the 800 of the others. */
+  .pl-h3 {
+    font-family: var(--font-bricolage);
+    font-weight: 700;
+    font-optical-sizing: none;
+    font-variation-settings: "opsz" 14, "wdth" 100;
+    font-size: 20px;
+    line-height: 24px;
+    letter-spacing: -0.01em;
+    color: var(--color-pl-text);
+  }
+
+  /* Label/Eyebrow — 13/18 bold caps, tracked 8%, plum-500. */
+  .pl-eyebrow {
+    font-family: var(--font-figtree);
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-plum-500);
+  }
+
+  /* Body/Lead 18/28 · Body/Default 16/26 · Body/Small 14/22 · Caption 13/18. */
+  .pl-lead {
+    font-family: var(--font-figtree);
+    font-size: 18px;
+    line-height: 28px;
+    color: var(--color-pl-muted);
+  }
+  .pl-body {
+    font-family: var(--font-figtree);
+    font-size: 16px;
+    line-height: 26px;
+  }
+  .pl-small {
+    font-family: var(--font-figtree);
+    font-size: 14px;
+    line-height: 22px;
+  }
+  .pl-caption {
+    font-family: var(--font-figtree);
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+  }
+  /* Label/Strong 16/22 bold, -0.5%. */
+  .pl-strong {
+    font-family: var(--font-figtree);
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+  }
+
+  /* Focus ring: 3px violet, 2px offset (Button spec, 5:98). The design's
+     interactive states are violet, not the blue the earlier design used. */
+  .pl-focus:focus-visible {
+    outline: 3px solid var(--color-plum-500);
+    outline-offset: 2px;
+  }
+}

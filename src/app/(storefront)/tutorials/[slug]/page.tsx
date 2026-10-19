@@ -4,6 +4,14 @@ import { notFound } from "next/navigation";
 import { ArrowRight, BookOpen, Newspaper } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/brand/breadcrumbs";
+import {
+  PlumColumn,
+  PlumGround,
+  PlumLinkList,
+  PlumSectionHead,
+  PlumToc,
+} from "@/components/content/plum";
+import { plumButtonClass } from "@/components/ui/plum-button";
 import { ContentBlocks } from "@/components/content/content-blocks";
 import { RelatedPatterns } from "@/components/content/related-patterns";
 import { TutorialCardLink } from "@/components/content/tutorial-card";
@@ -90,167 +98,147 @@ export default async function TutorialPage({ params }: PageProps<"/tutorials/[sl
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
 
-      <article className="container-page max-w-3xl py-10 lg:py-14">
-        <Breadcrumbs
-          items={[
-            { label: "Learn", href: "/learn" },
-            { label: "Tutorials", href: "/tutorials" },
-            { label: tutorial.title },
-          ]}
-        />
+      <PlumGround>
+        <PlumColumn className="pt-6 pb-16 lg:pt-8">
+          <article className="grid grid-cols-[minmax(0,1fr)] gap-x-16 gap-y-5 lg:grid-cols-[minmax(0,720px)_minmax(0,1fr)]">
+            <header className="flex flex-col items-start gap-5 lg:col-start-1">
+              <Breadcrumbs
+                variant="plum"
+                items={[
+                  { label: "Learn", href: "/learn" },
+                  { label: "Tutorials", href: "/tutorials" },
+                  { label: tutorial.title },
+                ]}
+              />
+              {tutorial.topic && (
+                <Link
+                  href={`/tutorials?topic=${tutorial.topic.slug}`}
+                  className="pl-eyebrow pl-focus rounded-sm hover:underline"
+                >
+                  {tutorial.topic.name}
+                </Link>
+              )}
+              <h1 className="pl-display pl-h1">{tutorial.title}</h1>
+              <p className="flex flex-wrap items-center gap-2 text-sm leading-[22px] text-pl-muted">
+                <span className="font-bold text-pl-text">{siteConfig.name}</span>
+                <span aria-hidden>·</span>
+                <span>{TUTORIAL_DIFFICULTY_LABELS[tutorial.difficulty]}</span>
+                {time && (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span>{time}</span>
+                  </>
+                )}
+                <span aria-hidden>·</span>
+                <time dateTime={tutorial.publishedAt.toISOString()}>
+                  {tutorial.publishedAt.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </time>
+              </p>
+            </header>
 
-        <header className="mt-6 mb-8 border-b border-border pb-8">
-          {tutorial.topic && (
-            <Link href={`/tutorials?topic=${tutorial.topic.slug}`} className="label-caps text-brand-600 hover:underline">
-              {tutorial.topic.name}
-            </Link>
-          )}
-          <h1 className="heading-section mt-2">{tutorial.title}</h1>
-          <p className="text-body mt-4 text-base leading-relaxed">{tutorial.excerpt}</p>
-          <p className="text-body mt-5 flex flex-wrap items-center gap-2 text-xs">
-            <span className="font-medium text-foreground">{siteConfig.name}</span>
-            <span aria-hidden className="opacity-40">·</span>
-            <span>{TUTORIAL_DIFFICULTY_LABELS[tutorial.difficulty]}</span>
-            {time && (
-              <>
-                <span aria-hidden className="opacity-40">·</span>
-                <span>{time}</span>
-              </>
+            {tutorial.coverImageUrl && (
+              <figure className="overflow-hidden rounded-[20px] bg-pl-tint-crochet lg:col-start-1">
+                <Image
+                  src={tutorial.coverImageUrl}
+                  alt={tutorial.coverImageAlt ?? ""}
+                  width={1200}
+                  height={675}
+                  sizes="(min-width: 1024px) 45rem, 100vw"
+                  className="h-auto w-full object-cover"
+                  priority
+                />
+              </figure>
             )}
-            <span aria-hidden className="opacity-40">·</span>
-            <time dateTime={tutorial.publishedAt.toISOString()}>
-              {tutorial.publishedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
-            </time>
-          </p>
-        </header>
 
-        {tutorial.coverImageUrl && (
-          <figure className="mb-10 overflow-hidden rounded-sm border border-border bg-surface-alt">
-            <Image
-              src={tutorial.coverImageUrl}
-              alt={tutorial.coverImageAlt ?? ""}
-              width={1200}
-              height={675}
-              sizes="(min-width: 768px) 48rem, 100vw"
-              className="h-auto w-full object-cover"
-              priority
-            />
-          </figure>
-        )}
+            {tutorial.steps.length > 2 && (
+              <div className="lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:self-start">
+                <PlumToc
+                  label="The steps"
+                  ordered
+                  items={tutorial.steps.map((step) => ({
+                    key: step.title,
+                    href: `#${headingId(step.title)}`,
+                    text: step.title,
+                  }))}
+                />
+              </div>
+            )}
 
-        <ContentBlocks blocks={tutorial.intro} />
+            <div className="flex flex-col gap-12 lg:col-start-1">
+              <div className="flex flex-col gap-8">
+                <ContentBlocks blocks={tutorial.intro} />
+                {tutorial.materials.length > 0 && (
+                  <TutorialMaterials materials={tutorial.materials} />
+                )}
+              </div>
 
-        {tutorial.materials.length > 0 && (
-          <div className="mt-8">
-            <TutorialMaterials materials={tutorial.materials} />
-          </div>
-        )}
+              <TutorialSteps steps={tutorial.steps} />
 
-        {tutorial.steps.length > 2 && (
-          <nav aria-label="The steps" className="mt-10 rounded-sm border border-border bg-surface-alt/60 px-5 py-4">
-            <p className="label-caps text-muted-foreground">The steps</p>
-            <ol className="text-body mt-3 list-decimal space-y-1.5 pl-5 text-sm">
-              {tutorial.steps.map((step) => (
-                <li key={step.title}>
-                  <Link
-                    href={`#${headingId(step.title)}`}
-                    className="text-foreground underline-offset-4 hover:text-brand-600 hover:underline"
-                  >
-                    {step.title}
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          </nav>
-        )}
+              {tutorial.outro.length > 0 && (
+                <div className="border-t border-pl-line pt-8">
+                  <ContentBlocks blocks={tutorial.outro} />
+                </div>
+              )}
 
-        <div className="mt-12">
-          <TutorialSteps steps={tutorial.steps} />
-        </div>
+              {related.resources.length > 0 && (
+                <PlumLinkList
+                  id="related-resources"
+                  title="Keep these to hand"
+                  Icon={BookOpen}
+                  items={related.resources.map((resource) => ({
+                    key: resource.slug,
+                    href: resourcePath(resource.slug),
+                    title: resource.title,
+                    blurb: resource.description,
+                  }))}
+                />
+              )}
 
-        {tutorial.outro.length > 0 && (
-          <div className="mt-12 border-t border-border pt-8">
-            <ContentBlocks blocks={tutorial.outro} />
-          </div>
-        )}
+              {related.articles.length > 0 && (
+                <PlumLinkList
+                  id="related-articles"
+                  title="The wider explanation"
+                  Icon={Newspaper}
+                  items={related.articles.map((article) => ({
+                    key: article.slug,
+                    href: `/blog/${article.slug}`,
+                    title: article.title,
+                    blurb: article.excerpt,
+                  }))}
+                />
+              )}
 
-        {related.resources.length > 0 && (
-          <section aria-labelledby="related-resources" className="mt-12 border-t border-border pt-8">
-            <h2 id="related-resources" className="heading-sub">
-              Keep these to hand
-            </h2>
-            <ul className="mt-4 space-y-2.5">
-              {related.resources.map((resource) => (
-                <li key={resource.slug}>
-                  <Link
-                    href={resourcePath(resource.slug)}
-                    className="group flex items-start gap-2.5 text-sm text-foreground hover:text-brand-700"
-                  >
-                    <BookOpen className="mt-0.5 size-4 shrink-0 text-brand-600" aria-hidden />
-                    <span>
-                      <span className="font-medium underline-offset-4 group-hover:underline">{resource.title}</span>
-                      <span className="text-body mt-0.5 block text-xs leading-relaxed">{resource.description}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+              <RelatedPatterns products={related.products} heading="Patterns that use this" />
 
-        {related.articles.length > 0 && (
-          <section aria-labelledby="related-articles" className="mt-12 border-t border-border pt-8">
-            <h2 id="related-articles" className="heading-sub">
-              The wider explanation
-            </h2>
-            <ul className="mt-4 space-y-2.5">
-              {related.articles.map((article) => (
-                <li key={article.slug}>
-                  <Link
-                    href={`/blog/${article.slug}`}
-                    className="group flex items-start gap-2.5 text-sm text-foreground hover:text-brand-700"
-                  >
-                    <Newspaper className="mt-0.5 size-4 shrink-0 text-brand-600" aria-hidden />
-                    <span>
-                      <span className="font-medium underline-offset-4 group-hover:underline">{article.title}</span>
-                      <span className="text-body mt-0.5 block text-xs leading-relaxed">{article.excerpt}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        <div className="mt-12">
-          <RelatedPatterns products={related.products} heading="Patterns that use this" />
-        </div>
+              <p>
+                <Link href="/tutorials" className={plumButtonClass({ style: "secondary", size: "md" })}>
+                  All tutorials
+                  <ArrowRight className="size-5" aria-hidden />
+                </Link>
+              </p>
+            </div>
+          </article>
+        </PlumColumn>
 
         {related.tutorials.length > 0 && (
-          <section aria-labelledby="related-tutorials" className="mt-12 border-t border-border pt-8">
-            <h2 id="related-tutorials" className="heading-sub">
-              Next skill
-            </h2>
-            <ul className="mt-6 grid gap-5 sm:grid-cols-2">
-              {related.tutorials.map((sibling) => (
-                <li key={sibling.slug}>
-                  <TutorialCardLink tutorial={sibling} />
-                </li>
-              ))}
-            </ul>
+          <section aria-labelledby="related-tutorials" className="bg-pl-subtle">
+            <PlumColumn className="py-12">
+              <PlumSectionHead id="related-tutorials" title="Next skill" />
+              <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {related.tutorials.map((sibling) => (
+                  <li key={sibling.slug}>
+                    <TutorialCardLink tutorial={sibling} />
+                  </li>
+                ))}
+              </ul>
+            </PlumColumn>
           </section>
         )}
-
-        <p className="mt-12 border-t border-border pt-6">
-          <Link
-            href="/tutorials"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline-offset-4 hover:underline"
-          >
-            All tutorials
-            <ArrowRight className="size-3.5" aria-hidden />
-          </Link>
-        </p>
-      </article>
+      </PlumGround>
     </>
   );
 }

@@ -10,6 +10,8 @@ type LogoProps = {
   className?: string;
   /** Render as plain text when it already sits inside a link. */
   asLink?: boolean;
+  /** `plum` swaps the focus ring to the Plum Studio violet; the default is unchanged. */
+  focus?: "forest" | "plum";
 };
 
 /**
@@ -41,7 +43,13 @@ const SIZES = {
  * inside the text means the mark still reads as "Meemi Art" when copied, and
  * to a screen reader.
  */
-export function Logo({ tone = "dark", size = "lg", className, asLink = true }: LogoProps) {
+export function Logo({
+  tone = "dark",
+  size = "lg",
+  className,
+  asLink = true,
+  focus = "forest",
+}: LogoProps) {
   const mark = (
     <span
       className={cn(
@@ -62,7 +70,11 @@ export function Logo({ tone = "dark", size = "lg", className, asLink = true }: L
     <Link
       href="/"
       aria-label={`${siteConfig.name} — home`}
-      className="inline-flex items-center rounded-xs focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-forest"
+      className={
+        focus === "plum"
+          ? "pl-focus inline-flex items-center rounded-xs"
+          : "inline-flex items-center rounded-xs focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-forest"
+      }
     >
       {mark}
     </Link>

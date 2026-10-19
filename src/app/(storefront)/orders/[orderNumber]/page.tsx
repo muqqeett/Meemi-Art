@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { Download } from "lucide-react";
 import { OrderDetailView } from "@/components/orders/order-detail-view";
 import { OrderConfirmed } from "@/components/orders/order-confirmed";
-import { ButtonLink } from "@/components/ui/button-link";
+import { PlumButtonLink } from "@/components/ui/plum-button";
+import { PlumColumn, PlumGround } from "@/components/content/plum";
 import { getOrderForViewer } from "@/lib/queries/orders";
 import { isEmailConfigured } from "@/lib/email";
 import { getCurrentUser } from "@/lib/auth-guards";
@@ -86,7 +87,8 @@ export default async function OrderPage({
   }
 
   return (
-    <div className="container-page max-w-4xl py-10 lg:py-14">
+    <PlumGround>
+      <PlumColumn width="max-w-[900px]" className="py-10 lg:py-14">
       {/* Paid and confirmed: the files exist, so the download is the whole
           point of this panel and gets the primary button. */}
       {returnedFromPayment && isPaid && (
@@ -94,16 +96,16 @@ export default async function OrderPage({
           heading="Thank you — your order is confirmed"
           actions={
             <>
-              <ButtonLink href="/account/downloads" variant="brand" size="pill">
+              <PlumButtonLink href="/account/downloads" style="primary">
                 <Download className="size-4" aria-hidden />
                 View my downloads
-              </ButtonLink>
-              <ButtonLink href="/account/orders" variant="brandOutline" size="pill">
+              </PlumButtonLink>
+              <PlumButtonLink href="/account/orders" style="secondary">
                 View all orders
-              </ButtonLink>
-              <ButtonLink href="/shop" variant="brandOutline" size="pill">
+              </PlumButtonLink>
+              <PlumButtonLink href="/shop" style="secondary">
                 Keep shopping
-              </ButtonLink>
+              </PlumButtonLink>
             </>
           }
         >
@@ -138,16 +140,12 @@ export default async function OrderPage({
           heading="Confirming your payment"
           actions={
             <>
-              <ButtonLink
-                href={`/orders/${order.orderNumber}?from=payment`}
-                variant="brand"
-                size="pill"
-              >
+              <PlumButtonLink href={`/orders/${order.orderNumber}?from=payment`} style="primary">
                 Refresh
-              </ButtonLink>
-              <ButtonLink href="/account/orders" variant="brandOutline" size="pill">
+              </PlumButtonLink>
+              <PlumButtonLink href="/account/orders" style="secondary">
                 View all orders
-              </ButtonLink>
+              </PlumButtonLink>
             </>
           }
         >
@@ -168,11 +166,12 @@ export default async function OrderPage({
           would have no level-one heading at all in that case. */}
       {!(returnedFromPayment && (isPaid || awaitingConfirmation)) && (
         <header className="mb-8">
-          <h1 className="heading-section">Order details</h1>
+          <h1 className="pl-display pl-h1">Order details</h1>
         </header>
       )}
 
-      <OrderDetailView order={order} reviewable={reviewable} />
-    </div>
+      <OrderDetailView order={order} reviewable={reviewable} variant="plum" />
+      </PlumColumn>
+    </PlumGround>
   );
 }

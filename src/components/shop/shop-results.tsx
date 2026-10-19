@@ -5,7 +5,7 @@ import { ShopToolbar } from "@/components/shop/shop-toolbar";
 import { FilterPanel } from "@/components/shop/filter-panel";
 import { PaginationNav } from "@/components/shop/pagination-nav";
 import { EmptyState } from "@/components/brand/empty-state";
-import { ButtonLink } from "@/components/ui/button-link";
+import { PlumButtonLink } from "@/components/ui/plum-button";
 import { isFacetedView } from "@/lib/shop-params";
 import type { CurrentParams } from "@/components/shop/use-filter-params";
 import type { ProductListResult } from "@/lib/queries/products";
@@ -54,15 +54,14 @@ export function ShopResults({
   const catalogueIsEmpty = result.total === 0 && !isFacetedView(params);
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[220px_1fr] lg:gap-14">
+    <div className="grid gap-8 lg:grid-cols-[256px_1fr]">
       <aside className="hidden lg:block">
-        <div className="sticky top-28">
-          <h2 className="label-caps mb-5 text-muted-foreground">Refine</h2>
+        <div className="sticky top-24">
           <FilterPanel {...filterProps} />
         </div>
       </aside>
 
-      <div className="min-w-0">
+      <div className="flex min-w-0 flex-col gap-5">
         <ShopToolbar
           {...filterProps}
           total={result.total}
@@ -71,39 +70,36 @@ export function ShopResults({
 
         {catalogueIsEmpty ? (
           <EmptyState
+            tone="plum"
             icon={PackageOpen}
             title="No products yet"
             description="Nothing has been published to the shop yet. New pieces will appear here as soon as they're listed."
             action={
-              <ButtonLink href="/" variant="brand" size="pill">
+              <PlumButtonLink href="/" style="primary">
                 Back to home
-              </ButtonLink>
+              </PlumButtonLink>
             }
           />
         ) : result.products.length === 0 ? (
           <EmptyState
+            tone="plum"
             icon={SearchX}
             title={emptyTitle}
             description={emptyDescription}
             action={
-              <ButtonLink href={basePath} variant="brand" size="pill">
+              <PlumButtonLink href={basePath} style="primary">
                 Clear filters
-              </ButtonLink>
+              </PlumButtonLink>
             }
             secondaryAction={
-              <ButtonLink href="/shop" variant="brandOutline" size="pill">
+              <PlumButtonLink href="/shop" style="secondary">
                 Browse everything
-              </ButtonLink>
+              </PlumButtonLink>
             }
           />
         ) : (
           <>
-            <ProductGrid
-              products={result.products}
-              columns={4}
-              priorityCount={4}
-              className="mt-8"
-            />
+            <ProductGrid variant="plum" products={result.products} priorityCount={3} />
             <PaginationNav
               page={result.page}
               pageCount={result.pageCount}

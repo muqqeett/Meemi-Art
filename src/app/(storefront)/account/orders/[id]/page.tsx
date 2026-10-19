@@ -27,13 +27,13 @@ export default async function AccountOrderDetailPage({
     <div>
       <Link
         href="/account/orders"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-brand-600"
+        className="pl-focus font-figtree mb-6 inline-flex items-center gap-1.5 rounded-sm text-sm leading-[22px] font-bold text-pl-muted transition-colors hover:text-pl-text"
       >
         <ArrowLeft className="size-4" aria-hidden />
         Back to orders
       </Link>
 
-      <OrderDetailView order={order} />
+      <OrderDetailView order={order} variant="plum" />
     </div>
   );
 }

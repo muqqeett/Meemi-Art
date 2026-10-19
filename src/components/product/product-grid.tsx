@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { ProductCard } from "@/components/product/product-card";
+import { PlumProductCard } from "@/components/product/plum-product-card";
 import { RevealGroup, RevealItem } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProductCardData } from "@/lib/queries/products";
@@ -10,6 +11,11 @@ type ProductGridProps = {
   className?: string;
   /** Cards before this index load their image eagerly. */
   priorityCount?: number;
+  /**
+   * `plum` is the Plum Studio shop grid: the Plum card, two up on mobile with a
+   * 12px gap, three up from 1024px with 32px between cards (Figma 17:955).
+   */
+  variant?: "default" | "plum";
 };
 
 /** Two up on mobile, three on tablet, four on desktop — with editorial gutters. */
@@ -24,7 +30,30 @@ export function ProductGrid({
   columns = 4,
   className,
   priorityCount = 0,
+  variant = "default",
 }: ProductGridProps) {
+  if (variant === "plum") {
+    return (
+      <RevealGroup
+        as="ul"
+        className={cn(
+          "grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 lg:gap-8",
+          className,
+        )}
+      >
+        {products.map((product, index) => (
+          <RevealItem key={product.id} as="li" className="flex">
+            <PlumProductCard
+              product={product}
+              priority={index < priorityCount}
+              className="w-full"
+            />
+          </RevealItem>
+        ))}
+      </RevealGroup>
+    );
+  }
+
   return (
     // One observer on the list schedules every card, rather than one per card.
     // The cards themselves stay server components — they are passed through as

@@ -5,6 +5,14 @@ import { ArrowRight, BookOpen, GraduationCap } from "lucide-react";
 
 import { ArticleCardLink } from "@/components/content/article-card";
 import { Breadcrumbs } from "@/components/brand/breadcrumbs";
+import {
+  PlumColumn,
+  PlumGround,
+  PlumLinkList,
+  PlumSectionHead,
+  PlumToc,
+} from "@/components/content/plum";
+import { plumButtonClass } from "@/components/ui/plum-button";
 import { ContentBlocks } from "@/components/content/content-blocks";
 import { RelatedPatterns } from "@/components/content/related-patterns";
 import { outline } from "@/lib/content/blocks";
@@ -79,145 +87,144 @@ export default async function ArticlePage({ params }: PageProps<"/blog/[slug]">)
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
 
-      <article className="container-page max-w-3xl py-10 lg:py-14">
-        <Breadcrumbs
-          items={[
-            { label: "Learn", href: "/learn" },
-            { label: "Articles", href: "/blog" },
-            { label: article.title },
-          ]}
-        />
+      {/*
+        Article — Plum Studio "Article" (27:2732): a 720px reading column and a
+        sticky "On this page" card beside it from lg, a plum eyebrow, a 52px
+        Bricolage title and a cover with a 20px radius. Related articles close
+        the page on the subtle band ("Keep learning").
 
-        <header className="mt-6 mb-8 border-b border-border pb-8">
-          {article.topic && (
-            <Link href={`/blog/topic/${article.topic.slug}`} className="label-caps text-brand-600 hover:underline">
-              {article.topic.name}
-            </Link>
-          )}
-          <h1 className="heading-section mt-2">{article.title}</h1>
-          <p className="text-body mt-4 text-base leading-relaxed">{article.excerpt}</p>
-          <p className="text-body mt-5 flex flex-wrap items-center gap-2 text-xs">
-            <span className="font-medium text-foreground">{siteConfig.name}</span>
-            <span aria-hidden className="opacity-40">·</span>
-            <time dateTime={article.publishedAt.toISOString()}>
-              {article.publishedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
-            </time>
-            <span aria-hidden className="opacity-40">·</span>
-            <span>{article.readingMinutes} min read</span>
-          </p>
-        </header>
+        The design's "Free cheat sheet" card in the sidebar is not drawn: it is
+        an email-capture download, and this shop has no such flow.
 
-        {article.coverImageUrl && (
-          <figure className="mb-10 overflow-hidden rounded-sm border border-border bg-surface-alt">
-            <Image
-              src={article.coverImageUrl}
-              alt={article.coverImageAlt ?? ""}
-              width={1200}
-              height={675}
-              sizes="(min-width: 768px) 48rem, 100vw"
-              className="h-auto w-full object-cover"
-              priority
-            />
-          </figure>
-        )}
+        The contents card comes before the body in the source, so on a phone it
+        sits between the cover and the text exactly as it did; from lg it is
+        moved into the second column by grid placement rather than rendered
+        twice.
+      */}
+      <PlumGround>
+        <PlumColumn className="pt-6 pb-16 lg:pt-8">
+          <article className="grid grid-cols-[minmax(0,1fr)] gap-x-16 gap-y-5 lg:grid-cols-[minmax(0,720px)_minmax(0,1fr)]">
+            <header className="flex flex-col items-start gap-5 lg:col-start-1">
+              <Breadcrumbs
+                variant="plum"
+                items={[
+                  { label: "Learn", href: "/learn" },
+                  { label: "Articles", href: "/blog" },
+                  { label: article.title },
+                ]}
+              />
+              {article.topic && (
+                <Link
+                  href={`/blog/topic/${article.topic.slug}`}
+                  className="pl-eyebrow pl-focus rounded-sm hover:underline"
+                >
+                  {article.topic.name}
+                </Link>
+              )}
+              <h1 className="pl-display pl-h1">{article.title}</h1>
+              <p className="flex flex-wrap items-center gap-2 text-sm leading-[22px] text-pl-muted">
+                <span className="font-bold text-pl-text">{siteConfig.name}</span>
+                <span aria-hidden>·</span>
+                <time dateTime={article.publishedAt.toISOString()}>
+                  {article.publishedAt.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </time>
+                <span aria-hidden>·</span>
+                <span>{article.readingMinutes} min read</span>
+              </p>
+            </header>
 
-        {sections.length > 2 && (
-          <nav aria-label="On this page" className="mb-10 rounded-sm border border-border bg-surface-alt/60 px-5 py-4">
-            <p className="label-caps text-muted-foreground">On this page</p>
-            <ul className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
-              {sections.map((section) => (
-                <li key={section.id}>
-                  <Link
-                    href={`#${section.id}`}
-                    className="text-sm text-foreground underline-offset-4 hover:text-brand-600 hover:underline"
-                  >
-                    {section.text}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        )}
+            {article.coverImageUrl && (
+              <figure className="overflow-hidden rounded-[20px] bg-pl-tint-crochet lg:col-start-1">
+                <Image
+                  src={article.coverImageUrl}
+                  alt={article.coverImageAlt ?? ""}
+                  width={1200}
+                  height={675}
+                  sizes="(min-width: 1024px) 45rem, 100vw"
+                  className="h-auto w-full object-cover"
+                  priority
+                />
+              </figure>
+            )}
 
-        <ContentBlocks blocks={article.body} />
+            {sections.length > 2 && (
+              <div className="lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:self-start">
+                <PlumToc
+                  label="On this page"
+                  items={sections.map((section) => ({
+                    key: section.id,
+                    href: `#${section.id}`,
+                    text: section.text,
+                  }))}
+                />
+              </div>
+            )}
 
-        {related.resources.length > 0 && (
-          <section aria-labelledby="related-resources" className="mt-12 border-t border-border pt-8">
-            <h2 id="related-resources" className="heading-sub">
-              Keep these to hand
-            </h2>
-            <ul className="mt-4 space-y-2.5">
-              {related.resources.map((resource) => (
-                <li key={resource.slug}>
-                  <Link
-                    href={resourcePath(resource.slug)}
-                    className="group flex items-start gap-2.5 text-sm text-foreground hover:text-brand-700"
-                  >
-                    <BookOpen className="mt-0.5 size-4 shrink-0 text-brand-600" aria-hidden />
-                    <span>
-                      <span className="font-medium underline-offset-4 group-hover:underline">{resource.title}</span>
-                      <span className="text-body mt-0.5 block text-xs leading-relaxed">{resource.description}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+            <div className="flex flex-col gap-12 lg:col-start-1">
+              <div className="flex flex-col gap-5">
+                <p className="pl-lead !text-pl-text">{article.excerpt}</p>
+                <ContentBlocks blocks={article.body} />
+              </div>
 
-        {related.tutorials.length > 0 && (
-          <section aria-labelledby="related-tutorials" className="mt-12 border-t border-border pt-8">
-            <h2 id="related-tutorials" className="heading-sub">
-              Try it step by step
-            </h2>
-            <ul className="mt-4 space-y-2.5">
-              {related.tutorials.map((tutorial) => (
-                <li key={tutorial.slug}>
-                  <Link
-                    href={`/tutorials/${tutorial.slug}`}
-                    className="group flex items-start gap-2.5 text-sm text-foreground hover:text-brand-700"
-                  >
-                    <GraduationCap className="mt-0.5 size-4 shrink-0 text-brand-600" aria-hidden />
-                    <span>
-                      <span className="font-medium underline-offset-4 group-hover:underline">{tutorial.title}</span>
-                      <span className="text-body mt-0.5 block text-xs leading-relaxed">{tutorial.excerpt}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+              {related.resources.length > 0 && (
+                <PlumLinkList
+                  id="related-resources"
+                  title="Keep these to hand"
+                  Icon={BookOpen}
+                  items={related.resources.map((resource) => ({
+                    key: resource.slug,
+                    href: resourcePath(resource.slug),
+                    title: resource.title,
+                    blurb: resource.description,
+                  }))}
+                />
+              )}
 
-        <div className="mt-12">
-          <RelatedPatterns products={related.products} />
-        </div>
+              {related.tutorials.length > 0 && (
+                <PlumLinkList
+                  id="related-tutorials"
+                  title="Try it step by step"
+                  Icon={GraduationCap}
+                  items={related.tutorials.map((tutorial) => ({
+                    key: tutorial.slug,
+                    href: `/tutorials/${tutorial.slug}`,
+                    title: tutorial.title,
+                    blurb: tutorial.excerpt,
+                  }))}
+                />
+              )}
+
+              <RelatedPatterns products={related.products} />
+
+              <p>
+                <Link href="/blog" className={plumButtonClass({ style: "secondary", size: "md" })}>
+                  All articles
+                  <ArrowRight className="size-5" aria-hidden />
+                </Link>
+              </p>
+            </div>
+          </article>
+        </PlumColumn>
 
         {related.articles.length > 0 && (
-          <section aria-labelledby="related-articles" className="mt-12 border-t border-border pt-8">
-            <h2 id="related-articles" className="heading-sub">
-              More on this
-            </h2>
-            <ul className="mt-6 grid gap-5 sm:grid-cols-2">
-              {related.articles.map((sibling) => (
-                <li key={sibling.slug}>
-                  <ArticleCardLink article={sibling} />
-                </li>
-              ))}
-            </ul>
+          <section aria-labelledby="related-articles" className="bg-pl-subtle">
+            <PlumColumn className="py-12">
+              <PlumSectionHead id="related-articles" title="More on this" />
+              <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {related.articles.map((sibling) => (
+                  <li key={sibling.slug}>
+                    <ArticleCardLink article={sibling} />
+                  </li>
+                ))}
+              </ul>
+            </PlumColumn>
           </section>
         )}
-
-        <p className="mt-12 border-t border-border pt-6">
-          <Link
-            href="/blog"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline-offset-4 hover:underline"
-          >
-            All articles
-            <ArrowRight className="size-3.5" aria-hidden />
-          </Link>
-        </p>
-      </article>
+      </PlumGround>
     </>
   );
 }
