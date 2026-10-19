@@ -15,7 +15,6 @@
  *
  * Run: npm run test:admin-motion
  */
-import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
@@ -120,24 +119,22 @@ function main() {
     pageHookUsers.length === 1 && pageHookUsers[0].endsWith(path.join("app", "admin", "template.tsx")),
     pageHookUsers.map((f) => path.relative(ROOT, f)).join(),
   );
-  // The homepage source is unchanged from the last commit — the motion work
-  // does not touch it at all.
-  const homepageDiff = execFileSync("git", ["diff", "--name-only", "HEAD", "--", "src/app/(storefront)/page.tsx"], {
-    cwd: ROOT,
-    encoding: "utf8",
-  }).trim();
-  check("the homepage is unchanged", homepageDiff === "", homepageDiff);
-  // The storefront layout is shared by the homepage and has since gained the
-  // Plum Studio chrome gate (`ChromeGate`), so a git diff no longer says
-  // anything about the motion work. What this guard exists to protect is that
-  // the admin motion never reaches the storefront and that the homepage is
-  // still handed its own header and footer.
-  const layoutSource = readFileSync(path.join(ROOT, "src", "app", "(storefront)", "layout.tsx"), "utf8");
+  // The homepage and the storefront layout are shared with every public page,
+  // and both have been redesigned since this guard was written, so a git diff
+  // no longer says anything about the motion work. What it exists to protect is
+  // that the admin motion never reaches the storefront: neither file may carry
+  // an admin hook, and the layout still renders the storefront's own header and
+  // footer.
+  const storefrontSources = ["page.tsx", "layout.tsx"].map((name) =>
+    readFileSync(path.join(ROOT, "src", "app", "(storefront)", name), "utf8"),
+  );
   check(
-    "the storefront layout carries no admin hooks and still gives `/` its own header and footer",
-    !/admin-(root|page|kpi-row|card-interactive)/.test(layoutSource) &&
-      layoutSource.includes("home={<SiteHeader />}") &&
-      layoutSource.includes("home={<SiteFooter />}"),
+    "the homepage and storefront layout carry no admin hooks",
+    storefrontSources.every((source) => !/admin-(root|page|kpi-row|card-interactive)/.test(source)),
+  );
+  check(
+    "the storefront layout renders the storefront header and footer",
+    storefrontSources[1].includes("<PlumHeader />") && storefrontSources[1].includes("<PlumFooter />"),
   );
 
   console.log("\nCompositor-only, no residue");

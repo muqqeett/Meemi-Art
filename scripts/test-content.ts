@@ -994,12 +994,24 @@ async function main() {
     check("the seed script never overwrites a published article", seedScript.includes("existing.status === \"PUBLISHED\""));
 
     // ------------------------------------------------------------ homepage
-    console.log("\nThe homepage is untouched");
+    // The homepage has since been redesigned and now points at the learning
+    // section on purpose (a hero link and a closing band), so what is checked is
+    // that it does so only with plain links: no content query, no article or
+    // tutorial import, nothing that could publish or expose a draft.
+    console.log("\nThe homepage reaches the learning section only through links");
     const homepage = read("src/app/(storefront)/page.tsx");
-    check("the homepage does not import the learning section", !/learn|resources|content\//i.test(homepage));
+    const homeSources =
+      homepage +
+      ["plum-hero", "guides-band", "category-tiles", "latest-patterns", "how-it-works"]
+        .map((name) => read(`src/components/home/plum/${name}.tsx`))
+        .join("\n");
     check(
-      "no home component mentions the blog or resources",
-      !/\/learn|\/resources|\/blog/.test(read("src/components/home/figma/hero-band.tsx") + read("src/components/home/brand-story.tsx")),
+      "the homepage does not import the learning content or its queries",
+      !/lib\/content|queries\/(articles|tutorials|content-links)|components\/content/.test(homeSources),
+    );
+    check(
+      "the homepage links to the learning index and nothing deeper",
+      /href="\/learn"/.test(homeSources) && !/\/blog|\/tutorials|\/resources/.test(homeSources),
     );
   } finally {
     if (createdTutorials.length > 0) await prisma.tutorial.deleteMany({ where: { id: { in: createdTutorials } } });

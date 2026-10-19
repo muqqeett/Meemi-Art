@@ -104,8 +104,7 @@ export function MegaNav({
                   "pl-focus font-figtree inline-flex h-11 items-center justify-center gap-1 rounded-full px-3 text-[15px] leading-[18px] font-bold text-pl-text transition-colors",
                   open ? "bg-plum-100" : "hover:bg-plum-100",
                 )
-              : // The earlier design's call, verbatim: the homepage renders
-                // this and its markup is protected.
+              : // The earlier design's call, kept verbatim as the default.
                 cn(
                   "inline-flex size-12 items-center justify-center rounded-full transition-colors",
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600",

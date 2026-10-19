@@ -55,8 +55,7 @@ export function CartButton({
       className={
         variant === "plum"
           ? "pl-focus relative inline-flex size-11 items-center justify-center rounded-full text-pl-text transition-colors hover:bg-plum-100"
-          : // The earlier design's string, verbatim: the homepage renders this
-            // and its markup is protected.
+          : // The earlier design's string, kept verbatim as the default.
             cn(
               "relative inline-flex size-11 items-center justify-center rounded-full text-brand-700 transition-colors",
               "hover:bg-surface-alt hover:text-royal-600",

@@ -50,14 +50,16 @@
 }
 
 @layer components {
-  /* Display face. The design pins the optical-size axis at 14, so the glyphs
-     keep the same weight and spacing at every size instead of the browser
-     re-cutting them per font-size. */
+  /* Display face. Figma reports the optical-size axis as 14, but its own
+     renders — and so the widths its frames are laid out to — follow the optical
+     size of the type: the 80px hero is the tight display cut. Pinning 14 set
+     every heading about 10% wider than drawn, so the axis is left automatic and
+     tracks font-size. */
   .pl-display {
     font-family: var(--font-bricolage);
     font-weight: 800;
-    font-optical-sizing: none;
-    font-variation-settings: "opsz" 14, "wdth" 100;
+    font-optical-sizing: auto;
+    font-variation-settings: "wdth" 100;
     color: var(--color-pl-text);
   }
 
@@ -95,8 +97,8 @@
   .pl-h3 {
     font-family: var(--font-bricolage);
     font-weight: 700;
-    font-optical-sizing: none;
-    font-variation-settings: "opsz" 14, "wdth" 100;
+    font-optical-sizing: auto;
+    font-variation-settings: "wdth" 100;
     font-size: 20px;
     line-height: 24px;
     letter-spacing: -0.01em;
@@ -151,5 +153,88 @@
   .pl-focus:focus-visible {
     outline: 3px solid var(--color-plum-500);
     outline-offset: 2px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Homepage hero motion — Figma "Home hero" (89:2959).
+
+   Every rule sets the FINAL state in its base declaration and uses the
+   keyframes only for the "from" side, so that with animations switched off
+   (prefers-reduced-motion, or the block below) the scene simply shows its
+   finished picture instead of an empty one.
+   --------------------------------------------------------------------------- */
+@keyframes pl-draw {
+  from { stroke-dashoffset: 300; }
+}
+@keyframes pl-pop {
+  from { transform: scale(0.6); opacity: 0; }
+}
+@keyframes pl-wiggle {
+  from { transform: rotate(-4deg) translateY(-4px); }
+  to { transform: rotate(0) translateY(0); }
+}
+@keyframes pl-wiggle-b {
+  from { transform: rotate(-4deg) translateY(-4px); }
+  to { transform: rotate(0) translateY(0); }
+}
+@keyframes pl-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
+}
+@keyframes pl-hop {
+  from { transform: translateY(0) rotate(0); }
+  to { transform: translateY(-14px) rotate(-3deg); }
+}
+@keyframes pl-card-in {
+  from { transform: scale(0.15) rotate(-20deg); opacity: 0; }
+}
+@keyframes pl-sparkle {
+  from { transform: scale(0) rotate(-30deg); opacity: 0; }
+}
+@keyframes pl-thread {
+  from { stroke-dashoffset: 420; }
+}
+@keyframes pl-spin-ball {
+  from { transform: rotate(0); }
+}
+
+@layer components {
+  .pl-underline-path {
+    stroke-dasharray: 300;
+    animation: pl-draw 700ms 250ms cubic-bezier(0.3, 0.7, 0.2, 1) backwards;
+  }
+  .pl-bubble { animation: pl-pop 350ms cubic-bezier(0.2, 1.5, 0.4, 1) backwards; }
+  .pl-wiggle { animation: pl-wiggle 320ms ease-in-out 4 alternate; }
+  .pl-wiggle-b { animation: pl-wiggle-b 320ms ease-in-out 4 alternate; }
+  .pl-bob { animation: pl-bob 3.2s ease-in-out infinite alternate; }
+  .pl-hop { animation: pl-hop 500ms cubic-bezier(0.34, 1.56, 0.64, 1) infinite alternate; }
+  .pl-card-in {
+    transform-origin: bottom left;
+    animation: pl-card-in 620ms cubic-bezier(0.2, 1.6, 0.4, 1) backwards;
+  }
+  .pl-sparkle { animation: pl-sparkle 700ms cubic-bezier(0.2, 1.6, 0.4, 1) backwards; }
+  .pl-thread {
+    stroke-dasharray: 420;
+    animation: pl-thread 800ms cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  }
+  .pl-ball-spin {
+    transform: rotate(-200deg);
+    animation: pl-spin-ball 900ms ease-in-out backwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-underline-path,
+  .pl-bubble,
+  .pl-wiggle,
+  .pl-wiggle-b,
+  .pl-bob,
+  .pl-hop,
+  .pl-card-in,
+  .pl-sparkle,
+  .pl-thread,
+  .pl-ball-spin {
+    animation: none !important;
   }
 }

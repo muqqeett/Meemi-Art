@@ -1,6 +1,3 @@
-import { SiteHeader } from "@/components/layout/site-header";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { ChromeGate } from "@/components/layout/plum/chrome-gate";
 import { PlumHeader } from "@/components/layout/plum/plum-header";
 import { PlumFooter } from "@/components/layout/plum/plum-footer";
 import { TestModeBanner } from "@/components/layout/test-mode-banner";
@@ -15,9 +12,7 @@ export default function StorefrontLayout({ children }: LayoutProps<"/">) {
     <>
       <OrganizationSchema />
       <TestModeBanner />
-      {/* The homepage is protected and keeps its own header and footer; every
-          other route takes the Plum Studio chrome. See ChromeGate. */}
-      <ChromeGate home={<SiteHeader />} plum={<PlumHeader />} />
+      <PlumHeader />
       {/*
         `flex flex-col` rather than a bare `flex-1`.
 
@@ -35,7 +30,7 @@ export default function StorefrontLayout({ children }: LayoutProps<"/">) {
       <main id="main" className="flex flex-1 flex-col">
         <PageTransition>{children}</PageTransition>
       </main>
-      <ChromeGate home={<SiteFooter />} plum={<PlumFooter />} />
+      <PlumFooter />
       <CartDrawer />
       {/* The pattern guide is offered only where it can actually answer: a
           deployment without a Gemini API key shows no launcher at all. Local
