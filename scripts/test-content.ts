@@ -143,6 +143,93 @@ async function main() {
     check("the outline lists only h2s", blocks.outline(sample).length === 1 && blocks.outline(sample)[0].text === "Reading a round");
     check("plain text ignores markup structure", blocks.blocksToPlainText(sample).includes("Count at the end of every round"));
 
+    // ------------------------------------------------ inline whitespace
+    // A run of text beside a link, bold or code keeps the space that separates
+    // it from its neighbour; only the outer edges of the whole sequence are
+    // trimmed. Regression: "the [guide](/x) covers it" used to print
+    // "theguidecovers it", because every run was trimmed on its own.
+    console.log("\nInline whitespace");
+    const para = (source: string) => {
+      const parsed = authoring.parseAuthoringText(source)[0];
+      return parsed && parsed.type === "paragraph" ? parsed.content : [];
+    };
+    const flat = (nodes: unknown[]) => nodes.map((node) => (typeof node === "string" ? node : (node as { text: string }).text)).join("");
+
+    const linked = para("If you substitute, the [yarn weight guide](/resources/yarn-weights) covers each number.");
+    check(
+      "spaces around a link survive parsing",
+      JSON.stringify(linked) ===
+        JSON.stringify(["If you substitute, the ", { text: "yarn weight guide", href: "/resources/yarn-weights" }, " covers each number."]),
+      JSON.stringify(linked),
+    );
+    check("a linked sentence reads as written", flat(linked) === "If you substitute, the yarn weight guide covers each number.", flat(linked));
+
+    const bold = para("Changing **colour** changes nothing; changing **yarn weight** changes everything.");
+    check("spaces around bold text survive", flat(bold) === "Changing colour changes nothing; changing yarn weight changes everything.", flat(bold));
+    check("bold stays bold", bold.some((node) => typeof node === "object" && node.strong === true && node.text === "colour"));
+
+    const code = para("Work `sc` into each st, then `inc` once.");
+    check("spaces around code survive", flat(code) === "Work sc into each st, then inc once.", flat(code));
+
+    const adjacent = para("**one** **two**");
+    check(
+      "a lone space between two inline nodes is kept",
+      JSON.stringify(adjacent) === JSON.stringify([{ text: "one", strong: true }, " ", { text: "two", strong: true }]),
+      JSON.stringify(adjacent),
+    );
+
+    const punct = para("Read the [guide](/g), then (see [the chart](/c)). It is [here](/h).");
+    check("punctuation hugging a node gets no extra space", flat(punct) === "Read the guide, then (see the chart). It is here.", flat(punct));
+    check("no node is padded with a leading or trailing space", punct.every((node) => typeof node !== "object" || node.text === node.text.trim()));
+
+    const edges = blocks.parseBlocks([{ type: "paragraph", content: ["   Start ", { text: "link", href: "/a" }, " end   "] }]);
+    check(
+      "the outer edges of a paragraph are trimmed",
+      edges[0]?.type === "paragraph" && edges[0].content[0] === "Start " && edges[0].content[2] === " end",
+      JSON.stringify(edges[0]),
+    );
+    const trailing = blocks.parseBlocks([{ type: "paragraph", content: ["Lead ", { text: "link", href: "/a" }, "   "] }]);
+    check(
+      "a trailing whitespace-only run is dropped",
+      trailing[0]?.type === "paragraph" && trailing[0].content.length === 2,
+      JSON.stringify(trailing[0]),
+    );
+    check("a whitespace-only paragraph is still dropped", blocks.parseBlocks([{ type: "paragraph", content: ["   ", "\n"] }]).length === 0);
+    check(
+      "runs of whitespace and newlines collapse to one space",
+      flat(para("a   b\t c")) === "a b c" &&
+        (blocks.parseBlocks([{ type: "paragraph", content: ["a \n\n b", { text: "x", strong: true }, "c  d"] }])[0] as { content: unknown[] }).content[0] === "a b",
+    );
+    check(
+      "a node's own text is still trimmed",
+      JSON.stringify(blocks.parseBlocks([{ type: "paragraph", content: ["a ", { text: "  pad  ", strong: true }, " b"] }])[0]) ===
+        JSON.stringify({ type: "paragraph", content: ["a ", { text: "pad", strong: true }, " b"] }),
+    );
+    check(
+      "the length cap still counts visible text only",
+      blocks.parseBlocks([{ type: "paragraph", content: ["x".repeat(2000) + "   "] }]).length === 1 &&
+        blocks.parseBlocks([{ type: "paragraph", content: ["x".repeat(2001)] }]).length === 0,
+    );
+    const listedInline = authoring.parseAuthoringText("- Use the [hook guide](/resources/hook-sizes) first\n- Then **count** twice");
+    check(
+      "list items keep their inline spaces",
+      listedInline[0]?.type === "list" && flat(listedInline[0].items[0]) === "Use the hook guide first" && flat(listedInline[0].items[1]) === "Then count twice",
+    );
+    const called = authoring.parseAuthoringText("> tip: Check the [chart](/c) before you start.")[0];
+    check("callouts keep their inline spaces", called?.type === "callout" && flat(called.content) === "Check the chart before you start.", JSON.stringify(called));
+    check(
+      "headings, captions and table cells are still trimmed",
+      blocks.parseBlocks([{ type: "heading", level: 2, text: "  Spaced  " }])[0]?.type === "heading" &&
+        (blocks.parseBlocks([{ type: "heading", level: 2, text: "  Spaced  " }])[0] as { text: string }).text === "Spaced",
+    );
+    const reparsed = authoring.parseAuthoringText(authoring.toAuthoringText(authoring.parseAuthoringText("Use the [guide](/g) and **bold** now.")));
+    check("authoring text round-trips without losing spaces", flat((reparsed[0] as { content: unknown[] }).content) === "Use the guide and bold now.");
+    check(
+      "already-stored runs without spaces are left exactly as stored",
+      JSON.stringify(blocks.parseBlocks([{ type: "paragraph", content: ["the", { text: "guide", href: "/g" }, "covers"] }])[0]) ===
+        JSON.stringify({ type: "paragraph", content: ["the", { text: "guide", href: "/g" }, "covers"] }),
+    );
+
     // ------------------------------------------------------------ reference data
     console.log("\nCrochet reference data");
     const abbrs = abbreviations.ABBREVIATIONS;

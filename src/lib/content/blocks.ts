@@ -74,8 +74,26 @@ const text = (value: unknown, max = 2000): string | null => {
   return trimmed.length > 0 && trimmed.length <= max ? trimmed : null;
 };
 
+/**
+ * A plain-text run inside a paragraph, list item or callout.
+ *
+ * Unlike a heading or a caption, the whitespace at the edges of a run is part
+ * of the sentence: in `the [guide](/x) covers it` the runs are `"the "` and
+ * `" covers it"`, and trimming them prints "theguidecovers it". So runs keep
+ * a single collapsed space at each edge here; `parseInlines` trims the outer
+ * edges of the whole sequence, where the space really is padding.
+ *
+ * The length cap applies to the visible text, as it always has.
+ */
+function parseInlineRun(value: string): string | null {
+  const collapsed = value.replace(/\s+/g, " ");
+  const visible = collapsed.trim();
+  if (visible.length > 2000) return null;
+  return collapsed.length > 0 ? collapsed : null;
+}
+
 function parseInline(value: unknown): Inline | null {
-  if (typeof value === "string") return text(value);
+  if (typeof value === "string") return parseInlineRun(value);
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const node = value as Record<string, unknown>;
   const body = text(node.text);
@@ -91,7 +109,17 @@ function parseInline(value: unknown): Inline | null {
 function parseInlines(value: unknown): Inline[] | null {
   if (!Array.isArray(value) || value.length === 0) return null;
   const parsed = value.map(parseInline).filter((node): node is Inline => node !== null);
-  return parsed.length > 0 ? parsed : null;
+
+  // The outer edges of the whole sequence are padding, not a word boundary.
+  const first = parsed[0];
+  if (typeof first === "string") parsed[0] = first.trimStart();
+  const last = parsed[parsed.length - 1];
+  if (typeof last === "string") parsed[parsed.length - 1] = last.trimEnd();
+
+  // A run that was only whitespace is a separator between two nodes and stays;
+  // at an edge it has just been trimmed to nothing and goes.
+  const kept = parsed.filter((node) => node !== "");
+  return kept.length > 0 ? kept : null;
 }
 
 /**
