@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Check, X, Ban, TriangleAlert } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { ButtonLink } from "@/components/ui/button-link";
+import { PlumButtonLink, plumButtonClass } from "@/components/ui/plum-button";
 import { formatMoney } from "@/lib/money";
 
 type Outcome = "succeeded" | "failed" | "cancelled";
@@ -62,69 +61,67 @@ export function SandboxPaymentPanel({
   if (alreadyComplete) {
     return (
       <div className="mt-6 space-y-4">
-        <p className="border border-success/30 bg-success/5 px-4 py-3 text-sm text-success">
+        <p className="font-figtree rounded-[16px] border border-success/30 bg-success/5 px-4 py-3 text-sm leading-[22px] font-bold text-success">
           This order is already paid. Sending another event would be ignored as a
           duplicate.
         </p>
-        <ButtonLink href={`/orders/${orderNumber}`} variant="brand" size="pill">
+        <PlumButtonLink href={`/orders/${orderNumber}`} style="primary">
           View the order
-        </ButtonLink>
+        </PlumButtonLink>
       </div>
     );
   }
 
   return (
     <div className="mt-6 space-y-3">
-      <Button
+      <button
         type="button"
-        variant="brand"
-        size="pillLg"
-        className="w-full"
+        className={plumButtonClass({ style: "buy", size: "lg", className: "w-full" })}
         disabled={pending !== null}
         onClick={() => send("succeeded")}
       >
         {pending === "succeeded" ? (
-          <Loader2 className="animate-spin" aria-hidden />
+          <Loader2 className="size-5 animate-spin" aria-hidden />
         ) : (
-          <Check aria-hidden />
+          <Check className="size-5" aria-hidden />
         )}
         Pay {formatMoney(totalCents)}
-      </Button>
+      </button>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Button
+        <button
           type="button"
-          variant="outline"
+          className={plumButtonClass({ style: "secondary", size: "md" })}
           disabled={pending !== null}
           onClick={() => send("failed")}
         >
-          <X aria-hidden />
+          <X className="size-4" aria-hidden />
           Decline
-        </Button>
+        </button>
 
-        <Button
+        <button
           type="button"
-          variant="outline"
+          className={plumButtonClass({ style: "secondary", size: "md" })}
           disabled={pending !== null}
           onClick={() => send("cancelled")}
         >
-          <Ban aria-hidden />
+          <Ban className="size-4" aria-hidden />
           Cancel
-        </Button>
+        </button>
 
-        <Button
+        <button
           type="button"
-          variant="outline"
+          className={plumButtonClass({ style: "secondary", size: "md" })}
           disabled={pending !== null}
           onClick={() => send("succeeded", 1, "underpay")}
         >
-          <TriangleAlert aria-hidden />
+          <TriangleAlert className="size-4" aria-hidden />
           Underpay
-        </Button>
+        </button>
       </div>
 
       {note && (
-        <p role="status" className="text-body text-xs">
+        <p role="status" className="font-figtree text-[13px] leading-[18px] font-medium text-pl-muted">
           {note}
         </p>
       )}

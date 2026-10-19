@@ -86,7 +86,7 @@ export async function PlumHeader() {
           </div>
 
           <div className="flex shrink-0 items-center">
-            <Logo focus="plum" className="text-pl-text max-sm:text-2xl/6" />
+            <Logo focus="plum" className="max-sm:h-6" />
           </div>
 
           {/* MegaNav is its own `nav` landmark ("Main"), so the plain links get a

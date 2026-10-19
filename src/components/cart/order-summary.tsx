@@ -7,6 +7,8 @@ type OrderSummaryProps = {
   coupon?: AppliedCoupon | null;
   /** Set on the checkout page, where the summary sits inside a bordered card. */
   bare?: boolean;
+  /** `plum`: the Plum Studio checkout — 16/26 rows and a large Bricolage total. */
+  variant?: "default" | "plum";
   className?: string;
   children?: React.ReactNode;
 };
@@ -15,11 +17,24 @@ function Row({
   label,
   value,
   tone = "default",
+  plum = false,
 }: {
   label: string;
   value: string;
   tone?: "default" | "success" | "muted";
+  plum?: boolean;
 }) {
+  if (plum) {
+    return (
+      <div className="flex items-center justify-between gap-4 text-base leading-[26px]">
+        <dt className="text-pl-muted">{label}</dt>
+        <dd className={cn("tabular-nums", tone === "success" ? "font-bold text-success" : "text-pl-text")}>
+          {value}
+        </dd>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
       <dt className="text-muted-foreground">{label}</dt>
@@ -50,9 +65,44 @@ export function OrderSummary({
   totals,
   coupon,
   bare = false,
+  variant = "default",
   className,
   children,
 }: OrderSummaryProps) {
+  if (variant === "plum") {
+    return (
+      <div className={cn("font-figtree", className)}>
+        <dl className="space-y-1.5">
+          <Row plum label="Subtotal" value={formatMoney(totals.subtotalCents)} />
+
+          {totals.discountCents > 0 && (
+            <Row
+              plum
+              label={coupon ? `Discount (${coupon.code})` : "Discount"}
+              value={`−${formatMoney(totals.discountCents)}`}
+              tone="success"
+            />
+          )}
+
+          <div className="flex items-center justify-between gap-4 border-t border-pl-line pt-3">
+            <dt className="text-base leading-[22px] font-bold tracking-[-0.005em] text-pl-text">Total</dt>
+            <dd className="pl-display text-[30px] leading-9 tracking-[-0.015em] tabular-nums">
+              {formatMoney(totals.totalCents)}
+            </dd>
+          </div>
+        </dl>
+
+        {/* Said once, here: Paddle is the merchant of record and adds any sales
+            tax at its own step, so the figure above is what this shop charges. */}
+        <p className="mt-2 text-[13px] leading-[18px] font-medium text-pl-muted">
+          Any local sales tax is calculated and added at the payment step.
+        </p>
+
+        {children && <div className="mt-5 space-y-3">{children}</div>}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(

@@ -18,9 +18,9 @@ import { safeJsonLd } from "@/lib/json-ld";
  *
  * ── Logo ───────────────────────────────────────────────────────────────────
  *
- * `logo` is the official "MA" monogram (`siteConfig.logo`), a static square
+ * `logo` is the Meemi Art mark, the "m" and yarn ball on plum (`siteConfig.logo`): a static square
  * file on the canonical origin. It is identity data only — the visible header
- * keeps its typographic wordmark.
+ * draws the wordmark itself.
  *
  * ── Deliberately absent ────────────────────────────────────────────────────
  *

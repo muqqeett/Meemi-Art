@@ -47,27 +47,29 @@ export default async function SandboxCheckoutPage({
   if (!order) notFound();
 
   return (
-    <div className="container-page py-12 lg:py-16">
+    <div data-fill className="font-figtree flex-1 bg-pl-page px-4 py-12 text-pl-text sm:px-8 lg:py-16">
       <div className="mx-auto max-w-lg">
-        <p className="label-caps text-warning">Sandbox — no real money</p>
-        <h1 className="heading-sub mt-3">Test payment</h1>
-        <p className="text-body mt-2">
+        <p className="inline-flex rounded-full bg-pl-tint-templates px-3 py-1 text-[13px] leading-[18px] font-bold text-pl-text">
+          Sandbox — no real money
+        </p>
+        <h1 className="pl-display mt-4 text-[34px] leading-[38px] tracking-[-0.03em]">Test payment</h1>
+        <p className="mt-2 text-base leading-[26px] text-pl-muted">
           This page replaces the payment provider while{" "}
           <code className="font-mono text-xs">PAYMENT_PROVIDER=sandbox</code>. Choosing an
           outcome sends a signed webhook to the real endpoint, which verifies it exactly
           as it would a live one.
         </p>
 
-        <div className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-card">
-          <p className="font-mono text-sm font-semibold">{order.orderNumber}</p>
+        <div className="mt-8 rounded-[20px] border border-pl-line bg-pl-surface p-5 shadow-pl-sm">
+          <p className="font-mono text-sm font-bold">{order.orderNumber}</p>
 
-          <ul className="mt-4 space-y-2 border-y border-border py-4 text-sm">
+          <ul className="mt-4 space-y-2 border-y border-pl-line py-4 text-sm">
             {order.items.map((item) => (
               <li key={item.id} className="flex justify-between gap-3">
                 <span>
                   {item.name}
                   {item.quantity > 1 && (
-                    <span className="text-muted-foreground"> × {item.quantity}</span>
+                    <span className="text-pl-muted"> × {item.quantity}</span>
                   )}
                 </span>
                 <span className="tabular-nums">{formatMoney(item.totalCents)}</span>
@@ -75,9 +77,9 @@ export default async function SandboxCheckoutPage({
             ))}
           </ul>
 
-          <div className="mt-4 flex justify-between text-base font-semibold">
+          <div className="mt-4 flex items-center justify-between text-base font-bold">
             <span>Total ({order.currency})</span>
-            <span className="tabular-nums">{formatMoney(order.totalCents)}</span>
+            <span className="pl-display pl-price tabular-nums">{formatMoney(order.totalCents)}</span>
           </div>
         </div>
 

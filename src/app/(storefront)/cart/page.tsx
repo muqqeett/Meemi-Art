@@ -6,6 +6,7 @@ import { CouponForm } from "@/components/cart/coupon-form";
 import { OrderSummary } from "@/components/cart/order-summary";
 import { EmptyState } from "@/components/brand/empty-state";
 import { ButtonLink } from "@/components/ui/button-link";
+import { PlumButtonLink } from "@/components/ui/plum-button";
 import { getCartWithCoupon } from "@/lib/cart/cart-service";
 
 export const metadata: Metadata = {
@@ -17,24 +18,29 @@ export default async function CartPage() {
   const cart = await getCartWithCoupon();
 
   if (cart.lines.length === 0) {
+    // The empty bag is where an empty checkout lands (checkout redirects here),
+    // so it takes the Plum Studio treatment. The populated bag below is unchanged.
     return (
-      <div className="container-page py-10 lg:py-14">
-        <h1 className="heading-section">Your bag</h1>
-        <EmptyState
-          icon={ShoppingBag}
-          title="Your bag is empty"
-          description="You haven't added anything yet. Have a look at what's new, or pick up where you left off."
-          action={
-            <ButtonLink href="/shop" variant="brand" size="pill">
-              Start shopping
-            </ButtonLink>
-          }
-          secondaryAction={
-            <ButtonLink href="/account/wishlist" variant="brandOutline" size="pill">
-              View wishlist
-            </ButtonLink>
-          }
-        />
+      <div data-fill className="font-figtree flex-1 bg-pl-page px-4 py-10 text-pl-text sm:px-8 lg:py-14">
+        <div className="mx-auto w-full max-w-[1120px]">
+          <h1 className="pl-display pl-h1">Your bag</h1>
+          <EmptyState
+            tone="plum"
+            icon={ShoppingBag}
+            title="Your bag is empty"
+            description="You haven't added anything yet. Have a look at what's new, or pick up where you left off."
+            action={
+              <PlumButtonLink href="/shop" style="primary">
+                Start shopping
+              </PlumButtonLink>
+            }
+            secondaryAction={
+              <PlumButtonLink href="/account/wishlist" style="secondary">
+                View wishlist
+              </PlumButtonLink>
+            }
+          />
+        </div>
       </div>
     );
   }

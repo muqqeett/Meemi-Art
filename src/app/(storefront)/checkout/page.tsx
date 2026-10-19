@@ -23,17 +23,15 @@ export const metadata: Metadata = {
  *
  * ── Why this page composes itself differently from the rest of the site ─────
  *
- * Every other storefront page is a band of content in the 1400px site gutter.
- * That is right for a catalogue and wrong here: at 1440 it let the form run to
- * roughly 950px wide, and with a 356px footer directly beneath it the payment
- * step read as one more section of a long page rather than as the thing the
- * page is for.
+ * Every other storefront page is a band of content. That is right for a
+ * catalogue and wrong here: the payment step has to read as the thing the page
+ * is for, not as one more section of a long page. So this route claims the
+ * height `main` hands down (`data-fill`) and lays itself out as a column — a
+ * context bar, then the workspace — in the Plum Studio style: a violet page
+ * ground, a Bricolage title, and two panels beside a sticky summary.
  *
- * So this route claims the height `main` now hands down (`min-h-full`) and
- * lays itself out as a column: context bar, workspace, reassurance. The
- * workspace is the flexible row, which is what keeps the footer at the bottom
- * of a short viewport without a single magic number — no `calc(100vh - 64px)`
- * guess that breaks when the announcement banner shows.
+ * Presentation only. The sign-in guard, the server-priced cart, the empty-cart
+ * redirect and the payment provider lookup are unchanged.
  */
 export default async function CheckoutPage() {
   const user = await requireUser("/checkout");
@@ -45,21 +43,21 @@ export default async function CheckoutPage() {
   const provider = getPaymentProvider();
 
   return (
-    <div data-fill className="flex min-h-full flex-col bg-surface-alt/35">
+    <div data-fill className="font-figtree flex min-h-full flex-col bg-pl-page text-pl-text">
       {/* Context bar. The header above says "Meemi Art"; this says "you are
           paying now, and here is the way back". */}
-      <div className="border-b border-border/70 bg-card/70">
-        <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-8">
+      <div className="border-b border-pl-line bg-pl-surface">
+        <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-8">
           <Link
             href="/cart"
-            className="inline-flex h-11 items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 sm:h-auto"
+            className="pl-focus inline-flex h-11 items-center gap-2 rounded-full pr-3 text-[15px] leading-[18px] font-bold text-pl-text transition-colors hover:text-plum-500"
           >
-            <ArrowLeft className="size-4" aria-hidden />
+            <ArrowLeft className="size-5" aria-hidden />
             Back to bag
           </Link>
 
-          <p className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <Lock className="size-3.5 text-brand-600" aria-hidden />
+          <p className="inline-flex items-center gap-1.5 text-[13px] leading-[18px] font-bold text-pl-muted">
+            <Lock className="size-4 text-plum-500" aria-hidden />
             Secure checkout
           </p>
         </div>
@@ -69,10 +67,12 @@ export default async function CheckoutPage() {
           footer sits at the bottom on a short screen and scrolls normally on a
           tall order. */}
       <div className="flex flex-1 flex-col">
-        <div className="mx-auto w-full max-w-[1120px] px-5 py-10 sm:px-8 lg:py-14">
+        <div className="mx-auto w-full max-w-[1120px] px-4 pt-8 pb-16 sm:px-8 lg:pt-12 lg:pb-20">
           <header className="mb-8 lg:mb-10">
-            <h1 className="heading-section">Checkout</h1>
-            <p className="text-body mt-1.5 text-sm">
+            <h1 className="pl-display text-[40px] leading-[44px] tracking-[-0.03em] sm:text-[52px] sm:leading-[56px]">
+              Checkout
+            </h1>
+            <p className="mt-3 max-w-[560px] text-base leading-[26px] text-pl-muted sm:text-lg sm:leading-7">
               Digital purchase — your files are ready the moment payment clears.
             </p>
           </header>

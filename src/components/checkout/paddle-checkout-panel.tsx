@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Loader2, Lock, ShieldCheck, X, AlertCircle, CheckCircle2 } from "lucide-react";
 
 import { formatMoney } from "@/lib/money";
+import { plumButtonClass } from "@/components/ui/plum-button";
 import {
   loadPaddle,
   onPaddleEvent,
@@ -195,7 +196,7 @@ export function PaddleCheckoutPanel({
          mid-payment. From `sm` up it becomes a centred dialog on a scrim deep
          enough that the shop behind reads as dimmed context, not as a page the
          payment is sitting inside. */
-      className="fixed inset-0 z-[60] flex justify-center overflow-y-auto bg-ink/70 backdrop-blur-sm sm:items-center sm:p-6"
+      className="font-figtree fixed inset-0 z-[60] flex justify-center overflow-y-auto bg-plum-900/70 sm:items-center sm:p-6"
     >
       <div
         ref={surface}
@@ -204,25 +205,27 @@ export function PaddleCheckoutPanel({
            laptop screen — the reserved 460px Paddle frame alone makes the
            natural height 922px, which overflowed a 900px viewport. On phones
            it stays a full-height sheet and the page itself scrolls. */
-        className="flex min-h-dvh w-full flex-col bg-card pb-[env(safe-area-inset-bottom)] sm:my-auto sm:max-h-[calc(100dvh-3rem)] sm:min-h-0 sm:max-w-[480px] sm:overflow-hidden sm:rounded-2xl sm:border sm:border-border sm:pb-0 sm:shadow-2xl"
+        className="flex min-h-dvh w-full flex-col bg-pl-surface pb-[env(safe-area-inset-bottom)] text-pl-text sm:my-auto sm:max-h-[calc(100dvh-3rem)] sm:min-h-0 sm:max-w-[480px] sm:overflow-hidden sm:rounded-[24px] sm:pb-0 sm:shadow-[0_24px_48px_-20px_rgba(36,17,63,0.45)]"
       >
         {/* Sticky on the sheet so the amount and the way out stay reachable
             while Paddle's frame scrolls under a mobile keyboard. */}
-        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border bg-card px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4 sm:static sm:rounded-t-2xl sm:pt-5">
+        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-pl-line bg-pl-surface px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4 sm:static sm:rounded-t-[24px] sm:pt-5">
           <div className="min-w-0">
-            <p className="label-caps flex items-center gap-1.5 text-brand-600">
-              <Lock className="size-3" aria-hidden />
+            <p className="pl-eyebrow flex items-center gap-1.5">
+              <Lock className="size-3.5" aria-hidden />
               Secure payment
             </p>
-            <h2 className="heading-sub mt-1.5">Card details</h2>
-            <p className="text-body mt-0.5 text-xs">Order {orderNumber}</p>
+            <h2 className="pl-h3 mt-1.5">Card details</h2>
+            <p className="mt-0.5 text-[13px] leading-[18px] font-medium text-pl-muted">
+              Order {orderNumber}
+            </p>
           </div>
           <button
             ref={closeButton}
             type="button"
             onClick={onClose}
             aria-label="Close checkout"
-            className="-m-1.5 inline-flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-alt hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:size-9"
+            className="pl-focus -m-1.5 inline-flex size-11 shrink-0 items-center justify-center rounded-full text-pl-text transition-colors hover:bg-plum-100"
           >
             <X className="size-5" aria-hidden />
           </button>
@@ -232,22 +235,22 @@ export function PaddleCheckoutPanel({
           <ul className="space-y-3">
             {lines.map((line) => (
               <li key={line.name} className="flex items-center gap-3">
-                <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-surface-alt">
+                <span className="relative size-12 shrink-0 overflow-hidden rounded-[12px] bg-pl-tint-crochet">
                   {line.imageUrl && (
                     <Image
                       src={line.imageUrl}
                       alt=""
                       fill
                       sizes="48px"
-                      className="object-contain"
+                      className="object-contain p-1"
                     />
                   )}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-foreground">
+                  <span className="block truncate text-base leading-[22px] font-bold tracking-[-0.005em] text-pl-text">
                     {line.name}
                   </span>
-                  <span className="text-body block text-xs">
+                  <span className="block text-[13px] leading-[18px] font-medium text-pl-muted">
                     Digital download{line.quantity > 1 ? ` · ${line.quantity}` : ""}
                   </span>
                 </span>
@@ -257,16 +260,16 @@ export function PaddleCheckoutPanel({
 
           {/* The amount is the one number that must never be hunted for on a
               payment screen, so it gets its own panel rather than a row. */}
-          <div className="rounded-xl bg-surface-alt/70 px-4 py-3.5">
+          <div className="rounded-[16px] bg-pl-subtle px-4 py-3.5">
             <div className="flex items-baseline justify-between gap-3">
-              <span className="text-sm font-medium text-muted-foreground">
+              <span className="text-sm leading-[22px] font-bold text-pl-muted">
                 Amount to pay
               </span>
-              <span className="text-2xl font-semibold text-foreground tabular-nums">
+              <span className="pl-display text-[30px] leading-9 tracking-[-0.015em] tabular-nums">
                 {formatMoney(totalCents)}
               </span>
             </div>
-            <p className="text-body mt-1.5 text-xs">
+            <p className="mt-1.5 text-[13px] leading-[18px] font-medium text-pl-muted">
               Any local sales tax is added by Paddle at the payment step.
             </p>
           </div>
@@ -274,19 +277,17 @@ export function PaddleCheckoutPanel({
           {phase === "submitted" ? (
             <div
               role="status"
-              className="rounded-xl border border-success/30 bg-success/5 p-5 text-center"
+              className="rounded-[16px] border border-success/30 bg-success/5 p-5 text-center"
             >
               <CheckCircle2 className="text-success mx-auto size-8" aria-hidden />
-              <p className="mt-2 font-semibold text-foreground">
-                Payment submitted successfully
-              </p>
-              <p className="text-body mt-1 text-sm">
+              <p className="pl-h3 mt-2">Payment submitted successfully</p>
+              <p className="mt-1 text-sm leading-[22px] text-pl-muted">
                 We&rsquo;re confirming your payment. Your download becomes available as
                 soon as it&rsquo;s confirmed — usually a few seconds.
               </p>
               <a
                 href={`/orders/${orderNumber}?from=payment`}
-                className="mt-4 inline-flex items-center justify-center rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
+                className={plumButtonClass({ style: "primary", size: "md", className: "mt-4" })}
               >
                 View your order
               </a>
@@ -296,7 +297,7 @@ export function PaddleCheckoutPanel({
               {phase === "failed" && (
                 <div
                   role="alert"
-                  className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                  className="flex items-start gap-2.5 rounded-[16px] border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm leading-[22px] font-bold text-destructive"
                 >
                   <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
                   <span>
@@ -310,7 +311,7 @@ export function PaddleCheckoutPanel({
                   Paddle — the card fields never exist in this document. */}
               <div className="relative min-h-[460px]">
                 {phase === "loading" && (
-                  <div className="text-body absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm leading-[22px] text-pl-muted">
                     <Loader2 className="size-5 animate-spin" aria-hidden />
                     Loading secure payment form…
                   </div>
@@ -320,13 +321,13 @@ export function PaddleCheckoutPanel({
             </>
           )}
 
-          <ul className="text-body space-y-1.5 border-t border-border pt-4 text-xs">
+          <ul className="space-y-1.5 border-t border-pl-line pt-4 text-[13px] leading-[18px] font-medium text-pl-muted">
             <li className="flex items-center gap-2">
-              <Lock className="size-3.5 shrink-0 text-brand-500" aria-hidden />
+              <Lock className="size-3.5 shrink-0 text-plum-500" aria-hidden />
               Card details are entered directly with Paddle. They never reach Meemi Art.
             </li>
             <li className="flex items-center gap-2">
-              <ShieldCheck className="size-3.5 shrink-0 text-brand-500" aria-hidden />
+              <ShieldCheck className="size-3.5 shrink-0 text-plum-500" aria-hidden />
               Paddle is the merchant of record and appears on your statement.
             </li>
           </ul>

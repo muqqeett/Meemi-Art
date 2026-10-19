@@ -71,7 +71,7 @@ export function PlumFooter() {
       <div className="mx-auto w-full max-w-[1280px] px-4 pt-10 pb-8 sm:px-6 lg:px-8 lg:pt-16 lg:pb-10">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[260px_repeat(3,150px)_1fr] lg:gap-8">
           <div className="flex flex-col items-start gap-3 sm:col-span-2 lg:col-span-1">
-            <Logo focus="plum" tone="light" size="md" className="text-pl-on-dark" />
+            <Logo focus="plum" tone="light" size="md" />
             <p className="font-figtree max-w-[260px] text-sm leading-[22px] text-plum-200">
               {siteConfig.tagline}. Made by hand, delivered as a download.
             </p>
