@@ -53,6 +53,18 @@ export async function PlumHeader() {
     image: category.image ?? null,
   }));
 
+  /**
+   * The drawer needs the product count as well, so it can skip categories
+   * with nothing in them — the same rule the homepage applies.
+   */
+  const navCategories = categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    image: category.image ?? null,
+    productCount: category._count.products,
+  }));
+
   const megaFeatured = featured.map((product) => ({
     id: product.id,
     name: product.name,
@@ -80,7 +92,7 @@ export async function PlumHeader() {
             <MobileNav
               isSignedIn={Boolean(user)}
               userName={user?.name ?? null}
-              categories={megaCategories}
+              categories={navCategories}
               variant="plum"
             />
           </div>

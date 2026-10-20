@@ -52,6 +52,15 @@ export async function SiteHeader() {
     image: category.image ?? null,
   }));
 
+  /** The drawer also needs the product count, to skip empty categories. */
+  const navCategories = categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    image: category.image ?? null,
+    productCount: category._count.products,
+  }));
+
   const megaFeatured = featured.map((product) => ({
     id: product.id,
     name: product.name,
@@ -110,7 +119,7 @@ export async function SiteHeader() {
           <MobileNav
             isSignedIn={Boolean(user)}
             userName={user?.name ?? null}
-            categories={megaCategories}
+            categories={navCategories}
           />
         </div>
         <div className="hidden shrink-0 lg:block">
