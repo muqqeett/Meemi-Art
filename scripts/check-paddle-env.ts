@@ -27,6 +27,30 @@ function prefixEnv(value: string, live: string, test: string): string {
   return "unrecognised";
 }
 
+/**
+ * Which variable supplied the site URL, named for the operator.
+ *
+ * Mirrors the order in `paymentConfig.appUrl`. The *value* is read from the
+ * config module rather than recomputed here — this only reports where it came
+ * from, so there is one place that resolves and one place that explains.
+ */
+function appUrlSource(): "NEXT_PUBLIC_APP_URL" | "SITE_URL" | null {
+  // Trimmed, because the config chain skips blank and whitespace-only values.
+  // Reporting on raw truthiness would name a variable the runtime ignored.
+  if (process.env.NEXT_PUBLIC_APP_URL?.trim()) return "NEXT_PUBLIC_APP_URL";
+  if (process.env.SITE_URL?.trim()) return "SITE_URL";
+  return null;
+}
+
+/** An absolute https origin, which is what a live return URL has to be. */
+function isLiveReturnUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 async function main() {
   const ping = process.argv.includes("--ping");
 
@@ -36,7 +60,16 @@ async function main() {
   const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";
   const secret = process.env.PADDLE_WEBHOOK_SECRET ?? "";
   const currency = process.env.PAYMENT_CURRENCY ?? "";
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+
+  // The URL is read from the config module, not recomputed from the
+  // environment. An earlier version of this script asserted
+  // `NEXT_PUBLIC_SITE_URL`, which nothing in `src/` has ever read, so it
+  // reported a failure on a correctly configured deployment. Importing the
+  // real value makes that class of drift impossible: whatever checkout will
+  // hand Paddle as a return URL is exactly what is checked here.
+  const { paymentConfig } = await import("../src/lib/payments/config");
+  const appUrl = paymentConfig.appUrl;
+  const urlSource = appUrlSource();
 
   row("PAYMENT_PROVIDER", provider === "paddle", provider || "not set");
   row("PADDLE_ENV", env === "production", env || "not set");
@@ -58,7 +91,19 @@ async function main() {
   );
 
   row("PAYMENT_CURRENCY", currency.length === 3, currency || "not set");
-  row("NEXT_PUBLIC_SITE_URL", siteUrl.startsWith("https://"), siteUrl || "not set");
+
+  // Falling through to the built-in default means neither variable is set, and
+  // the default is `http://localhost:3000` — a return URL that strands every
+  // real customer at the end of a payment. That is a failure here even though
+  // it is the right answer on a laptop, because this script only ever asserts
+  // production-shaped configuration (it already requires PADDLE_ENV=production).
+  row(
+    "Site URL",
+    urlSource !== null && isLiveReturnUrl(appUrl),
+    urlSource === null
+      ? `${appUrl} — neither NEXT_PUBLIC_APP_URL nor SITE_URL is set; using the built-in default. Set SITE_URL.`
+      : `${appUrl || "(empty)"} — from ${urlSource}`,
+  );
 
   // The failure that produces a working-looking site that charges nobody.
   const keyEnv = apiKey ? prefixEnv(apiKey, "pdl_live_", "pdl_sdbx_") : null;
@@ -90,7 +135,6 @@ async function main() {
       bad++;
     } else {
       const { paddleApi } = await import("../src/lib/payments/paddle-api");
-      const { paymentConfig } = await import("../src/lib/payments/config");
       console.log(`  endpoint: ${paymentConfig.paddle.apiBase}`);
       const result = await paddleApi.check();
       if (result.ok) {

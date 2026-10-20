@@ -1,6 +1,7 @@
 import "server-only";
 
 import { siteConfig } from "@/lib/config";
+import { resolveAppUrl } from "@/lib/app-url";
 
 /**
  * Email environment, read once on the server.
@@ -57,12 +58,11 @@ export const emailConfig = {
   adminEmail: process.env.ADMIN_EMAIL || (replyTo ? bareAddress(replyTo) : ""),
   /**
    * Absolute base for links inside emails. Emails are read outside the app, so
-   * relative URLs are useless here.
+   * relative URLs are useless here — and a blank variable used to produce
+   * exactly that, a bare path in a customer's inbox. Resolution is shared with
+   * the payment system; see `lib/app-url.ts`.
    */
-  appUrl:
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.SITE_URL ??
-    siteConfig.url,
+  appUrl: resolveAppUrl(),
 } as const;
 
 /** Absolute URL builder for links embedded in emails. */

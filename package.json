@@ -23,6 +23,7 @@
     "paddle:webhook-events": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/paddle-webhook-events.ts",
     "paddle:audit": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/paddle-audit.ts",
     "paddle:check": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/check-paddle-env.ts",
+    "check:email": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/check-email-config.ts",
     "paddle:sync": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/paddle-sync.ts",
     "check": "npm run typecheck && npm run lint && npm run build",
     "test:reviews": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/test-reviews.ts",

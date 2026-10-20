@@ -1,6 +1,6 @@
 import "server-only";
 
-import { siteConfig } from "@/lib/config";
+import { resolveAppUrl } from "@/lib/app-url";
 
 /**
  * Payment environment, read once on the server.
@@ -73,12 +73,12 @@ export const paymentConfig = {
    * quoted, not what lands in the bank.
    */
   currency: (process.env.PAYMENT_CURRENCY ?? "USD").toUpperCase(),
-  /** Absolute base for return URLs handed to the provider. */
-  appUrl: (
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.SITE_URL ??
-    siteConfig.url
-  ).replace(/\/+$/, ""),
+  /**
+   * Absolute base for return URLs handed to the provider. Shared with the
+   * email system so a customer's return link and their receipt link can never
+   * point at different origins — see `lib/app-url.ts`.
+   */
+  appUrl: resolveAppUrl(),
 } as const;
 
 /** Absolute URL builder for provider return links. */

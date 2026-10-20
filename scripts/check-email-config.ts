@@ -9,7 +9,15 @@ import "dotenv/config";
 
 const EXPECTED_FROM = "Meemi Art <hello@meemiart.com>";
 const EXPECTED_REPLY = "hello@meemiart.com";
-const EXPECTED_ORIGIN = "https://meemiart.com";
+/**
+ * The canonical origin, matching `SITE_URL`.
+ *
+ * `www` rather than the apex: the apex 308-redirects to it, and `SITE_URL` is
+ * what `lib/app-url.ts` resolves for both email links and Paddle return URLs.
+ * This literal said `https://meemiart.com` and so failed against every
+ * correctly configured deployment.
+ */
+const EXPECTED_ORIGIN = "https://www.meemiart.com";
 
 let failures = 0;
 function check(label: string, pass: boolean, detail?: unknown) {
