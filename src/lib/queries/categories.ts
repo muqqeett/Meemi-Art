@@ -45,6 +45,29 @@ export const getAllCategories = cache(async () => {
 });
 
 /**
+ * Every active category with the number of products a customer can open in it.
+ *
+ * Not the same number as `getAllCategories` reports. The category page lists a
+ * product only when it is active AND has a downloadable file behind it
+ * (`where.asset = { isNot: null }` in `listProducts`), so a count of active
+ * products alone can promise "3 patterns" on a page that shows none. Counting
+ * with the same two conditions keeps a homepage tile and the page it links to
+ * telling the same story. If the listing's rule changes, change it here too.
+ */
+export const getCategoriesWithListedCounts = cache(async () => {
+  return prisma.category.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: "asc" },
+    select: {
+      slug: true,
+      _count: {
+        select: { products: { where: { isActive: true, asset: { isNot: null } } } },
+      },
+    },
+  });
+});
+
+/**
  * Category slugs for the sitemap — only those that actually have something in
  * them.
  *

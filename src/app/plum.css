@@ -44,6 +44,12 @@
   --color-pl-tint-printables: #e3f3ea;
   --color-pl-tint-assets: #e3eefb;
   --color-pl-tint-ebooks: #e9e3f5;
+  /* The same five, deepened — a category tile's hover and pressed fill. */
+  --color-pl-tint-crochet-deep: #e2d5fa; /* --cat-crochet-deep */
+  --color-pl-tint-templates-deep: #ffe6b8; /* --cat-templates-deep */
+  --color-pl-tint-printables-deep: #d2ebdd; /* --cat-printables-deep */
+  --color-pl-tint-assets-deep: #d2e2f7; /* --cat-assets-deep */
+  --color-pl-tint-ebooks-deep: #ddd3ef; /* --cat-ebooks-deep */
 
   --shadow-pl-sm: 0 1px 2px rgb(36 17 63 / 0.06), 0 1px 1px rgb(36 17 63 / 0.04);
   --shadow-pl-md: 0 8px 24px -8px rgb(36 17 63 / 0.18);
