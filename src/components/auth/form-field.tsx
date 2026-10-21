@@ -5,9 +5,21 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  plumError,
+  plumField,
+  plumHint,
+  plumLabel,
+} from "@/components/auth/plum-auth-styles";
 import { cn } from "@/lib/utils";
 
 type FormFieldProps = {
+  /**
+   * `plum` is the Plum Studio field used by the log-in and sign-up screens.
+   * The default is the earlier styling the other auth forms still use, so
+   * adopting the new look is a per-form decision and nothing else moves.
+   */
+  variant?: "default" | "plum";
   label: string;
   name: string;
   type?: "text" | "email" | "password" | "tel";
@@ -45,6 +57,7 @@ const AUTH_INPUT =
  * `aria-describedby` / `aria-invalid`, plus a show/hide toggle for passwords.
  */
 export function FormField({
+  variant = "default",
   label,
   name,
   type = "text",
@@ -64,15 +77,21 @@ export function FormField({
   const resolvedType = isPassword && revealed ? "text" : type;
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
+  const plum = variant === "plum";
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn(plum ? "flex flex-col gap-1.5" : "space-y-2", className)}>
       {/* The design puts the label and its action on one row, baseline
           aligned — "Password" left, "Forgot？" right. */}
       <div className="flex items-center justify-between gap-3">
-        <Label htmlFor={id} className="text-sm font-medium text-foreground">
+        <Label
+          htmlFor={id}
+          className={plum ? plumLabel : "text-sm font-medium text-foreground"}
+        >
           {label}
-          {required && (
+          {/* The Plum design carries no asterisk; `required` still reaches the
+              input, so assistive technology is told either way. */}
+          {required && !plum && (
             <span className="text-destructive" aria-hidden>
               {" "}
               *
@@ -96,7 +115,7 @@ export function FormField({
             [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(" ") ||
             undefined
           }
-          className={cn(AUTH_INPUT, isPassword && "pr-12", className && undefined)}
+          className={cn(plum ? plumField : AUTH_INPUT, isPassword && "pr-12")}
         />
 
         {isPassword && (
@@ -105,7 +124,12 @@ export function FormField({
             onClick={() => setRevealed((value) => !value)}
             aria-label={revealed ? "Hide password" : "Show password"}
             aria-pressed={revealed}
-            className="absolute top-1/2 right-1 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-500"
+            className={cn(
+              "absolute top-1/2 right-1 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-md transition-colors",
+              plum
+                ? "pl-focus text-pl-muted hover:text-pl-text"
+                : "text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-500",
+            )}
           >
             {revealed ? (
               <EyeOff className="size-4" aria-hidden />
@@ -117,13 +141,17 @@ export function FormField({
       </div>
 
       {hint && !error && (
-        <p id={hintId} className="text-xs text-muted-foreground">
+        <p id={hintId} className={plum ? plumHint : "text-xs text-muted-foreground"}>
           {hint}
         </p>
       )}
 
       {error && (
-        <p id={errorId} role="alert" className="text-sm text-destructive">
+        <p
+          id={errorId}
+          role="alert"
+          className={plum ? plumError : "text-sm text-destructive"}
+        >
           {error}
         </p>
       )}

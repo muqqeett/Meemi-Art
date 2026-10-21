@@ -121,6 +121,8 @@ export const authConfig = {
   verificationTtlMinutes: 60,
   /** Verification emails one address may request per hour. */
   verificationResendPerHour: 3,
+  /** Lifetime of a password-reset link. */
+  resetTtlMinutes: 30,
 } as const;
 
 export const PRICE_BOUNDS = { min: 0, max: 30_000 } as const;

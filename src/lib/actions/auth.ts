@@ -14,6 +14,7 @@ import { issueVerificationEmail } from "@/lib/actions/verification";
 import {
   sendEmail,
   withinRateLimit,
+  isEmailConfigured,
   resetPasswordTemplate,
   passwordChangedTemplate,
   EMAIL_TEMPLATES,
@@ -27,6 +28,8 @@ import {
   profileSchema,
 } from "@/lib/validations/auth";
 import { allowLoginAttempt, clearLoginAttempts } from "@/lib/security/login-throttle";
+import { safeCallback } from "@/lib/security/safe-callback";
+import { authConfig } from "@/lib/config";
 
 /**
  * React resets an uncontrolled form after a form action resolves, so a failed
@@ -35,7 +38,15 @@ import { allowLoginAttempt, clearLoginAttempts } from "@/lib/security/login-thro
  * never echoed.
  */
 export type AuthResult =
-  | { ok: true; message?: string }
+  | {
+      ok: true;
+      message?: string;
+      /**
+       * Set when the site has no mail provider, so nothing was or could be
+       * sent. A property of the environment, never of the address submitted.
+       */
+      emailUnavailable?: true;
+    }
   | {
       ok: false;
       error: string;
@@ -55,13 +66,6 @@ function flattenIssues(issues: { path: PropertyKey[]; message: string }[]) {
     if (key && !fieldErrors[key]) fieldErrors[key] = issue.message;
   }
   return fieldErrors;
-}
-
-/** Only allow relative callback paths — never an attacker-supplied origin. */
-function safeCallback(callbackUrl?: string | null): string {
-  if (!callbackUrl) return "/account";
-  if (!callbackUrl.startsWith("/") || callbackUrl.startsWith("//")) return "/account";
-  return callbackUrl;
 }
 
 // ------------------------------------------------------------------ sign in
@@ -227,7 +231,7 @@ export async function signOutAction(): Promise<void> {
 
 // ------------------------------------------------------------------ password reset
 
-const RESET_TOKEN_TTL_MINUTES = 30;
+const RESET_TOKEN_TTL_MINUTES = authConfig.resetTtlMinutes;
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -292,6 +296,17 @@ export async function forgotPasswordAction(
   }
 
   // Identical response either way — this must not reveal registration status.
+  // Without a mail provider nothing can have been sent to anyone, so say so;
+  // that depends on the environment alone, so it is the same for every address.
+  if (!isEmailConfigured()) {
+    return {
+      ok: true,
+      emailUnavailable: true,
+      message:
+        "Email delivery isn't available right now, so no reset link was sent. Please try again later.",
+    };
+  }
+
   return {
     ok: true,
     message:
@@ -346,7 +361,9 @@ export async function resetPasswordAction(
       where: { id: record.id },
       data: { usedAt: new Date() },
     }),
-    // Any active sessions belong to whoever had the old password.
+    // Clears database-backed sessions only. Sign-in uses JWT sessions (see
+    // `src/auth.ts`), which live in a cookie and are not stored here, so this
+    // does not end sign-ins that already exist on other devices.
     prisma.session.deleteMany({ where: { userId: record.userId } }),
   ]);
 

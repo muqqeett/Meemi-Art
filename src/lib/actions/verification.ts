@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import {
   sendEmail,
   withinRateLimit,
+  isEmailConfigured,
   verifyEmailTemplate,
   welcomeTemplate,
   EMAIL_TEMPLATES,
@@ -126,7 +127,17 @@ export async function verifyEmailToken(token: string): Promise<VerificationResul
   return { ok: true, alreadyVerified };
 }
 
-export type ResendResult = { ok: true; message: string } | { ok: false; error: string };
+export type ResendResult =
+  | {
+      ok: true;
+      message: string;
+      /**
+       * Set when the site has no mail provider, so nothing was or could be
+       * sent. A property of the environment, never of the address submitted.
+       */
+      emailUnavailable?: true;
+    }
+  | { ok: false; error: string };
 
 /**
  * Request a fresh verification email.
@@ -140,8 +151,23 @@ export async function resendVerificationEmail(
 ): Promise<ResendResult> {
   const parsed = emailSchema.safeParse(formData.get("email"));
 
-  const generic =
-    "If that address needs verifying, we've sent a new link. Check your inbox.";
+  // One reply for every address and for a throttled request alike. Without a
+  // mail provider nothing is sent to anyone, so the reply says that instead —
+  // it depends on the environment alone, so it still reveals nothing about
+  // any address.
+  const reply = (): ResendResult =>
+    isEmailConfigured()
+      ? {
+          ok: true,
+          message:
+            "If that address needs verifying, we've sent a new link. Check your inbox.",
+        }
+      : {
+          ok: true,
+          emailUnavailable: true,
+          message:
+            "Email delivery isn't available right now, so no link was sent. Please try again later.",
+        };
 
   if (!parsed.success) {
     return { ok: false, error: "Enter a valid email address." };
@@ -153,7 +179,7 @@ export async function resendVerificationEmail(
   if (!allowed) {
     // Deliberately the same shape as success — a throttle message that only
     // appeared for real accounts would leak which addresses exist.
-    return { ok: true, message: generic };
+    return reply();
   }
 
   const user = await prisma.user.findUnique({
@@ -165,5 +191,5 @@ export async function resendVerificationEmail(
     await issueVerificationEmail(user);
   }
 
-  return { ok: true, message: generic };
+  return reply();
 }

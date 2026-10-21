@@ -3,77 +3,67 @@
 import { useActionState } from "react";
 import { Loader2, AlertCircle, MailCheck } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/auth/form-field";
+import { AuthStatus } from "@/components/auth/plum-auth";
+import { plumAlert, plumNotice, plumPrimary } from "@/components/auth/plum-auth-styles";
 import { forgotPasswordAction } from "@/lib/actions/auth";
+import { authConfig } from "@/lib/config";
 
-export function ForgotPasswordForm({
-  emailConfigured = true,
-}: {
-  /** False when no mail provider is set up — the screen must not imply a send. */
-  emailConfigured?: boolean;
-}) {
+/**
+ * Asks for a reset link — presentation only. The action, the field name and the
+ * deliberately identical outcome for known and unknown addresses are untouched.
+ *
+ * When the site has no mail provider the action says so (`emailUnavailable`),
+ * the same for every address, and this screen must not dress that up as a send.
+ */
+export function ForgotPasswordForm() {
   const [state, formAction, pending] = useActionState(forgotPasswordAction, null);
+
+  if (state?.ok && state.emailUnavailable) {
+    return (
+      <p role="status" className={plumNotice}>
+        {state.message}
+      </p>
+    );
+  }
 
   if (state?.ok) {
     return (
-      <div
-        role="status"
-        className="flex flex-col items-center gap-3 rounded-xl border border-border bg-surface-alt px-6 py-10 text-center"
-      >
-        <MailCheck className="size-8 text-success" aria-hidden />
-        <h2 className="font-semibold text-foreground">
-          {emailConfigured ? "Check your inbox" : "Request received"}
-        </h2>
-        <p className="text-body">{state.message}</p>
-        {emailConfigured ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            The link expires in 30 minutes. Check your spam folder if it hasn&apos;t
-            arrived in a few minutes.
-          </p>
-        ) : (
-          <p className="mt-2 text-xs text-warning">
-            Email delivery isn&apos;t configured on this environment, so no message was
-            actually sent.
-          </p>
-        )}
-      </div>
+      <AuthStatus icon={MailCheck} title="Check your inbox">
+        <p>{state.message}</p>
+        <p className="text-[13px] leading-[18px] font-medium">
+          The link expires in {authConfig.resetTtlMinutes} minutes. Check your spam
+          folder if it hasn&apos;t arrived in a few minutes.
+        </p>
+      </AuthStatus>
     );
   }
 
   return (
-    <form action={formAction} className="space-y-5" noValidate>
+    <form action={formAction} className="flex flex-col gap-4" noValidate>
       {state && !state.ok && !state.fieldErrors && (
-        <div
-          role="alert"
-          className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
-        >
+        <div role="alert" className={plumAlert}>
           <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>{state.error}</span>
         </div>
       )}
 
       <FormField
+        variant="plum"
         label="Email"
         name="email"
         type="email"
-        placeholder="you@example.com"
+        placeholder="name@mail.com"
         autoComplete="email"
         required
         defaultValue={state && !state.ok ? state.values?.email : undefined}
         error={state && !state.ok ? state.fieldErrors?.email : undefined}
       />
 
-      <Button
-        type="submit"
-        variant="brand"
-        size="pill"
-        className="w-full"
-        disabled={pending}
-      >
-        {pending && <Loader2 className="animate-spin" aria-hidden />}
+      <button type="submit" className={plumPrimary} disabled={pending} aria-busy={pending}>
+        {pending && <Loader2 className="size-4 animate-spin" aria-hidden />}
         {pending ? "Sending…" : "Send reset link"}
-      </Button>
+      </button>
     </form>
   );
 }

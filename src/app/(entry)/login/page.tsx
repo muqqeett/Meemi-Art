@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { LoginForm } from "@/components/auth/login-form";
-import { AuthScreen } from "@/components/auth/auth-visuals";
+import { PlumAuthShell } from "@/components/auth/plum-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = {
@@ -13,14 +13,13 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <AuthScreen
-      title="Welcome back"
-      subtitle="Sign in to continue to Meemi Art."
-      headline="Made by hand. Ready the moment you buy."
+    <PlumAuthShell
+      title="Log in"
+      subtitle="Welcome back. Log in to find your downloads, orders and saved patterns."
     >
-      <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+      <Suspense fallback={<Skeleton className="h-64 w-full rounded-[12px]" />}>
         <LoginForm />
       </Suspense>
-    </AuthScreen>
+    </PlumAuthShell>
   );
 }

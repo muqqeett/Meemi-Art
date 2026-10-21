@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { CircleCheck, CircleAlert, Clock } from "lucide-react";
+import Link from "next/link";
+import { CircleAlert, Clock } from "lucide-react";
 
-import { ButtonLink } from "@/components/ui/button-link";
 import { ResendVerificationForm } from "@/components/auth/resend-verification-form";
+import {
+  AuthCelebrate,
+  AuthIconCircle,
+  AuthSwitch,
+  PlumAuthShell,
+} from "@/components/auth/plum-auth";
+import { plumPrimary, plumSecondary } from "@/components/auth/plum-auth-styles";
 import { verifyEmailToken } from "@/lib/actions/verification";
 import { siteConfig } from "@/lib/config";
-import { AuthScreen } from "@/components/auth/auth-visuals";
 
 export const metadata: Metadata = {
   title: "Verify your email",
@@ -28,27 +34,26 @@ export default async function VerifyEmailPage({
 
   const result = await verifyEmailToken(raw);
 
+  // Success is the design's "Done" moment: Meemi celebrates once, and there are
+  // two next steps.
   if (result.ok) {
     return (
-      <div className="text-center">
-        <CircleCheck className="mx-auto size-11 text-success" aria-hidden />
-        <h1 className="font-display mt-5 text-3xl leading-tight">
-          {result.alreadyVerified ? "Already verified" : "Email verified"}
-        </h1>
-        <p className="text-body mt-3">
-          {result.alreadyVerified
+      <PlumAuthShell
+        lead={<AuthCelebrate />}
+        title={result.alreadyVerified ? "Already verified" : "Email verified"}
+        subtitle={
+          result.alreadyVerified
             ? `This address was already confirmed. Your ${siteConfig.name} account is active.`
-            : `Thank you — your ${siteConfig.name} account is now active.`}
-        </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <ButtonLink href="/shop" variant="brand" size="pill">
-            Continue shopping
-          </ButtonLink>
-          <ButtonLink href="/account" variant="brandOutline" size="pill">
-            Go to my account
-          </ButtonLink>
-        </div>
-      </div>
+            : `Thank you — your ${siteConfig.name} account is now active.`
+        }
+      >
+        <Link href="/shop" className={plumPrimary}>
+          Browse patterns
+        </Link>
+        <Link href="/account" className={plumSecondary}>
+          Go to my account
+        </Link>
+      </PlumAuthShell>
     );
   }
 
@@ -71,25 +76,13 @@ export default async function VerifyEmailPage({
   }[result.reason];
 
   return (
-    <AuthScreen>
-      <div>
-      <div className="text-center">
-        <copy.Icon className="mx-auto size-11 text-warning" aria-hidden />
-        <h1 className="font-display mt-5 text-3xl leading-tight">{copy.title}</h1>
-        <p className="text-body mt-3">{copy.body}</p>
-      </div>
-
-      <div className="mt-8">
-        <ResendVerificationForm />
-      </div>
-
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Already verified?{" "}
-        <a href="/login" className="link-brand font-semibold">
-          Sign in
-        </a>
-      </p>
-    </div>
-    </AuthScreen>
+    <PlumAuthShell
+      lead={<AuthIconCircle icon={copy.Icon} />}
+      title={copy.title}
+      subtitle={copy.body}
+    >
+      <ResendVerificationForm />
+      <AuthSwitch prompt="Already verified?" linkLabel="Log in" href="/login" />
+    </PlumAuthShell>
   );
 }
