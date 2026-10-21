@@ -149,9 +149,20 @@ function buildOrderBy(sort: ProductFilters["sort"]): Prisma.ProductOrderByWithRe
  */
 export async function listProducts(
   filters: ProductFilters,
-  options: { categorySlug?: string } = {},
+  options: {
+    categorySlug?: string;
+    /** Several categories at once — a category page and its sub-categories. */
+    categorySlugs?: string[];
+    /** Only these products, e.g. the ones matching a skill-level filter. */
+    productIds?: string[];
+  } = {},
 ): Promise<ProductListResult> {
   const categorySlug = options.categorySlug ?? filters.category;
+  const categoryWhere: Prisma.ProductWhereInput = options.categorySlugs
+    ? { category: { slug: { in: options.categorySlugs } } }
+    : categorySlug
+      ? { category: { slug: categorySlug } }
+      : {};
 
   const where: Prisma.ProductWhereInput = { isActive: true };
 
@@ -167,8 +178,10 @@ export async function listProducts(
     ];
   }
 
-  if (categorySlug) {
-    where.category = { slug: categorySlug };
+  Object.assign(where, categoryWhere);
+
+  if (options.productIds) {
+    where.id = { in: options.productIds };
   }
 
   if (filters.brand) {
@@ -210,7 +223,7 @@ export async function listProducts(
       orderBy: { brand: "asc" },
     }),
     prisma.product.aggregate({
-      where: { isActive: true, ...(categorySlug ? { category: { slug: categorySlug } } : {}) },
+      where: { isActive: true, ...categoryWhere },
       _min: { priceCents: true },
       _max: { priceCents: true },
     }),
@@ -290,6 +303,50 @@ export async function getBestSellers(limit = 4): Promise<ProductCardData[]> {
     .map((row) => toCard(row, wishlisted))
     .sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0));
 }
+
+/** How recent a product must be for the Shop menu to call it new. */
+const SHOP_MENU_NEW_DAYS = 30;
+
+/**
+ * The two facts the Shop menu quotes about the catalogue: how many products
+ * arrived in the last 30 days, and the newest one (for the feature card).
+ *
+ * "Listed" is the same rule the category counts and the shop listing use — an
+ * active product with a downloadable file — so the menu never promises a
+ * product the shopper cannot open.
+ */
+export const getShopMenuHighlights = cache(async () => {
+  const listed = { isActive: true, asset: { isNot: null } } satisfies Prisma.ProductWhereInput;
+  const since = new Date(Date.now() - SHOP_MENU_NEW_DAYS * 24 * 60 * 60 * 1000);
+
+  const [newCount, latest] = await Promise.all([
+    prisma.product.count({ where: { ...listed, createdAt: { gte: since } } }),
+    prisma.product.findFirst({
+      where: listed,
+      orderBy: { createdAt: "desc" },
+      select: {
+        name: true,
+        slug: true,
+        shortDescription: true,
+        priceCents: true,
+        createdAt: true,
+      },
+    }),
+  ]);
+
+  return {
+    newCount,
+    latest: latest
+      ? {
+          name: latest.name,
+          slug: latest.slug,
+          shortDescription: latest.shortDescription,
+          priceCents: latest.priceCents,
+          isNew: latest.createdAt >= since,
+        }
+      : null,
+  };
+});
 
 export async function getFeaturedProducts(limit = 4): Promise<ProductCardData[]> {
   const [rows, wishlisted] = await Promise.all([

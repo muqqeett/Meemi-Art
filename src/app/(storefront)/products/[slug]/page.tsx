@@ -194,7 +194,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           variant="plum"
           items={[
             { label: "Shop", href: "/shop" },
-            { label: product.category.name, href: `/shop/${product.category.slug}` },
+            { label: product.category.name, href: `/c/${product.category.slug}` },
             { label: product.name },
           ]}
         />
@@ -254,7 +254,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
 
           <PdpProductRail
             title="Related Product"
-            href={`/shop/${product.category.slug}`}
+            href={`/c/${product.category.slug}`}
             products={related}
             soldCounts={soldCounts}
           />

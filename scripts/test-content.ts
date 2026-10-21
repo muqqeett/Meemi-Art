@@ -372,7 +372,7 @@ async function main() {
     // The generated XML itself is verified over HTTP against a built server.
     const sitemapSource = read("src/app/sitemap.ts");
     check("the sitemap builds the hub and every resource from the registry", sitemapSource.includes("/learn") && sitemapSource.includes("RESOURCES.map") && sitemapSource.includes("resourcePath("));
-    check("the sitemap still lists the shop, categories and products", sitemapSource.includes("/shop") && sitemapSource.includes("getAllCategorySlugs") && sitemapSource.includes("getAllProductSlugs"));
+    check("the sitemap still lists the shop, categories and products", sitemapSource.includes("/shop") && sitemapSource.includes("getCategorySitemapPaths") && sitemapSource.includes("getAllProductSlugs"));
     const sitemapUrls = sitemapSource.split("`").filter((part) => part.startsWith("${base}/"));
     check("the sitemap names no private or transactional route", !sitemapUrls.some((url) => /(admin|account|cart|checkout|orders|login|register|search)/.test(url)), sitemapUrls.join(" "));
 

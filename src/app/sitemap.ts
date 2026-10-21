@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { getAllProductSlugs } from "@/lib/queries/products";
-import { getAllCategorySlugs } from "@/lib/queries/categories";
+import { getCategorySitemapPaths } from "@/lib/queries/categories";
 import { siteConfig } from "@/lib/config";
 import { RESOURCES, resourcePath } from "@/lib/content/resources";
 import { getPublishedArticleSlugs, getTopicSlugs } from "@/lib/queries/articles";
@@ -28,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const [products, categories, articles, topics, tutorials] = await Promise.all([
     getAllProductSlugs(),
-    getAllCategorySlugs(),
+    getCategorySitemapPaths(),
     // Published only. A draft has no URL to list: its page 404s.
     getPublishedArticleSlugs(),
     getTopicSlugs(),
@@ -63,7 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticRoutes,
     ...categories.map((category) => ({
-      url: `${base}/shop/${category.slug}`,
+      url: `${base}${category.path}`,
       lastModified: category.updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.8,

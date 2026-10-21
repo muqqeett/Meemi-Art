@@ -42,7 +42,7 @@ export function parseFilters(raw: RawSearchParams): ProductFilters {
  * with it, and are excluded from the sitemap.
  */
 export function isFacetedView(raw: RawSearchParams): boolean {
-  const facets = ["q", "brand", "minPrice", "maxPrice", "rating", "sort", "page"];
+  const facets = ["q", "brand", "minPrice", "maxPrice", "rating", "skill", "sort", "page"];
   return facets.some((key) => Boolean(first(raw[key])));
 }
 

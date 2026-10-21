@@ -2,16 +2,16 @@ import Link from "next/link";
 import { Heart } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
-import { MegaNav } from "@/components/layout/mega-nav";
-import { MobileNav } from "@/components/layout/mobile-nav";
+import { PlumMobileMenu } from "@/components/layout/plum/plum-mobile-menu";
 import { SearchDialog } from "@/components/layout/search-dialog";
 import { AccountMenu } from "@/components/layout/account-menu";
 import { PlumNavLink } from "@/components/layout/plum/plum-nav-link";
+import { ShopMenu } from "@/components/layout/plum/shop-menu";
 import { CartButton } from "@/components/cart/cart-button";
 import { getCurrentUser } from "@/lib/auth-guards";
 import { getCartCount } from "@/lib/cart/cart-service";
-import { getAllCategories } from "@/lib/queries/categories";
-import { getFeaturedProducts } from "@/lib/queries/products";
+import { getShopMenuCategories } from "@/lib/queries/categories";
+import { getShopMenuHighlights } from "@/lib/queries/products";
 import { mainNav } from "@/lib/config";
 
 /**
@@ -21,9 +21,10 @@ import { mainNav } from "@/lib/config";
  * field, then account / saved / bag. On mobile it is 56px: menu, wordmark,
  * search, bag.
  *
- * Data and behaviour are the existing header's, unchanged: the same user,
- * cart count, categories and featured products feed the same mega panel,
- * search dialog, account menu and bag. Only the presentation is new.
+ * The user, cart count, search dialog, account menu and bag are the existing
+ * header's. The Shop menu is the design's mega menu: five fixed categories,
+ * featured links and a feature card (see `ShopMenu`), not the CMS category
+ * list, and so is the mobile drawer (`PlumMobileMenu`), from the same query.
  *
  * Where the design and the shop disagree, the shop wins:
  *   - the design's nav is Shop, New & drops, Bundles, Free, Learn, About. This
@@ -39,39 +40,17 @@ import { mainNav } from "@/lib/config";
 const NAV_HREFS = ["/shop?sort=newest", "/learn", "/about"] as const;
 
 export async function PlumHeader() {
-  const [user, cartCount, categories, featured] = await Promise.all([
+  const [user, cartCount, menuCategories, highlights] = await Promise.all([
     getCurrentUser(),
     getCartCount(),
-    getAllCategories(),
-    getFeaturedProducts(2),
+    getShopMenuCategories(),
+    getShopMenuHighlights(),
   ]);
 
-  const megaCategories = categories.map((category) => ({
-    id: category.id,
-    name: category.name,
-    slug: category.slug,
-    image: category.image ?? null,
-  }));
-
-  /**
-   * The drawer needs the product count as well, so it can skip categories
-   * with nothing in them — the same rule the homepage applies.
-   */
-  const navCategories = categories.map((category) => ({
-    id: category.id,
-    name: category.name,
-    slug: category.slug,
-    image: category.image ?? null,
-    productCount: category._count.products,
-  }));
-
-  const megaFeatured = featured.map((product) => ({
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    priceCents: product.priceCents,
-    imageUrl: product.imageUrl,
-  }));
+  /** A menu row links only where the category page has something to list. */
+  const liveSlugs = menuCategories
+    .filter((category) => category.count > 0)
+    .map((category) => category.slug);
 
   const links = NAV_HREFS.map((href) => mainNav.find((item) => item.href === href)).filter(
     (item): item is (typeof mainNav)[number] => Boolean(item),
@@ -89,11 +68,9 @@ export async function PlumHeader() {
       <header className="sticky top-0 z-50 border-b border-pl-line bg-pl-surface">
         <div className="mx-auto flex h-14 w-full max-w-[1280px] items-center gap-2 px-4 sm:px-6 lg:h-[72px] lg:gap-6 lg:px-8">
           <div className="lg:hidden">
-            <MobileNav
-              isSignedIn={Boolean(user)}
-              userName={user?.name ?? null}
-              categories={navCategories}
-              variant="plum"
+            <PlumMobileMenu
+              categories={menuCategories}
+              user={user ? { name: user.name, email: user.email } : null}
             />
           </div>
 
@@ -101,10 +78,14 @@ export async function PlumHeader() {
             <Logo focus="plum" className="max-sm:h-6" />
           </div>
 
-          {/* MegaNav is its own `nav` landmark ("Main"), so the plain links get a
+          {/* ShopMenu is its own `nav` landmark ("Main"), so the plain links get a
               sibling landmark rather than being nested inside it. */}
           <div className="hidden items-center gap-0.5 lg:flex">
-            <MegaNav categories={megaCategories} featured={megaFeatured} variant="plum" />
+            <ShopMenu
+              liveSlugs={liveSlugs}
+              newCount={highlights.newCount}
+              feature={highlights.latest}
+            />
             <nav aria-label="Site" className="flex items-center gap-0.5">
               {links.map((item) => (
                 <PlumNavLink key={item.href} href={item.href}>

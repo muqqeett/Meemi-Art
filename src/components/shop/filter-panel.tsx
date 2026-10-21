@@ -44,7 +44,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
  * whole row is the button (Figma Checkbox, 7:80), `aria-pressed` carries the
  * state, and the box fills plum when it is on.
  */
-function FacetRow({
+export function FacetRow({
   active,
   onClick,
   label,
