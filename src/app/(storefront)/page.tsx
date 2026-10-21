@@ -7,6 +7,7 @@ import { HowItWorks } from "@/components/home/plum/how-it-works";
 import { GuidesBand } from "@/components/home/plum/guides-band";
 import { getCategoriesWithListedCounts } from "@/lib/queries/categories";
 import { getNewArrivals } from "@/lib/queries/products";
+import { isAssistantConfigured } from "@/lib/ai/client";
 import { siteConfig } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -54,7 +55,10 @@ export default async function HomePage() {
 
   return (
     <div data-fill className="font-figtree w-full bg-pl-page text-pl-text">
-      <PlumHero products={heroProducts} />
+      <PlumHero
+        products={heroProducts}
+        askMeemi={isAssistantConfigured() || process.env.NODE_ENV === "development"}
+      />
       <CategoryTiles
         categories={categories.map((category) => ({
           slug: category.slug,

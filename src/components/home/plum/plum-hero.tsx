@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 
 import { plumButtonClass } from "@/components/ui/plum-button";
 import { formatMoney } from "@/lib/money";
+import { useAskMeemi } from "@/lib/stores/ask-meemi";
 import { cn } from "@/lib/utils";
 
 /**
@@ -59,7 +60,17 @@ function shortName(name: string): string {
 
 const STAGE = { w: 560, h: 500 } as const;
 
-export function PlumHero({ products }: { products: HeroProduct[] }) {
+export function PlumHero({
+  products,
+  askMeemi = false,
+}: {
+  products: HeroProduct[];
+  /**
+   * Ask Meemi is available: the "What should Meemi make?" chips then open her
+   * panel and ask for that pattern, instead of playing the make animation.
+   */
+  askMeemi?: boolean;
+}) {
   const [phase, setPhase] = useState<Phase>("hello");
   const [picked, setPicked] = useState<number | null>(null);
   const [run, setRun] = useState(0);
@@ -424,8 +435,13 @@ export function PlumHero({ products }: { products: HeroProduct[] }) {
                     <button
                       key={item.id}
                       type="button"
-                      aria-pressed={active}
-                      onClick={() => pick(index)}
+                      aria-pressed={askMeemi ? undefined : active}
+                      aria-haspopup={askMeemi ? "dialog" : undefined}
+                      onClick={() =>
+                        askMeemi
+                          ? useAskMeemi.getState().openPanel({ ask: `Show me ${item.name}` })
+                          : pick(index)
+                      }
                       className={cn(
                         "pl-focus font-figtree inline-flex items-center gap-2 rounded-full border-2 py-[7px] pr-3.5 pl-[7px] text-sm leading-[18px] font-bold whitespace-nowrap transition-colors lg:max-w-[176px]",
                         active

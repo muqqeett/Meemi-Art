@@ -177,6 +177,15 @@
 @keyframes pl-pop {
   from { transform: scale(0.6); opacity: 0; }
 }
+/* Ask Meemi: the header avatar pops when her mood changes (scale .8 → 1). */
+@keyframes ask-meemi-pop {
+  from {
+    transform: scale(0.8);
+  }
+  to {
+    transform: scale(1);
+  }
+}
 @keyframes pl-wiggle {
   from { transform: rotate(-4deg) translateY(-4px); }
   to { transform: rotate(0) translateY(0); }

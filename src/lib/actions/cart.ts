@@ -34,6 +34,26 @@ async function isSellable(productId: string): Promise<boolean> {
   return Boolean(product?.isActive && product.asset);
 }
 
+/**
+ * Add one of a product to the bag, named by its slug.
+ *
+ * For Ask Meemi's result cards, which are keyed and linked by slug and never
+ * carry a database id. It resolves the slug here and then goes through
+ * `addToCart`, so every rule — sellable, quantity cap, analytics — is the same
+ * ones the shop's own buttons use.
+ */
+export async function addToCartBySlug(input: {
+  slug: string;
+}): Promise<ActionResult<{ itemCount: number }>> {
+  const slug = typeof input?.slug === "string" ? input.slug.slice(0, 200) : "";
+  if (!slug) return fail("That item is no longer available.");
+
+  const product = await prisma.product.findUnique({ where: { slug }, select: { id: true } });
+  if (!product) return fail("That item is no longer available.");
+
+  return addToCart({ productId: product.id, quantity: 1 });
+}
+
 export async function addToCart(input: {
   productId: string;
   quantity: number;

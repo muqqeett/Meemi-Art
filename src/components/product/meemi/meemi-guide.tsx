@@ -79,7 +79,7 @@ function overlaps(a: DOMRect, b: DOMRect, margin = 32): boolean {
  *     difficulty or techniques block, and a word after a successful wishlist
  *     save or add to cart — each at most once per product, never two within
  *     twenty seconds, and never over something the customer opened.
- *   - It sits above the Pattern guide launcher, and hides itself whenever it
+ *   - It sits above the Ask Meemi launcher, and hides itself whenever it
  *     would cover the purchase controls (`data-meemi-avoid`); a bubble that
  *     would cover them is tucked away.
  *
@@ -349,9 +349,9 @@ export function MeemiGuide({ facts, assistantAvailable }: { facts: MeemiFacts; a
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) interacting.current = false;
       }}
       className={cn(
-        // Stacked directly above the Pattern guide launcher (48px tall at
+        // Stacked directly above the Ask Meemi launcher (60px tall at
         // bottom 1rem, or 1.5rem from `sm`), right-aligned with it.
-        "pointer-events-none fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex flex-col-reverse items-end gap-2 sm:right-6 sm:bottom-[5.25rem]",
+        "pointer-events-none fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 flex flex-col-reverse items-end gap-2 sm:right-6 sm:bottom-[5.75rem]",
         "transition-opacity duration-200",
         obstructed && "opacity-0",
       )}

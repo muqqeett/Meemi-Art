@@ -278,7 +278,7 @@ async function queryMatches(
     .map(({ product, score, reasons }) => ({ ...product, match: { score, reasons } }));
 }
 
-function withoutCriterion(intent: CatalogIntent, criterion: CriterionKey): CatalogIntent {
+export function withoutCriterion(intent: CatalogIntent, criterion: CriterionKey): CatalogIntent {
   switch (criterion) {
     case "price":
       return { ...intent, minPriceCents: null, maxPriceCents: null };

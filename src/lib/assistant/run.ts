@@ -6,14 +6,19 @@ import {
   getAssistantCategories,
   retrieveCandidates,
   toPublicProduct,
+  withoutCriterion,
   type CandidateProduct,
+  type Relaxation,
   type Retrieval,
 } from "@/lib/assistant/catalog";
-import { describeTimeCap, type CriterionKey } from "@/lib/assistant/matching";
+import { MATCH_WEIGHTS, describeTimeCap, type CriterionKey } from "@/lib/assistant/matching";
 import { preParse, type NameMatch, type PreParsed } from "@/lib/assistant/parse";
 import type { AssistantRequest } from "@/lib/assistant/request";
 import type {
+  AssistantChip,
   AssistantComparison,
+  AssistantLink,
+  AssistantMood,
   AssistantRecommendation,
   AssistantReply,
   ChatTurn,
@@ -95,6 +100,13 @@ const DATABASE_CATALOG: AssistantCatalog = {
 
 export const FALLBACK_HREF = "/shop";
 
+/**
+ * How long a turn may take on the server. The browser gives up at 12 seconds
+ * and shows Meemi napping; answering a little sooner than that means the
+ * customer normally sees the server's own explanation rather than a timeout.
+ */
+export const TURN_TIMEOUT_MS = 10_000;
+
 export const STARTER_REPLIES = [
   "Show me flower patterns",
   "Something under $5",
@@ -111,15 +123,33 @@ const TROUBLE: AssistantReply = {
 
 type OkReply = Extract<AssistantReply, { ok: true }>;
 
-function say(message: string, extra: Partial<Omit<OkReply, "ok" | "message">> = {}): OkReply {
+/** Plain labels as tappable chips: tapping sends the label itself. */
+function chipsOf(labels: readonly string[]): AssistantChip[] {
+  return labels.map((label) => ({ label, query: label }));
+}
+
+/**
+ * A reply the server writes itself.
+ *
+ * Meemi's face follows what the reply does unless the caller says otherwise:
+ * happy with results, curious with a question or nothing to show.
+ */
+function say(
+  message: string,
+  extra: Partial<Omit<OkReply, "ok" | "message">> = {},
+): OkReply {
+  const recommendations = extra.recommendations ?? [];
+  const mood: AssistantMood = extra.mood ?? (recommendations.length > 0 ? "happy" : "curious");
   return {
     ok: true,
     message,
-    recommendations: [],
+    recommendations,
     followUpQuestion: null,
-    quickReplies: [],
+    chips: [],
+    links: [],
     comparison: null,
     ...extra,
+    mood,
   };
 }
 
@@ -167,21 +197,6 @@ const SUITED_FOR: Readonly<Record<DifficultyLevel, string>> = {
 };
 
 const NOT_ASSESSED = "Not assessed yet";
-
-function criterionPhrase(criterion: CriterionKey, intent: CatalogIntent): string {
-  switch (criterion) {
-    case "difficulty": {
-      const label = LEVEL_LABELS.get(intent.difficulty?.level ?? "BEGINNER")?.toLowerCase() ?? "skill";
-      return `the ${label} level`;
-    }
-    case "time":
-      return `the ${describeTimeCap(intent.maxMinutes ?? 0)} time limit`;
-    case "techniques":
-      return "the technique request";
-    case "price":
-      return `the ${formatMoney(intent.maxPriceCents ?? 0)} budget`;
-  }
-}
 
 /** The server-built comparison table. Every cell is catalogue data or an honest "not assessed". */
 export function buildComparison(products: CandidateProduct[]): AssistantComparison {
@@ -276,7 +291,7 @@ function unresolvedNames(matches: NameMatch<CandidateProduct>[]): OkReply | null
   if (ambiguous && ambiguous.status === "ambiguous") {
     const query = cleanText(ambiguous.query, 60);
     return say(`I found more than one pattern matching "${query}". Which one did you mean?`, {
-      quickReplies: ambiguous.options.map((p) => cleanText(p.name, 40)).slice(0, 4),
+      chips: chipsOf(ambiguous.options.map((p) => cleanText(p.name, 40)).slice(0, 4)),
     });
   }
   const missing = matches.find((m) => m.status === "missing");
@@ -284,10 +299,141 @@ function unresolvedNames(matches: NameMatch<CandidateProduct>[]): OkReply | null
     const query = cleanText(missing.query, 60);
     return say(
       `I couldn't find a pattern called "${query}" in the Meemi Art catalogue. Could you check the name, or tell me what you'd like to make?`,
-      { quickReplies: STARTER_REPLIES },
+      { chips: chipsOf(STARTER_REPLIES), mood: "unsure" },
     );
   }
   return null;
+}
+
+// ---------------------------------------------------------------- never a dead end
+
+/** Questions about an order or a file: not Meemi's job, but not a dead end either. */
+const ACCOUNT_QUESTION =
+  /\b(downloads?|library|orders?|refunds?|receipts?|invoices?|account|password|log ?in|sign ?in|where is my)\b/i;
+
+/** Where an account or order question is sent, written here so a model can never invent one. */
+const ACCOUNT_LINKS: AssistantLink[] = [
+  { label: "Open My library", href: "/account/downloads" },
+  { label: "Help: downloads", href: "/faq" },
+  { label: "Contact us", href: "/contact" },
+];
+
+function offTopicReply(latest: string): OkReply {
+  if (ACCOUNT_QUESTION.test(latest)) {
+    return say(
+      "I only help with finding patterns. Your files are always in My library, and the download link is in your order email.",
+      { mood: "helping", links: ACCOUNT_LINKS },
+    );
+  }
+  return say(
+    "I'm here to help you find Meemi Art crochet patterns. Tell me what you'd like to make and I'll look through the catalogue.",
+    { mood: "helping", chips: chipsOf(STARTER_REPLIES) },
+  );
+}
+
+/** What a customer was asking for, in the words they would use: "flower pattern". */
+function subjectOf(intent: CatalogIntent, categories: AssistantCategory[]): string {
+  const words = intent.keywords.join(" ").trim();
+  if (words) return `${words} pattern`;
+  const category = categories.find((c) => c.slug === intent.categorySlug)?.name;
+  return category ? category.toLowerCase() : "pattern";
+}
+
+/** The filter that was let go, as the customer said it: "beginner", "under $5". */
+function droppedPhrase(criterion: CriterionKey, intent: CatalogIntent): string {
+  switch (criterion) {
+    case "difficulty":
+      return LEVEL_LABELS.get(intent.difficulty?.level ?? "BEGINNER")?.toLowerCase() ?? "that skill level";
+    case "price":
+      return intent.maxPriceCents !== null
+        ? `under ${formatMoney(intent.maxPriceCents)}`
+        : intent.minPriceCents !== null
+          ? `over ${formatMoney(intent.minPriceCents)}`
+          : "that price";
+    case "time":
+      return `under ${describeTimeCap(intent.maxMinutes ?? 0)}`;
+    case "techniques":
+      return "that technique";
+  }
+}
+
+/**
+ * The relaxation to use: the one that finds the most patterns, and among ties
+ * the least important filter (the matching engine's own weights), so a stated
+ * skill level outlives a stated budget.
+ */
+function pickRelaxation(relaxations: Relaxation[]): Relaxation {
+  return [...relaxations].sort(
+    (a, b) => b.matches - a.matches || MATCH_WEIGHTS[a.criterion] - MATCH_WEIGHTS[b.criterion],
+  )[0];
+}
+
+function cardsFor(products: CandidateProduct[]): AssistantRecommendation[] {
+  return products.slice(0, 4).map((product) => ({
+    product: toPublicProduct(product),
+    reason: "",
+    reasons: product.match?.reasons ?? [],
+    rank: null,
+  }));
+}
+
+/**
+ * "No beginner flower pattern yet, so I dropped "beginner". This is the closest
+ * match." — nothing matched everything, so show what matches almost everything
+ * and say exactly which filter was let go.
+ *
+ * Written entirely by the server from retrieved products: no model is asked, so
+ * it also works while the model is down.
+ */
+async function closestReply(
+  intent: CatalogIntent,
+  catalog: AssistantCatalog,
+  categories: AssistantCategory[],
+  viewing: CandidateProduct | null,
+  relaxations: Relaxation[],
+): Promise<OkReply | null> {
+  if (relaxations.length === 0) return null;
+  const { criterion } = pickRelaxation(relaxations);
+  const relaxed = withoutCriterion(intent, criterion);
+  const closest = await catalog.retrieveCandidates(relaxed, viewing?.slug ?? null);
+  if (closest.products.length === 0) return null;
+
+  const dropped = droppedPhrase(criterion, intent);
+  const subject = subjectOf(intent, categories);
+  const tail = closest.products.length === 1 ? "This is the closest match." : "These are the closest matches.";
+  const message =
+    criterion === "techniques"
+      ? `No ${subject} with that technique yet, so I dropped the technique request. ${tail}`
+      : criterion === "difficulty"
+        ? `No ${dropped} ${subject} yet, so I dropped "${dropped}". ${tail}`
+        : `No ${subject} ${dropped} yet, so I dropped "${dropped}". ${tail}`;
+
+  const keepQuery =
+    criterion === "difficulty"
+      ? `${dropped.charAt(0).toUpperCase()}${dropped.slice(1)} patterns`
+      : criterion === "price" || criterion === "time"
+        ? `Patterns ${dropped}`
+        : null;
+  const chips: AssistantChip[] = [
+    ...(keepQuery ? [{ label: `Keep ${dropped}, any kind`, query: keepQuery }] : []),
+    { label: "Gift ideas", query: "Gift ideas" },
+  ];
+
+  return say(message, { recommendations: cardsFor(closest.products), chips, mood: "unsure" });
+}
+
+/**
+ * The same for a keyword nothing matched: the search was re-run without it, so
+ * say which words were let go rather than presenting the result as a match.
+ */
+function broadenedReply(intent: CatalogIntent, retrieval: Retrieval): OkReply {
+  const words = intent.keywords.join(" ").trim();
+  const tail = retrieval.products.length === 1 ? "This is the closest match." : "These are the closest matches.";
+  return say(`No ${words} pattern yet, so I dropped "${words}". ${tail}`, {
+    recommendations: cardsFor(retrieval.products),
+    chips: chipsOf(["Gift ideas", "Help me choose"]),
+    mood: "unsure",
+  });
 }
 
 // ---------------------------------------------------------------- the turn
@@ -332,12 +478,7 @@ export async function runAssistant(
   }
 
   // Off-topic turns never reach the catalogue or the second model.
-  if (intent.outOfScope) {
-    return say(
-      "I'm here to help you find Meemi Art crochet patterns. Tell me what you'd like to make and I'll look through the catalogue.",
-      { quickReplies: STARTER_REPLIES },
-    );
-  }
+  if (intent.outOfScope) return offTopicReply(latest);
 
   if (intent.kind === "compare" || intent.kind === "explain") {
     return runNamedTurn(request, llm, catalog, intent, categories, viewing);
@@ -350,19 +491,23 @@ export async function runAssistant(
     if (retrieval.notAssessed) {
       return say(
         "Our patterns haven't been given difficulty, time or technique assessments yet, so I can't match them by skill level, time or technique. I can still help you find patterns by theme or budget.",
-        { quickReplies: STARTER_REPLIES },
+        { chips: chipsOf(STARTER_REPLIES), mood: "unsure" },
       );
     }
-    const suggestions = retrieval.relaxations.map(
-      ({ criterion, matches }) =>
-        `Without ${criterionPhrase(criterion, intent)}, there ${matches === 1 ? "is 1 pattern that fits" : `are ${matches} patterns that fit`}.`,
-    );
-    return say(
-      suggestions.length > 0
-        ? `I couldn't find a pattern that matches everything you asked for. ${suggestions.join(" ")}`
-        : "Nothing in the catalogue matches that yet. Try a broader search or browse all patterns.",
-      { quickReplies: STARTER_REPLIES },
-    );
+
+    // Show the closest patterns and say which filter was dropped.
+    const closest = await closestReply(intent, catalog, categories, viewing, retrieval.relaxations);
+    if (closest) return closest;
+
+    return say("Nothing in the catalogue matches that yet. Try a broader search or browse all patterns.", {
+      chips: chipsOf(STARTER_REPLIES),
+      mood: "unsure",
+    });
+  }
+
+  // Nothing matched the keywords: the search was widened, so say what was dropped.
+  if (retrieval.broadened && retrieval.products.length > 0 && intent.keywords.length > 0) {
+    return broadenedReply(intent, retrieval);
   }
 
   const products = referenced(retrieval.products);
@@ -415,7 +560,9 @@ export async function runAssistant(
     message,
     recommendations,
     followUpQuestion: followUp,
-    quickReplies: reply.quickReplies,
+    chips: chipsOf(reply.quickReplies),
+    links: [],
+    mood: recommendations.length > 0 ? "happy" : "curious",
     comparison: null,
   };
 }
@@ -513,7 +660,9 @@ async function runNamedTurn(
       reply.followUpQuestion && !makesUnsupportedClaim(reply.followUpQuestion, targets, intent)
         ? reply.followUpQuestion
         : null,
-    quickReplies: reply.quickReplies,
+    chips: chipsOf(reply.quickReplies),
+    links: [],
+    mood: "happy",
     comparison,
   };
 }
@@ -563,11 +712,20 @@ export async function runAssistantSafely(
   request: AssistantRequest,
   llm: AssistantLlm,
   catalog?: AssistantCatalog,
+  timeoutMs: number = TURN_TIMEOUT_MS,
 ): Promise<AssistantReply> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    return await runAssistant(request, llm, catalog);
+    return await Promise.race([
+      runAssistant(request, llm, catalog),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("assistant turn timed out")), timeoutMs);
+      }),
+    ]);
   } catch (error) {
     console.error("[assistant] turn failed:", describeError(error));
     return TROUBLE;
+  } finally {
+    clearTimeout(timer);
   }
 }

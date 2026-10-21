@@ -28,7 +28,7 @@ export function onProductEvent(handler: (event: ProductEvent) => void): () => vo
   return () => window.removeEventListener(PRODUCT_EVENT, listener);
 }
 
-/** Ask the existing Pattern Concierge to open. Only the assistant launcher listens. */
+/** Ask Ask Meemi to open. Only its launcher listens. */
 export function requestAssistantOpen(): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(OPEN_ASSISTANT));

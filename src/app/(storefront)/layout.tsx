@@ -4,7 +4,7 @@ import { TestModeBanner } from "@/components/layout/test-mode-banner";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { OrganizationSchema } from "@/components/brand/organization-schema";
 import { PageTransition } from "@/components/motion/page-transition";
-import { AssistantLauncher } from "@/components/assistant/assistant-launcher";
+import { AskMeemiLauncher } from "@/components/ask-meemi/ask-meemi-launcher";
 import { isAssistantConfigured } from "@/lib/ai/client";
 
 export default function StorefrontLayout({ children }: LayoutProps<"/">) {
@@ -32,12 +32,12 @@ export default function StorefrontLayout({ children }: LayoutProps<"/">) {
       </main>
       <PlumFooter />
       <CartDrawer />
-      {/* The pattern guide is offered only where it can actually answer: a
+      {/* Ask Meemi is offered only where it can actually answer: a
           deployment without a Gemini API key shows no launcher at all. Local
           development always shows it, so the panel can be worked on — its
           requests then return the "not available" state. */}
       {(isAssistantConfigured() || process.env.NODE_ENV === "development") && (
-        <AssistantLauncher />
+        <AskMeemiLauncher />
       )}
     </>
   );

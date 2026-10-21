@@ -289,7 +289,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
       {/* Meemi, the product page's crochet guide. Client-only and lazy: nothing
           in the server HTML. Its facts are derived here, from the product and
           its enabled difficulty assessment, never in the browser. "Ask Meemi"
-          is offered only where the Pattern guide itself is mounted — the same
+          is offered only where Ask Meemi itself is mounted — the same
           condition the storefront layout uses. */}
       <MeemiGuideLoader
         facts={meemiFactsFor(product)}

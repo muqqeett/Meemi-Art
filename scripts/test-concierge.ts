@@ -357,7 +357,99 @@ async function main() {
     {
       const llm = fakeGemini();
       const reply = await run.runAssistant(ask("An advanced pattern under $5"), llm, memoryCatalog(memory));
-      check("no match: deterministic relaxation from the real catalogue, no Gemini call", reply.ok && llm.replyCalls === 0 && reply.recommendations.length === 0 && /Without the advanced level, there are 4 patterns that fit\./.test(reply.message) && /Without the \$5\.00 budget, there is 1 pattern that fits\./.test(reply.message), reply.ok ? reply.message : "");
+      check(
+        "no match: shows the closest patterns and says which filter was dropped, with no Gemini call",
+        reply.ok &&
+          llm.replyCalls === 0 &&
+          llm.intentCalls === 0 &&
+          reply.recommendations.length > 0 &&
+          reply.mood === "unsure" &&
+          /^No advanced pattern yet, so I dropped "advanced"\. These are the closest matches\.$/.test(reply.message),
+        reply.ok ? reply.message : "",
+      );
+      check(
+        "no match: the closest cards still respect the filters that were kept (under $5)",
+        reply.ok && reply.recommendations.every((r) => r.product.priceCents <= 500),
+      );
+      check(
+        "no match: offers to keep the dropped filter, as a chip that sends a real query",
+        reply.ok && reply.chips.some((c) => c.label === "Keep advanced, any kind" && c.query === "Advanced patterns"),
+        reply.ok ? JSON.stringify(reply.chips) : "",
+      );
+    }
+
+    // Ask Meemi: her face follows the answer, and no turn is a dead end
+    {
+      console.log("\nAsk Meemi: moods, links and the time limit");
+      const happy = await run.runAssistant(ask("Something under $5"), fakeGemini(), memoryCatalog(memory));
+      check("mood: results found are happy, with no links", happy.ok && happy.mood === "happy" && happy.links.length === 0);
+
+      const accountCatalog = memoryCatalog(memory);
+      const account = await run.runAssistant(ask("Where is my download?"), fakeGemini(undefined, rawIntent({ outOfScope: true })), accountCatalog);
+      check(
+        "off-topic account question: helping, three server-written links, nothing searched",
+        account.ok &&
+          account.mood === "helping" &&
+          account.links.map((l) => l.label).join("|") === "Open My library|Help: downloads|Contact us" &&
+          account.links.map((l) => l.href).join() === "/account/downloads,/faq,/contact" &&
+          account.recommendations.length === 0 &&
+          !accountCatalog.calls.includes("retrieve"),
+      );
+
+      const joke = await run.runAssistant(ask("Tell me a joke"), fakeGemini(undefined, rawIntent({ outOfScope: true })), memoryCatalog(memory));
+      check("off-topic chat: helping, no links, starter chips to go on with", joke.ok && joke.mood === "helping" && joke.links.length === 0 && joke.chips.length > 0);
+
+      const base = memoryCatalog(memory);
+      const widening = {
+        ...base,
+        async retrieveCandidates(intent: CatalogIntent, slug: string | null) {
+          const retrieval = await base.retrieveCandidates(intent, slug);
+          return { ...retrieval, broadened: intent.keywords.length > 0 };
+        },
+      };
+      const widenedLlm = fakeGemini(undefined, rawIntent({ keywords: ["dragon"] }));
+      const widened = await run.runAssistant(ask("Dragon patterns"), widenedLlm, widening);
+      check(
+        "keywords matched nothing: the closest are shown, the dropped word is named, Meemi is unsure",
+        widened.ok &&
+          widened.mood === "unsure" &&
+          widened.recommendations.length > 0 &&
+          /^No dragon pattern yet, so I dropped "dragon"\. These are the closest matches\.$/.test(widened.message) &&
+          widenedLlm.replyCalls === 0,
+        widened.ok ? widened.message : "",
+      );
+
+      // Help me choose: each of the four answers is one ordinary, validated search turn
+      for (const [label, query] of [
+        ["Toy or animal", "Show me toy patterns"],
+        ["Something to wear", "Show me wearable patterns"],
+        ["For my pet", "Show me pet patterns"],
+        ["Flowers", "Show me flower patterns"],
+      ] as const) {
+        const guided = await run.runAssistant(ask(query), fakeGemini(), memoryCatalog(memory));
+        check(
+          `Help me choose "${label}": a real answer, never a dead end`,
+          guided.ok && guided.message.length > 0 && (guided.recommendations.length > 0 || guided.chips.length > 0),
+          guided.ok ? guided.message : "",
+        );
+      }
+
+      const unknown = await run.runAssistant(ask("Compare Dragon Egg and Garden Bunny"), fakeGemini(), memoryCatalog(memory));
+      check("a pattern that does not exist: unsure, never invented", unknown.ok && unknown.mood === "unsure" && unknown.recommendations.length === 0);
+
+      const slow: AssistantLlm = {
+        async extractIntent() {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          return rawIntent({ keywords: ["dragon"] });
+        },
+        async composeReply() {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          return run.REFUSED;
+        },
+      };
+      const started = Date.now();
+      const timedOut = await run.runAssistantSafely(ask("Dragon patterns"), slow, memoryCatalog(memory), 40);
+      check("a turn that overruns its time limit becomes the safe reply quickly", !timedOut.ok && Date.now() - started < 250, String(Date.now() - started));
     }
 
     // Compare
@@ -379,7 +471,7 @@ async function main() {
 
       const ambiguous = fakeGemini();
       const amb = await run.runAssistant(ask("Compare Zinnia and Rainbow Blanket"), ambiguous, memoryCatalog(memory));
-      check("compare with an ambiguous name: asks the customer to clarify, offers real names", amb.ok && /more than one pattern/.test(amb.message) && amb.quickReplies.every((q) => q.startsWith("Zinnia")) && ambiguous.replyCalls === 0);
+      check("compare with an ambiguous name: asks the customer to clarify, offers real names", amb.ok && /more than one pattern/.test(amb.message) && amb.chips.every((c) => c.label.startsWith("Zinnia")) && ambiguous.replyCalls === 0);
 
       const missing = await run.runAssistant(ask("Compare Dragon Egg and Garden Bunny"), fakeGemini(), memoryCatalog(memory));
       check("compare with an unknown name: says it could not find it", missing.ok && /couldn't find a pattern called "dragon egg"/.test(missing.message));

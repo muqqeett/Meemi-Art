@@ -219,8 +219,16 @@ async function main() {
   check("wishlist announces only after a successful save", wishlist.indexOf("emitProductEvent({") > wishlist.indexOf("if (!result.ok)") && /if \(result\.data\.added\) emitProductEvent/.test(wishlist));
   const buy = read("src/components/product/pdp/pdp-buy-actions.tsx");
   check("add to cart announces only after the add succeeded", buy.indexOf("emitProductEvent({") > buy.indexOf("if (!result.ok)") && buy.indexOf("emitProductEvent({") > buy.indexOf("setCount(result.data.itemCount)"));
-  const launcher = read("src/components/assistant/assistant-launcher.tsx");
-  check("the launcher only gains a listener that opens its own panel", /onAssistantOpenRequest\(\(\) => setOpen\(true\)\)/.test(launcher));
+  const launcher = read("src/components/ask-meemi/ask-meemi-launcher.tsx");
+  check("the launcher only gains a listener that opens its own panel", /onAssistantOpenRequest\(\(\) => useAskMeemi\.getState\(\)\.openPanel\(\)\)/.test(launcher));
+  const askStore = read("src/lib/stores/ask-meemi.ts");
+  const askPanel = read("src/components/ask-meemi/ask-meemi-panel.tsx");
+  check(
+    "Help me choose is the one Figma question with its four choices, and nothing that implies more",
+    askStore.includes('question: "What would you like to make?"') &&
+      ["Toy or animal", "Something to wear", "For my pet", "Flowers"].every((label) => askStore.includes(`label: "${label}"`)) &&
+      !/Question \d|of 3|crochet have you done|budget in mind|GUIDE_STEPS/.test(askStore + askPanel),
+  );
 
   // ---------------------------------------------------------------- artwork
   console.log("\nMascot artwork");

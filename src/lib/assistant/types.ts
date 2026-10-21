@@ -67,6 +67,22 @@ export type AssistantComparison = {
   rows: { label: string; values: string[] }[];
 };
 
+/**
+ * How Meemi looks for a turn — the seven faces of the Ask Meemi avatar.
+ *
+ * Chosen by the server from what actually happened (results found, nothing
+ * exact, off-topic, a clarifying question), never by the model, so the face
+ * always agrees with the answer. `hello`, `looking` and `napping` are the
+ * browser's own states (idle, waiting, no answer) and are not sent.
+ */
+export type AssistantMood = "hello" | "looking" | "happy" | "curious" | "unsure" | "helping" | "napping";
+
+/** A tappable follow-up: what it says, and what is sent when it is tapped. */
+export type AssistantChip = { label: string; query: string };
+
+/** A plain link the reply may offer, written by the server — never by the model. */
+export type AssistantLink = { label: string; href: string };
+
 export type ChatTurn = {
   role: "user" | "assistant";
   content: string;
@@ -78,7 +94,11 @@ export type AssistantReply =
       message: string;
       recommendations: AssistantRecommendation[];
       followUpQuestion: string | null;
-      quickReplies: string[];
+      /** Follow-up chips. The wire name for the spec's `chips[]`. */
+      chips: AssistantChip[];
+      /** Server-written links for turns the assistant cannot answer itself. */
+      links: AssistantLink[];
+      mood: AssistantMood;
       comparison: AssistantComparison | null;
     }
   | {
