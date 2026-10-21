@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 
 import {
   Sheet,
@@ -94,18 +94,27 @@ export function ShopToolbar({ total, showing, ...filterProps }: ShopToolbarProps
           <label htmlFor="sort" className="sr-only">
             Sort products
           </label>
-          <select
-            id="sort"
-            value={sort}
-            onChange={(event) => setFilters({ sort: event.target.value })}
-            className="pl-focus font-figtree h-11 rounded-full border-[1.5px] border-pl-line-strong bg-pl-surface px-4 pr-8 text-[14px] leading-[18px] font-bold text-pl-text transition-colors hover:bg-plum-100"
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          {/* The native arrow sits hard against the right edge, so it is replaced
+              with a drawn one that has room: the select keeps its own text and
+              keyboard behaviour, and the icon never takes a click. */}
+          <div className="relative">
+            <select
+              id="sort"
+              value={sort}
+              onChange={(event) => setFilters({ sort: event.target.value })}
+              className="pl-focus font-figtree h-11 appearance-none rounded-full border-[1.5px] border-pl-line-strong bg-pl-surface pr-11 pl-4 text-[14px] leading-[18px] font-bold text-pl-text transition-colors hover:bg-plum-100"
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-pl-text"
+              aria-hidden
+            />
+          </div>
         </div>
       </div>
     </div>

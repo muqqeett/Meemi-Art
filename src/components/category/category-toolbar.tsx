@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 
 import {
   Sheet,
@@ -95,18 +95,25 @@ export function CategoryToolbar({
         <label htmlFor="category-sort" className="sr-only">
           Sort products
         </label>
-        <select
-          id="category-sort"
-          value={sort}
-          onChange={(event) => setFilters({ sort: event.target.value })}
-          className="pl-focus font-figtree h-11 rounded-full border-[1.5px] border-pl-line-strong bg-pl-surface px-4 pr-8 text-[14px] leading-[18px] font-bold text-pl-text transition-colors hover:bg-plum-100"
-        >
-          {SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              Sort: {option.label}
-            </option>
-          ))}
-        </select>
+        {/* A drawn arrow with room on the right, in place of the native one. */}
+        <div className="relative">
+          <select
+            id="category-sort"
+            value={sort}
+            onChange={(event) => setFilters({ sort: event.target.value })}
+            className="pl-focus font-figtree h-11 appearance-none rounded-full border-[1.5px] border-pl-line-strong bg-pl-surface pr-11 pl-4 text-[14px] leading-[18px] font-bold text-pl-text transition-colors hover:bg-plum-100"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                Sort: {option.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-pl-text"
+            aria-hidden
+          />
+        </div>
       </div>
     </div>
   );
